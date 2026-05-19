@@ -1,0 +1,161 @@
+@page
+@model MyApp.Areas.Admin.Pages.LoginModel
+@{
+	Layout = "Layouts/_BlankLayout";
+	ViewData["Title"] = @Localizer.Get("Login");
+}
+
+@using System.Globalization
+
+@{
+	var currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+}
+@using MyApp.Helper
+@inject IDbLocalizer Localizer
+
+@section VendorStyles {
+	<link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.dist.css" />
+}
+
+@section VendorScripts {
+	<script src="~/vendor/libs/&#64;form-validation/popular.dist.js"></script>
+	<script src="~/vendor/libs/&#64;form-validation/bootstrap5.dist.js"></script>
+	<script src="~/vendor/libs/&#64;form-validation/auto-focus.dist.js"></script>
+}
+
+@section PageStyles {
+	<link rel="stylesheet" href="~/vendor/css/pages/page-auth.dist.css">
+}
+
+@section PageScripts {
+	<script src="~/js/pages-auth.dist.js"></script>
+}
+@* ************** Content ************** *@
+
+<div class="position-relative">
+	<div class="authentication-wrapper authentication-basic container-p-y p-4 p-sm-0">
+		<div class="authentication-inner py-6">
+
+			<!-- Login -->
+			<div class="card p-md-7 p-1">
+				<!-- Logo -->
+				<div class="app-brand justify-content-center mt-5">
+					<a class="app-brand-link gap-2">
+						<span class="app-brand-logo demo"><img src="~/img/LogoLogin.png" width="300px" /></span>
+						@* <span class="app-brand-text demo text-heading fw-semibold">@TempData.Peek("appName")</span> *@
+					</a>
+				</div>
+				<!-- /Logo -->
+
+				<div class="card-body mt-1">
+					<h4 class="mb-1">@Localizer.Get("WelcomeSystem") 👋</h4>
+					<p class="mb-5">@Localizer.Get("SignInLoginHeader")</p>
+
+
+
+
+					<form id="formAuthentication" class="mb-5" method="post">
+						<div class="form-floating form-floating-outline mb-5">
+							<input type="text" class="form-control" id="email-Username" name="txtUsername" value="@Model.DefaultUsername" placeholder="@Localizer.Get("EnterYourUsername")" autofocus>
+							<label for="email">@Localizer.Get("Username")</label>
+						</div>
+						<div class="mb-5">
+							<div class="form-password-toggle">
+								<div class="input-group input-group-merge">
+									<div class="form-floating form-floating-outline">
+										<input type="password" id="txtPassword" class="form-control" name="txtPassword" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" aria-describedby="password" />
+										<label for="password">@Localizer.Get("Password")</label>
+									</div>
+									<span class="input-group-text cursor-pointer"><i class="ri-eye-off-line"></i></span>
+								</div>
+							</div>
+						</div>
+
+
+
+						<div class="input-group">
+							<label class="input-group-text" for="inputGroupSelect01">@Localizer.Get("Language") </label>
+							<select class="form-select" id="inputGroupSelect01" name="optSelectedLanguage" asp-for="optSelectedLanguage" onchange="changeCulture(this.value)">
+
+
+								<option value="@AppConstants.LanguageOption.Code_English" selected="@(currentCulture == AppConstants.LanguageOption.Code_English ? "selected" : null)">@AppConstants.LanguageOption.Word_English</option>
+								<option value="@AppConstants.LanguageOption.Code_Chinese" selected="@(currentCulture == AppConstants.LanguageOption.Code_Chinese ? "selected" : null)">@AppConstants.LanguageOption.Word_Chinese</option>
+								<option value="@AppConstants.LanguageOption.Code_BahasaMalayu" selected="@(currentCulture == AppConstants.LanguageOption.Code_BahasaMalayu ? "selected" : null)">@AppConstants.LanguageOption.Word_BahasaMalayu</option>
+
+							</select>
+						</div>
+
+
+						<div class="mb-5 d-flex justify-content-between mt-5">
+							<div class="form-check mt-2">
+								<input class="form-check-input" type="checkbox" id="remember-me" name="chkRememberMe">
+								<label class="form-check-label" for="remember-me">
+									@Localizer.Get("RememberMe")
+								</label>
+							</div>
+							<a href="@AppConstants.Routes.ForgotPassword" class="float-end mb-1 mt-2">
+								<span>@Localizer.Get("ForgotPassword")</span>
+							</a>
+						</div>
+						<div class="mb-5">
+							<button class="btn btn-primary d-grid w-100" type="submit">@Localizer.Get("SignInButton")</button>
+						</div>
+					</form>
+
+					@* <p class="text-center" hidden>
+						<span>New on our platform?</span>
+						<a href="/Auth/Register/Basic">
+							<span>Create an account</span>
+						</a>
+					</p> *@
+
+					<div class="divider my-5">
+						<div class="divider-text"></div>
+					</div>
+
+
+				</div>
+			</div>
+			<!-- /Login -->
+			<img alt="mask" src="~/img/illustrations/auth-basic-login-mask-light.png" class="authentication-image d-none d-lg-block" data-app-light-img="illustrations/auth-basic-login-mask-light.png" data-app-dark-img="illustrations/auth-basic-login-mask-dark.png" />
+		</div>
+	</div>
+</div>
+
+<script>
+	function changeCulture(culture) {
+
+	  document.cookie = ".AspNetCore.Culture=c=" + culture + "|uic=" + culture + "; path=/";
+
+	  window.location.href = window.location.pathname;
+
+	}
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+		document.addEventListener("DOMContentLoaded", function () {
+		var messageType = '@Model.AlertMessageType';
+		var messageTitle = '@Model.AlertMessageTitle';
+			var messageContent = '@Model.AlertMessageContent';
+
+
+		if (messageType != "" ) {
+				Swal.fire({
+			icon: messageType,
+			title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+				text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+
+			 }).then(() => {
+		// Optional: trigger a reload or redirect
+
+				});
+			}
+		});
+</script>
+
+
+
+
+

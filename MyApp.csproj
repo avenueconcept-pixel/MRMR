@@ -1,0 +1,109 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>2ac58585-d1b3-40ff-a284-c11f26889b31</UserSecretsId>
+    <RootNamespace>MyApp</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Areas\Admin\Pages\CustomerF\**" />
+    <Compile Remove="Areas\Admin\Pages\JobsheetF\**" />
+    <Compile Remove="Areas\Admin\Pages\ProductF\**" />
+    <Compile Remove="Areas\Admin\Pages\UserF\**" />
+    <Compile Remove="Areas\Admin\Pages\CustomerF\**" />
+    <Compile Remove="Areas\Admin\Pages\JobsheetF\**" />
+    <Compile Remove="Areas\Admin\Pages\ProductF\**" />
+    <Compile Remove="Areas\Admin\Pages\UserF\**" />
+    <Compile Remove="wwwroot\custom\**" />
+    <Content Remove="Areas\Admin\Pages\CustomerF\**" />
+    <Content Remove="Areas\Admin\Pages\JobsheetF\**" />
+    <Content Remove="Areas\Admin\Pages\ProductF\**" />
+    <Content Remove="Areas\Admin\Pages\UserF\**" />
+    <Content Remove="Areas\Admin\Pages\CustomerF\**" />
+    <Content Remove="Areas\Admin\Pages\JobsheetF\**" />
+    <Content Remove="Areas\Admin\Pages\ProductF\**" />
+    <Content Remove="Areas\Admin\Pages\UserF\**" />
+    <Content Remove="wwwroot\custom\**" />
+    <EmbeddedResource Remove="Areas\Admin\Pages\CustomerF\**" />
+    <EmbeddedResource Remove="Areas\Admin\Pages\JobsheetF\**" />
+    <EmbeddedResource Remove="Areas\Admin\Pages\ProductF\**" />
+    <EmbeddedResource Remove="Areas\Admin\Pages\UserF\**" />
+    <EmbeddedResource Remove="Areas\Admin\Pages\CustomerF\**" />
+    <EmbeddedResource Remove="Areas\Admin\Pages\JobsheetF\**" />
+    <EmbeddedResource Remove="Areas\Admin\Pages\ProductF\**" />
+    <EmbeddedResource Remove="Areas\Admin\Pages\UserF\**" />
+    <EmbeddedResource Remove="wwwroot\custom\**" />
+    <None Remove="Areas\Admin\Pages\CustomerF\**" />
+    <None Remove="Areas\Admin\Pages\JobsheetF\**" />
+    <None Remove="Areas\Admin\Pages\ProductF\**" />
+    <None Remove="Areas\Admin\Pages\UserF\**" />
+    <None Remove="Areas\Admin\Pages\CustomerF\**" />
+    <None Remove="Areas\Admin\Pages\JobsheetF\**" />
+    <None Remove="Areas\Admin\Pages\ProductF\**" />
+    <None Remove="Areas\Admin\Pages\UserF\**" />
+    <None Remove="wwwroot\custom\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Areas\Admin\Pages\ForgotPassword.cshtml.cs" />
+    <Compile Remove="Areas\Admin\Pages\Login.cshtml.cs" />
+    <Compile Remove="Areas\Admin\Pages\Logout.cshtml.cs" />
+    <Compile Remove="Dtos\CustomerDtos.cs" />
+    <Compile Remove="Dtos\JobsheetDtos.cs" />
+    <Compile Remove="Dtos\ProductDtos.cs" />
+    <Compile Remove="Helper\JobsheetHelper.cs" />
+    <Compile Remove="Helper\SharedHelper.cs" />
+    <Compile Remove="Helper\UsersHelper.cs" />
+    <Compile Remove="Models\AdminUsers.cs" />
+    <Compile Remove="Models\Branch.cs" />
+    <Compile Remove="Models\EmailTemplates.cs" />
+    <Compile Remove="Models\JobSheet.cs" />
+    <Compile Remove="Areas\Admin\Pages\Page2.cshtml.cs" />
+    <Compile Remove="Models\Languages.cs" />
+    <Compile Remove="Models\MenuItem.cs" />
+    <Compile Remove="Models\Products.cs" />
+    <Compile Remove="Models\SystemDefaults.cs" />
+    <Compile Remove="Models\ViewModel.cs" />
+    <Compile Remove="Services\MenuService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Areas\Admin\Pages\ForgotPassword.cshtml" />
+    <Content Remove="Areas\Admin\Pages\Login.cshtml" />
+    <Content Remove="Areas\Admin\Pages\Logout.cshtml" />
+    <Content Remove="Areas\Admin\Pages\Page2.cshtml" />
+    <Content Remove="Areas\Admin\Pages\Shared\_JobsheetOptionList.cshtml" />
+    <Content Remove="Areas\Admin\Pages\Shared\_ValidationScriptsPartial.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Update Entity Framework Core packages to .NET 9 compatible versions -->
+    <PackageReference Include="MailKit" Version="4.16.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+    <PackageReference Include="NuGet.Packaging" Version="7.6.0" />
+    <PackageReference Include="NuGet.Protocol" Version="7.6.0" />
+    <None Update="User.Data.db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Areas\Admin\Pages\Shared\" />
+    <Folder Include="Areas\Customer\Pages\" />
+    <Folder Include="wwwroot\audio\" />
+  </ItemGroup>
+
+</Project>
