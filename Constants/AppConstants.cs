@@ -29,4 +29,28 @@ public static class AppConstants
 
   // ─── Pagination ───────────────────────────────────
   public const int DefaultPage = 1;
+
+
 }
+
+public static class YesNo
+{
+  public const string Yes = "Y";
+  public const string No = "N";
+
+}
+
+public static class EmailTemplateConstants
+{
+  public const string ForgotPassword = "ForgotPassword";
+
+}
+
+public static class UploadWebPath
+{
+
+  public const string Product = "uploads/product";
+
+
+}
+

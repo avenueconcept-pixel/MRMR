@@ -48,12 +48,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Areas\Admin\Pages\ForgotPassword.cshtml.cs" />
-    <Compile Remove="Areas\Admin\Pages\Login.cshtml.cs" />
     <Compile Remove="Areas\Admin\Pages\Logout.cshtml.cs" />
     <Compile Remove="Dtos\CustomerDtos.cs" />
     <Compile Remove="Dtos\JobsheetDtos.cs" />
     <Compile Remove="Dtos\ProductDtos.cs" />
+    <Compile Remove="Helper\AppConstants.cs" />
     <Compile Remove="Helper\JobsheetHelper.cs" />
     <Compile Remove="Helper\SharedHelper.cs" />
     <Compile Remove="Helper\UsersHelper.cs" />
@@ -71,8 +70,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="Areas\Admin\Pages\ForgotPassword.cshtml" />
-    <Content Remove="Areas\Admin\Pages\Login.cshtml" />
     <Content Remove="Areas\Admin\Pages\Logout.cshtml" />
     <Content Remove="Areas\Admin\Pages\Page2.cshtml" />
     <Content Remove="Areas\Admin\Pages\Shared\_JobsheetOptionList.cshtml" />
@@ -103,6 +100,7 @@
   <ItemGroup>
     <Folder Include="Areas\Admin\Pages\Shared\" />
     <Folder Include="Areas\Customer\Pages\" />
+    <Folder Include="bin\" />
     <Folder Include="wwwroot\audio\" />
   </ItemGroup>
 

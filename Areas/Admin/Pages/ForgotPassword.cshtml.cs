@@ -1,25 +1,26 @@
-using System;
-using System.Collections.Generic;
-using MyApp.Helper;
-using MyApp.Services;
-using MyApp.Models;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using static MyApp.Helper.AppConstants;
 using MyApp.Data;
+using MyApp.Helper;
+using MyApp.Helper.DB;
+using MyApp.Models;
+using MyApp.Services;
+using System;
+using System.Collections.Generic;
+using MyApp.Constants;
 
 namespace MyApp.Areas.Admin.Pages
 {
   public class ForgotPasswordModel : PageModel
   {
     private readonly AppDbContext _context;
-    private readonly IDbLocalizer _localizer;
+    private readonly TranslationService _translation;
 
     private readonly EmailService _emailService;
     private readonly ILogger<ForgotPasswordModel> _logger;
-    private readonly SharedHelper _sharedhelper;
+    private readonly AdminDbHelper _adminDbHelper;
 
 
     [TempData]
@@ -41,15 +42,15 @@ namespace MyApp.Areas.Admin.Pages
   
 
 
-    public ForgotPasswordModel(AppDbContext context, IDbLocalizer localizer, EmailService emailService, ILogger<ForgotPasswordModel> logger, SharedHelper sharedHelper)
+    public ForgotPasswordModel(AppDbContext context, TranslationService translation, EmailService emailService, ILogger<ForgotPasswordModel> logger,  AdminDbHelper adminDbHelper)
     {
-      _localizer = localizer;
-
+      _translation = translation;
       _context = context;
+      _adminDbHelper = adminDbHelper;
 
       _emailService = emailService;
       _logger = logger;
-      _sharedhelper = sharedHelper;
+    
 
 
     }
@@ -67,29 +68,29 @@ namespace MyApp.Areas.Admin.Pages
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = _localizer.Get("EnterYourUsername");
+        AlertMessageContent = await _translation.GetAsync("EnterYourUsername");
 
         return false;
       }
 
-      var adminUser = await _sharedhelper.GetAdminUserDataByUsername(txtUsername);
+      var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
 
 
       if (adminUser == null)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = _localizer.Get("InvalidUsername");
+        AlertMessageContent = await _translation.GetAsync("InvalidUsername");
 
         return false;
 
       }
 
-      if (adminUser.LoginStatus != AppConstants.LoginStatus.Active)
+      if (adminUser.Status != UserStatusConstants.Active)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = _localizer.Get("InactiveUsername");
+        AlertMessageContent = await _translation.GetAsync("InactiveUsername");
 
         return false;
       }
@@ -112,44 +113,26 @@ namespace MyApp.Areas.Admin.Pages
       DefaultUsername = txtUsername;
 
 
-      var adminUser = await _sharedhelper.GetAdminUserDataByUsername(txtUsername);
+      var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
 
-
-      //if (adminUser == null)
-      //{
-      //  AlertMessageType = MessageType.Error;
-      //  AlertMessageTitle = MessageTitle.Error;
-      //  AlertMessageContent = _localizer.Get("InvalidUsername");
-
-      //  return Page();
-
-      //}
-
-      //if (adminUser.LoginStatus != AppConstants.LoginStatus.Active)
-      //{
-      //  AlertMessageType = MessageType.Error;
-      //  AlertMessageTitle = MessageTitle.Error;
-      //  AlertMessageContent = _localizer.Get("InactiveUsername");
-
-      //  return Page();
-      //}
-
-      string? DBEmail = adminUser.Email;
-      string? DBPassword = PasswordCryptoHelper.Decrypt(adminUser.PasswordHash);
-
-      // TODO: Verify user exists and generate token
-
-
+      string? DBEmail = "";
+      string? DBPassword = "";
+      string currentUserLanguage ="";
+      if (adminUser != null)
+      {
+        DBEmail = adminUser.Email;
+        DBPassword = PasswordCryptoHelper.Decrypt(adminUser.PasswordHash);
+        currentUserLanguage = adminUser.LastLoginLangCode;
+      }
 
       string EmailSubject = "";
       string EmailhtmlContent = "";    
 
-      string currentUserLanguage = UsersHelper.GetCurrentCultureCode();// Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
-
+     
 
       //  var template = await _context.EmailTemplates
       //.FirstOrDefaultAsync(t => t.TemplateKey == "ForgotPassword" && t.CultureCode == currentUserLanguage);
-      var template = await _sharedhelper.GetEmailTemplate(AppConstants.EmailTemplate.ForgotPassword, currentUserLanguage);
+      var template = await _adminDbHelper.GetEmailTemplateAsync(AppConstants.EmailTemplate.ForgotPassword, currentUserLanguage);
 
       if (template == null)
       {
@@ -177,7 +160,7 @@ namespace MyApp.Areas.Admin.Pages
 
       AlertMessageType = MessageType.Success;
       AlertMessageTitle = MessageTitle.Success;
-      AlertMessageContent = _localizer.Get("PasswordEmailSend");
+      AlertMessageContent = await _translation.GetAsync("PasswordEmailSend");
       return Page();
       //return RedirectToPage(AppConstants.Routes.ForgotPassword);
 

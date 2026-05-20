@@ -53,7 +53,7 @@ Helper/
   ConvertHelper.cs
   SharedHelper.cs
   UsersHelper.cs
-Migrations/             ← EF Core migration files (auto-generated)
+Migrations/             ← EF Core migration files (not used — DB schema is managed manually)
 Models/                 ← EF entity classes only, no logic
 Services/               ← application services (email, translation, etc.)
 wwwroot/
@@ -225,7 +225,7 @@ Use `MessageConstants.*` keys when calling `TranslationService.GetAsync(key)`.
 - Use `Constants/` classes for any magic strings or numbers used in multiple places
 - Use `DbSet<T>` with expression-bodied property syntax: `public DbSet<Thing> Things => Set<Thing>();`
 - Create a new `*DbHelper` class per entity group (one for Admin, one for Customer, etc.)
-- Add new migrations with `dotnet ef migrations add <Name>` after model changes
+- After model changes, provide a raw SQL script for pgAdmin — do not suggest `dotnet ef migrations`
 
 ## Never
 

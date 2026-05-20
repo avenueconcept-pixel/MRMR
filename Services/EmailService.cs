@@ -1,17 +1,20 @@
 namespace MyApp.Services
 {
-  // Services/MailService.cs
   using MailKit.Net.Smtp;
   using MimeKit;
   using Microsoft.Extensions.Options;
+  using MyApp.Constants;
+  using MyApp.Helper.DB;
 
   public class EmailService
   {
     private readonly SmtpSettings _smtpSettings;
+    private readonly EmailTemplateDbHelper _emailTemplateDb;
 
-    public EmailService(IOptions<SmtpSettings> smtpOptions)
+    public EmailService(IOptions<SmtpSettings> smtpOptions, EmailTemplateDbHelper emailTemplateDb)
     {
       _smtpSettings = smtpOptions.Value;
+      _emailTemplateDb = emailTemplateDb;
     }
 
     public async Task SendEmailAsync(string to, string subject, string body)
@@ -29,6 +32,32 @@ namespace MyApp.Services
       await smtp.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password);
       await smtp.SendAsync(email);
       await smtp.DisconnectAsync(true);
+    }
+
+    public async Task SendAdminForgotPasswordAsync(string to, string fullName, string resetLink, string langCode)
+    {
+      var template = await _emailTemplateDb.GetByKeyAsync(EmailTemplateConstants.AdminForgotPassword, langCode);
+      if (template == null) return;
+
+      var subject = template.Subject.Replace("{{FullName}}", fullName);
+      var body = template.BodyHtml
+          .Replace("{{FullName}}", fullName)
+          .Replace("{{ResetLink}}", resetLink);
+
+      await SendEmailAsync(to, subject, body);
+    }
+
+    public async Task SendCustomerForgotPasswordAsync(string to, string fullName, string resetLink, string langCode)
+    {
+      var template = await _emailTemplateDb.GetByKeyAsync(EmailTemplateConstants.CustomerForgotPassword, langCode);
+      if (template == null) return;
+
+      var subject = template.Subject.Replace("{{FullName}}", fullName);
+      var body = template.BodyHtml
+          .Replace("{{FullName}}", fullName)
+          .Replace("{{ResetLink}}", resetLink);
+
+      await SendEmailAsync(to, subject, body);
     }
   }
 }

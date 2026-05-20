@@ -1,32 +1,33 @@
-using System;
-using System.Collections.Generic;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using MyApp.Helper;
-using MyApp.Models;
 using Microsoft.Extensions.Localization;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Localization;
-using System.Globalization;
+//using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualBasic;
-using System.Reflection;
-using Microsoft.IdentityModel.Tokens;
-
-using static MyApp.Helper.AppConstants;
+using MyApp.Constants;
 using MyApp.Data;
+using MyApp.Helper;
+using MyApp.Helper.DB;
+using MyApp.Models;
+using MyApp.Services;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
+using System.Security.Claims;
+//using MyApp.Constants;
 
 namespace MyApp.Areas.Admin.Pages
 {
 
   public class LoginModel : PageModel
   {
-
+    private readonly TranslationService _translation;
     private readonly AppDbContext _context;
-    private readonly IDbLocalizer _localizer;
-    private readonly SharedHelper _sharedhelper;
+    private readonly AdminDbHelper _adminDbHelper;
 
     [TempData]
     public string? AlertMessageType { get; set; } = null;
@@ -56,11 +57,12 @@ namespace MyApp.Areas.Admin.Pages
 
 
 
-    public LoginModel(AppDbContext context, IDbLocalizer localizer, SharedHelper sharedHelper)
+    public LoginModel(AppDbContext context, TranslationService translation, AdminDbHelper adminDbHelper)
     {
-      _localizer = localizer;
+      _translation = translation;
       _context = context;
-      _sharedhelper = sharedHelper;
+      _adminDbHelper = adminDbHelper;
+
 
     }
 
@@ -79,7 +81,7 @@ namespace MyApp.Areas.Admin.Pages
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = _localizer.Get("EnterYourUsername");
+        AlertMessageContent = await _translation.GetAsync("EnterYourUsername");
 
         return false;
       }
@@ -88,30 +90,30 @@ namespace MyApp.Areas.Admin.Pages
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = _localizer.Get("EnterYourPassword");
+        AlertMessageContent = await _translation.GetAsync("EnterYourPassword");
 
         return false;
       }
 
-      var adminUser = await _sharedhelper.GetAdminUserDataByUsername(txtUsername);
+      var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
 
 
       if (adminUser == null)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = _localizer.Get("InvalidUsername");
+        AlertMessageContent = await _translation.GetAsync("InvalidUsername");
 
         return false;
 
       }
 
-      if (adminUser.LoginStatus != AppConstants.LoginStatus.Active)
+      if (adminUser.Status != UserStatusConstants.Active)
       {
 
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = _localizer.Get("InactiveUsername");
+        AlertMessageContent = await _translation.GetAsync("InactiveUsername");
 
         return false;
       }
@@ -122,7 +124,7 @@ namespace MyApp.Areas.Admin.Pages
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = _localizer.Get("InvalidSignIn");
+        AlertMessageContent = await _translation.GetAsync("InvalidSignIn");
 
         return false;
 
@@ -145,20 +147,21 @@ namespace MyApp.Areas.Admin.Pages
 
       DefaultUsername = txtUsername;
 
-      var adminUser = await _sharedhelper.GetAdminUserDataByUsername(txtUsername);
+      var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
 
       //string EnterPasswordHash = PasswordCryptoHelper.Encrypt(txtPassword);
 
       //if (EnterPasswordHash == adminUser.PasswordHash)
       //{
       var claims = new List<Claim>
-          {
-             new Claim(AppConstants.SessionKeys.UserId, adminUser.UserId.ToString()),
-             new Claim(AppConstants.SessionKeys.Username, adminUser.Username.ToString()),
-              new Claim(AppConstants.SessionKeys.LoginLanguage, optSelectedLanguage) // e.g. "en", "zh", "ms"
+      {
+        // Store user session data in claims
+        //new Claim(CookieConstants.SessionKeys.UserId, adminUser.UserId.ToString()),
+        //new Claim(CookieConstants.SessionKeys.Username, adminUser.Username.ToString()),
+        // new Claim(CookieConstants.SessionKeys.LoginLanguage, optSelectedLanguage) // e.g. "en", "zh", "ms"
 
-            // Add other claims if needed
-          };
+        // Add other claims if needed
+      };
 
       var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
       var principal = new ClaimsPrincipal(identity);
@@ -171,33 +174,22 @@ namespace MyApp.Areas.Admin.Pages
           });
 
 
-      // update culture code
-      adminUser.CultureCode = optSelectedLanguage;
-      await _context.SaveChangesAsync();
+      // update last login time and language
+      if (adminUser != null)
+      {
+        adminUser.LastLogin = DateTime.Now;
+        adminUser.LastLoginLangCode = optSelectedLanguage;
+        await _context.SaveChangesAsync();
+      }
+
 
       AlertMessageType = MessageType.Success;
       AlertMessageTitle = MessageTitle.Success;
       AlertMessageContent = "";
-      return RedirectToPage(AppConstants.Routes.Dashboard);
+      return RedirectToPage(Routes.AdminDashboard);
     }
-    //else
-    //{
-    //  // ❌ Invalid password — show error
 
-    //  AlertMessageType = MessageType.Error;
-    //  AlertMessageTitle = MessageTitle.Error;
-    //  AlertMessageContent = _localizer.Get("InvalidSignIn");
-
-    //  return Page();
-    //}
-  //}
-}
+  }
 
 
-
-
-//public class CoverModel : PageModel
-//{
-//  public void OnGet() { }
-//}
 }

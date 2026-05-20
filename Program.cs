@@ -33,6 +33,8 @@ builder.Services.AddScoped<TranslationService>();
 
 builder.Services.AddScoped<AdminDbHelper>();
 builder.Services.AddScoped<CustomerDbHelper>();
+builder.Services.AddScoped<EmailTemplateDbHelper>();
+builder.Services.AddScoped<LanguageDbHelper>();
 
 
 

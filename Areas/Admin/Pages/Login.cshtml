@@ -2,16 +2,15 @@
 @model MyApp.Areas.Admin.Pages.LoginModel
 @{
 	Layout = "Layouts/_BlankLayout";
-	ViewData["Title"] = @Localizer.Get("Login");
+	ViewData["Title"] = await T.GetAsync("Login");
 }
 
-@using System.Globalization
+
 
 @{
 	var currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 }
-@using MyApp.Helper
-@inject IDbLocalizer Localizer
+
 
 @section VendorStyles {
 	<link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.dist.css" />
@@ -48,23 +47,23 @@
 				<!-- /Logo -->
 
 				<div class="card-body mt-1">
-					<h4 class="mb-1">@Localizer.Get("WelcomeSystem") 👋</h4>
-					<p class="mb-5">@Localizer.Get("SignInLoginHeader")</p>
+					<h4 class="mb-1">@await T.GetAsync("WelcomeSystem") 👋</h4>
+					<p class="mb-5">@await T.GetAsync("SignInLoginHeader")</p>
 
 
 
 
 					<form id="formAuthentication" class="mb-5" method="post">
 						<div class="form-floating form-floating-outline mb-5">
-							<input type="text" class="form-control" id="email-Username" name="txtUsername" value="@Model.DefaultUsername" placeholder="@Localizer.Get("EnterYourUsername")" autofocus>
-							<label for="email">@Localizer.Get("Username")</label>
+							<input type="text" class="form-control" id="email-Username" name="txtUsername" value="@Model.DefaultUsername" placeholder="@await T.GetAsync("EnterYourUsername")" autofocus>
+							<label for="email">@await T.GetAsync("Username")</label>
 						</div>
 						<div class="mb-5">
 							<div class="form-password-toggle">
 								<div class="input-group input-group-merge">
 									<div class="form-floating form-floating-outline">
 										<input type="password" id="txtPassword" class="form-control" name="txtPassword" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" aria-describedby="password" />
-										<label for="password">@Localizer.Get("Password")</label>
+										<label for="password">@await T.GetAsync("Password")</label>
 									</div>
 									<span class="input-group-text cursor-pointer"><i class="ri-eye-off-line"></i></span>
 								</div>
@@ -74,14 +73,11 @@
 
 
 						<div class="input-group">
-							<label class="input-group-text" for="inputGroupSelect01">@Localizer.Get("Language") </label>
+							<label class="input-group-text" for="inputGroupSelect01">@await T.GetAsync("Language") </label>
 							<select class="form-select" id="inputGroupSelect01" name="optSelectedLanguage" asp-for="optSelectedLanguage" onchange="changeCulture(this.value)">
 
 
-								<option value="@AppConstants.LanguageOption.Code_English" selected="@(currentCulture == AppConstants.LanguageOption.Code_English ? "selected" : null)">@AppConstants.LanguageOption.Word_English</option>
-								<option value="@AppConstants.LanguageOption.Code_Chinese" selected="@(currentCulture == AppConstants.LanguageOption.Code_Chinese ? "selected" : null)">@AppConstants.LanguageOption.Word_Chinese</option>
-								<option value="@AppConstants.LanguageOption.Code_BahasaMalayu" selected="@(currentCulture == AppConstants.LanguageOption.Code_BahasaMalayu ? "selected" : null)">@AppConstants.LanguageOption.Word_BahasaMalayu</option>
-
+							
 							</select>
 						</div>
 
@@ -90,15 +86,15 @@
 							<div class="form-check mt-2">
 								<input class="form-check-input" type="checkbox" id="remember-me" name="chkRememberMe">
 								<label class="form-check-label" for="remember-me">
-									@Localizer.Get("RememberMe")
+									@await T.GetAsync("RememberMe")
 								</label>
 							</div>
-							<a href="@AppConstants.Routes.ForgotPassword" class="float-end mb-1 mt-2">
-								<span>@Localizer.Get("ForgotPassword")</span>
+							<a asp-area="Admin" asp-page="/ForgotPassword" class="float-end mb-1 mt-2">
+								<span>@await T.GetAsync("ForgotPassword")</span>
 							</a>
 						</div>
 						<div class="mb-5">
-							<button class="btn btn-primary d-grid w-100" type="submit">@Localizer.Get("SignInButton")</button>
+							<button class="btn btn-primary d-grid w-100" type="submit">@await T.GetAsync("SignInButton")</button>
 						</div>
 					</form>
 

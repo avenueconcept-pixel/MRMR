@@ -22,4 +22,23 @@ public static class MessageConstants
   public const string LoginFailed = "MsgLoginFailed";
   public const string AccountLocked = "MsgAccountLocked";
   public const string SessionExpired = "MsgSessionExpired";
+
+  public const string InvalidRouteId = "MsgInvalidRouteId";
+  public const string InvalidDataAction = "MsgInvalidDataAction";
+
 }
+
+public static class MessageTitle
+{
+  public const string Error = "Oops...";
+  public const string Success = "";
+}
+
+public static class MessageType
+{
+  public const string Success = "success";
+  public const string Error = "error";
+  public const string Warning = "warning";
+}
+
+
