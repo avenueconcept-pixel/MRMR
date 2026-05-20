@@ -34,10 +34,10 @@ namespace MyApp.Services
       await smtp.DisconnectAsync(true);
     }
 
-    public async Task SendAdminForgotPasswordAsync(string to, string fullName, string resetLink, string langCode)
+    public async Task<bool> SendAdminForgotPasswordAsync(string to, string fullName, string resetLink, string langCode)
     {
       var template = await _emailTemplateDb.GetByKeyAsync(EmailTemplateConstants.AdminForgotPassword, langCode);
-      if (template == null) return;
+      if (template == null) return false;
 
       var subject = template.Subject.Replace("{{FullName}}", fullName);
       var body = template.BodyHtml
@@ -45,12 +45,13 @@ namespace MyApp.Services
           .Replace("{{ResetLink}}", resetLink);
 
       await SendEmailAsync(to, subject, body);
+      return true;
     }
 
-    public async Task SendCustomerForgotPasswordAsync(string to, string fullName, string resetLink, string langCode)
+    public async Task<bool> SendCustomerForgotPasswordAsync(string to, string fullName, string resetLink, string langCode)
     {
       var template = await _emailTemplateDb.GetByKeyAsync(EmailTemplateConstants.CustomerForgotPassword, langCode);
-      if (template == null) return;
+      if (template == null) return false;
 
       var subject = template.Subject.Replace("{{FullName}}", fullName);
       var body = template.BodyHtml
@@ -58,6 +59,7 @@ namespace MyApp.Services
           .Replace("{{ResetLink}}", resetLink);
 
       await SendEmailAsync(to, subject, body);
+      return true;
     }
   }
 }

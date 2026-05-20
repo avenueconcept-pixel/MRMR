@@ -40,11 +40,7 @@ public static class YesNo
 
 }
 
-public static class EmailTemplateConstants
-{
-  public const string ForgotPassword = "ForgotPassword";
 
-}
 
 public static class UploadWebPath
 {

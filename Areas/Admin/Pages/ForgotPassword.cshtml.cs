@@ -1,21 +1,14 @@
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using MyApp.Data;
 using MyApp.Helper;
 using MyApp.Helper.DB;
-using MyApp.Models;
 using MyApp.Services;
-using System;
-using System.Collections.Generic;
 using MyApp.Constants;
 
 namespace MyApp.Areas.Admin.Pages
 {
   public class ForgotPasswordModel : PageModel
   {
-    private readonly AppDbContext _context;
     private readonly TranslationService _translation;
 
     private readonly EmailService _emailService;
@@ -42,10 +35,9 @@ namespace MyApp.Areas.Admin.Pages
   
 
 
-    public ForgotPasswordModel(AppDbContext context, TranslationService translation, EmailService emailService, ILogger<ForgotPasswordModel> logger,  AdminDbHelper adminDbHelper)
+    public ForgotPasswordModel(TranslationService translation, EmailService emailService, ILogger<ForgotPasswordModel> logger, AdminDbHelper adminDbHelper)
     {
       _translation = translation;
-      _context = context;
       _adminDbHelper = adminDbHelper;
 
       _emailService = emailService;
@@ -115,47 +107,30 @@ namespace MyApp.Areas.Admin.Pages
 
       var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
 
-      string? DBEmail = "";
+      string? userEmail = "";
+      string? fullName = "";
       string? DBPassword = "";
       string currentUserLanguage ="";
       if (adminUser != null)
       {
-        DBEmail = adminUser.Email;
+        userEmail = adminUser.Email;
+        fullName = adminUser.FullName;
         DBPassword = PasswordCryptoHelper.Decrypt(adminUser.PasswordHash);
         currentUserLanguage = adminUser.LastLoginLangCode;
       }
 
-      string EmailSubject = "";
-      string EmailhtmlContent = "";    
+      string resetLink = "";// Url.Page("/Admin/ResetPassword", null, new { username = txtUsername }, Request.Scheme);
 
-     
+      bool sent = await _emailService.SendAdminForgotPasswordAsync(userEmail, fullName, resetLink, currentUserLanguage);
 
-      //  var template = await _context.EmailTemplates
-      //.FirstOrDefaultAsync(t => t.TemplateKey == "ForgotPassword" && t.CultureCode == currentUserLanguage);
-      var template = await _adminDbHelper.GetEmailTemplateAsync(AppConstants.EmailTemplate.ForgotPassword, currentUserLanguage);
-
-      if (template == null)
+      if (!sent)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = "Email template not found for key ForgotPassword and language " + currentUserLanguage;
-       
-        _logger.LogWarning(AlertMessageContent);     
-       
-        return Page(); // Or fallback
+        AlertMessageContent = "Email template not found for key admin_forgot_password and language " + currentUserLanguage;
+        _logger.LogWarning(AlertMessageContent);
+        return Page();
       }
-
-      EmailSubject = template.Subject;
-      EmailhtmlContent = template.BodyHtml;
-      EmailhtmlContent = EmailhtmlContent.Replace("{Username}", adminUser.Username);
-      EmailhtmlContent = EmailhtmlContent.Replace("{Password}", DBPassword);
-
-      await _emailService.SendEmailAsync(
-        DBEmail,
-        EmailSubject,
-        EmailhtmlContent
-        );
-      // _logger.LogInformation($"Reset email sent to {txtUsername}: {DBEmail}");
 
 
       AlertMessageType = MessageType.Success;
