@@ -1,29 +1,19 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using MyApp.Constants;
 using MyApp.Helper;
 using MyApp.Helper.DB;
+using MyApp.Models;
 using MyApp.Services;
-using MyApp.Constants;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MyApp.Areas.Admin.Pages
 {
-  public class ForgotPasswordModel : PageModel
+  public class ForgotPasswordModel : BasePageModel
   {
     private readonly TranslationService _translation;
-
     private readonly EmailService _emailService;
     private readonly ILogger<ForgotPasswordModel> _logger;
     private readonly AdminDbHelper _adminDbHelper;
-
-
-    [TempData]
-    public string? AlertMessageType { get; set; } = null;
-
-    [TempData]
-    public string? AlertMessageTitle { get; set; } = null;
-
-    [TempData]
-    public string? AlertMessageContent { get; set; } = null;
+    private readonly PasswordResetTokenDbHelper _tokenDbHelper;
 
     [TempData]
     public string? DefaultUsername { get; set; }
@@ -31,51 +21,35 @@ namespace MyApp.Areas.Admin.Pages
     [BindProperty]
     public string? txtUsername { get; set; }
 
-
-  
-
-
-    public ForgotPasswordModel(TranslationService translation, EmailService emailService, ILogger<ForgotPasswordModel> logger, AdminDbHelper adminDbHelper)
+    public ForgotPasswordModel(TranslationService translation, EmailService emailService, ILogger<ForgotPasswordModel> logger, AdminDbHelper adminDbHelper, PasswordResetTokenDbHelper tokenDbHelper)
     {
       _translation = translation;
-      _adminDbHelper = adminDbHelper;
-
       _emailService = emailService;
       _logger = logger;
-    
-
-
-    }
-    public void OnGet()
-    {
-      //AlertMessageType = null;
-      //AlertMessageContent = null;
-      //AlertMessageTitle = null;
-
+      _adminDbHelper = adminDbHelper;
+      _tokenDbHelper = tokenDbHelper;
     }
 
-    public async Task<bool> ErrorChecking()
+    public void OnGet() { }
+
+    public async Task<AdminUser?> ValidateAsync()
     {
       if (string.IsNullOrEmpty(txtUsername))
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
         AlertMessageContent = await _translation.GetAsync("EnterYourUsername");
-
-        return false;
+        return null;
       }
 
       var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
-
 
       if (adminUser == null)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
         AlertMessageContent = await _translation.GetAsync("InvalidUsername");
-
-        return false;
-
+        return null;
       }
 
       if (adminUser.Status != UserStatusConstants.Active)
@@ -83,65 +57,48 @@ namespace MyApp.Areas.Admin.Pages
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
         AlertMessageContent = await _translation.GetAsync("InactiveUsername");
-
-        return false;
+        return null;
       }
 
-      return true;
+      return adminUser;
     }
+
     public async Task<IActionResult> OnPostAsync()
     {
+      var adminUser = await ValidateAsync();
 
-      bool CheckStatus = await ErrorChecking();
-
-      if (CheckStatus == false)
-      {
+      if (adminUser == null)
         return Page();
-      }
-
-
-     
 
       DefaultUsername = txtUsername;
 
+      var langCode = string.IsNullOrEmpty(adminUser.LastLoginLangCode)
+          ? AppConstants.DefaultLanguage
+          : adminUser.LastLoginLangCode;
 
-      var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
+      var resetToken = await _tokenDbHelper.CreateAsync(UserTypeConstants.Admin, adminUser.Id);
 
-      string? userEmail = "";
-      string? fullName = "";
-      string? DBPassword = "";
-      string currentUserLanguage ="";
-      if (adminUser != null)
-      {
-        userEmail = adminUser.Email;
-        fullName = adminUser.FullName;
-        DBPassword = PasswordCryptoHelper.Decrypt(adminUser.PasswordHash);
-        currentUserLanguage = adminUser.LastLoginLangCode;
-      }
+      var resetLink = Url.Page(
+          "/ResetPassword",
+          null,
+          new { area = "Admin", token = resetToken.Token },
+          Request.Scheme);
 
-      string resetLink = "";// Url.Page("/Admin/ResetPassword", null, new { username = txtUsername }, Request.Scheme);
-
-      bool sent = await _emailService.SendAdminForgotPasswordAsync(userEmail, fullName, resetLink, currentUserLanguage);
+      bool sent = await _emailService.SendAdminForgotPasswordAsync(adminUser.Email, adminUser.FullName, resetLink ?? string.Empty, langCode);
 
       if (!sent)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
-        AlertMessageContent = "Email template not found for key admin_forgot_password and language " + currentUserLanguage;
-        _logger.LogWarning(AlertMessageContent);
+        AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveError);
+        _logger.LogWarning("Forgot password email template missing for key {Key}, language {Lang}", EmailTemplateConstants.AdminForgotPassword, langCode);
         return Page();
       }
-
 
       AlertMessageType = MessageType.Success;
       AlertMessageTitle = MessageTitle.Success;
       AlertMessageContent = await _translation.GetAsync("PasswordEmailSend");
       return Page();
-      //return RedirectToPage(AppConstants.Routes.ForgotPassword);
-
-
     }
-
   }
-  
 }

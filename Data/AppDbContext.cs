@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
   public DbSet<Customer> Customers => Set<Customer>();
   public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
   public DbSet<Language> Languages => Set<Language>();
+  public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -67,6 +68,20 @@ public class AppDbContext : DbContext
       entity.Property(e => e.NativeName).HasColumnName("native_name").HasMaxLength(100).IsRequired();
       entity.Property(e => e.SortOrder).HasColumnName("sort_order");
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+    });
+
+    // PasswordResetToken
+    modelBuilder.Entity<PasswordResetToken>(entity =>
+    {
+      entity.ToTable("password_reset_tokens");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.UserType).HasColumnName("user_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.UserId).HasColumnName("user_id");
+      entity.Property(e => e.Token).HasColumnName("token").HasMaxLength(64).IsRequired();
+      entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
+      entity.Property(e => e.IsUsed).HasColumnName("is_used");
       entity.Property(e => e.CreatedAt).HasColumnName("created_at");
     });
 

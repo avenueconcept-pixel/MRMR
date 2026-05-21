@@ -81,6 +81,8 @@ appsettings.json        ← connection strings, SMTP, upload paths
 | DTOs | `*Dtos.cs` (one file per domain) | `CustomerDtos.cs` |
 | Message keys | `Msg*` string constants | `MessageConstants.MsgSaveSuccess` |
 | PageModel classes | `*Model` suffix | `IndexModel`, `LoginModel` |
+| Dropdown `<select>` elements | `ddl` prefix | `ddlLanguage`, `ddlStatus` |
+| Textbox `<input type="text/password">` | `txt` prefix | `txtUsername`, `txtEmail` |
 
 ### Database
 | Thing | Convention | Example |
@@ -92,6 +94,24 @@ appsettings.json        ← connection strings, SMTP, upload paths
 ---
 
 ## Coding Patterns
+
+### CRUD handler naming
+Use named handlers for CRUD operations — never overload a single `OnPost`:
+
+```csharp
+public async Task<IActionResult> OnPostCreateAsync() { ... }
+public async Task<IActionResult> OnPostUpdateAsync() { ... }
+public async Task<IActionResult> OnPostDeleteAsync() { ... }
+```
+
+Wire up in the form with `asp-page-handler`:
+```html
+<form method="post">
+  <button asp-page-handler="Create">Save</button>
+  <button asp-page-handler="Update">Update</button>
+  <button asp-page-handler="Delete">Delete</button>
+</form>
+```
 
 ### DbHelper pattern
 All database access through scoped `DbHelper` subclasses injected into PageModels:
@@ -219,13 +239,19 @@ Use `MessageConstants.*` keys when calling `TranslationService.GetAsync(key)`.
 - Use `async/await` for all database and I/O operations
 - Map DB columns explicitly with `.HasColumnName("snake_case")` in `AppDbContext`
 - Keep Models as plain POCOs — no methods, no business logic
-- Put all EF queries in `DbHelper` subclasses, not in PageModels or Services
+- Put all EF queries in `DbHelper` subclasses, not in PageModels or Services — use `AdminDbHelper` for admin entities, `CustomerDbHelper` for customer entities
 - Register new DbHelpers and Services as `Scoped` in `Program.cs`
 - Use `string.Empty` as default for string properties in models
 - Use `Constants/` classes for any magic strings or numbers used in multiple places
 - Use `DbSet<T>` with expression-bodied property syntax: `public DbSet<Thing> Things => Set<Thing>();`
 - Create a new `*DbHelper` class per entity group (one for Admin, one for Customer, etc.)
 - After model changes, provide a raw SQL script for pgAdmin — do not suggest `dotnet ef migrations`
+- Use soft delete — set `Status = UserStatusConstants.Deleted` instead of physically deleting records, unless explicitly told otherwise
+- All `<select>` element names and `[BindProperty]` properties for dropdowns use `ddl` prefix — e.g. `ddlLanguage`, `ddlStatus`
+- All UI-facing strings go through `TranslationService.GetAsync(key)` — no hardcoded strings in `.cshtml` or PageModels
+- Use SweetAlert2 for all alert/notification messages — vendor file at `~/vendor/libs/sweetalert2/sweetalert2.dist.js`, never use `alert()` or inline Bootstrap alerts
+- New pages follow the folder structure: admin pages under `Areas/Admin/Pages/`, customer pages under `Areas/Customer/Pages/`
+- Use named handlers for CRUD: `OnPostCreateAsync`, `OnPostUpdateAsync`, `OnPostDeleteAsync` with matching `asp-page-handler` on form buttons
 
 ## Never
 
@@ -238,5 +264,6 @@ Use `MessageConstants.*` keys when calling `TranslationService.GetAsync(key)`.
 - Never edit files under `wwwroot/vendor/` — those are third-party libs
 - Never edit `*.dist.js` or `*.dist.css` files directly — edit the source and rebuild via Webpack/Gulp
 - Never skip `UseAuthentication` / `UseAuthorization` in the pipeline
+- Never physically delete records — always soft delete via `Status = UserStatusConstants.Deleted`
 - Never reorder the middleware pipeline without understanding the dependencies
 - Never commit real SMTP passwords or connection strings — move secrets to `appsettings.Development.json` or User Secrets

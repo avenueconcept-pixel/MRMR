@@ -1,29 +1,23 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using MyApp.Constants;
 using MyApp.Helper;
 using MyApp.Helper.DB;
+using MyApp.Models;
 using MyApp.Services;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+//using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace MyApp.Areas.Admin.Pages
 {
-
-  public class LoginModel : PageModel
+  public class LoginModel : BasePageModel
   {
     private readonly TranslationService _translation;
     private readonly AdminDbHelper _adminDbHelper;
+    private readonly LanguageDbHelper _languageDbHelper;
 
-    [TempData]
-    public string? AlertMessageType { get; set; } = null;
-
-    [TempData]
-    public string? AlertMessageTitle { get; set; } = null;
-
-    [TempData]
-    public string? AlertMessageContent { get; set; } = null;
+    public List<Language> Languages { get; set; } = new();
 
     [TempData]
     public string? DefaultUsername { get; set; }
@@ -35,7 +29,7 @@ namespace MyApp.Areas.Admin.Pages
     public string? txtPassword { get; set; }
 
     [BindProperty]
-    public string? optSelectedLanguage { get; set; }
+    public string? ddlLanguage { get; set; }
 
 
     [BindProperty]
@@ -44,30 +38,30 @@ namespace MyApp.Areas.Admin.Pages
 
 
 
-    public LoginModel(TranslationService translation, AdminDbHelper adminDbHelper)
+    public LoginModel(TranslationService translation, AdminDbHelper adminDbHelper, LanguageDbHelper languageDbHelper)
     {
       _translation = translation;
       _adminDbHelper = adminDbHelper;
+      _languageDbHelper = languageDbHelper;
     }
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
       AlertMessageType = null;
       AlertMessageContent = null;
       AlertMessageTitle = null;
-      //
+      Languages = await _languageDbHelper.GetAllActiveAsync();
     }
 
 
-    public async Task<bool> ErrorChecking()
+    public async Task<AdminUser?> ValidateLoginAsync()
     {
       if (string.IsNullOrEmpty(txtUsername))
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
         AlertMessageContent = await _translation.GetAsync("EnterYourUsername");
-
-        return false;
+        return null;
       }
 
       if (string.IsNullOrEmpty(txtPassword))
@@ -75,73 +69,58 @@ namespace MyApp.Areas.Admin.Pages
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
         AlertMessageContent = await _translation.GetAsync("EnterYourPassword");
-
-        return false;
+        return null;
       }
 
       var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
-
 
       if (adminUser == null)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
         AlertMessageContent = await _translation.GetAsync("InvalidUsername");
-
-        return false;
-
+        return null;
       }
 
       if (adminUser.Status != UserStatusConstants.Active)
       {
-
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
         AlertMessageContent = await _translation.GetAsync("InactiveUsername");
-
-        return false;
+        return null;
       }
 
-      string EnterPasswordHash = PasswordCryptoHelper.Encrypt(txtPassword);
-
-      if (EnterPasswordHash != adminUser.PasswordHash)
+      if (PasswordCryptoHelper.Encrypt(txtPassword) != adminUser.PasswordHash)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
         AlertMessageContent = await _translation.GetAsync("InvalidSignIn");
-
-        return false;
-
+        return null;
       }
 
-
-      return true;
-
+      return adminUser;
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+      Languages = await _languageDbHelper.GetAllActiveAsync();
 
-      bool CheckStatus = await ErrorChecking();
+      var adminUser = await ValidateLoginAsync();
 
-      if (CheckStatus == false)
+      if (adminUser == null)
       {
         return Page();
       }
 
       DefaultUsername = txtUsername;
 
-      var adminUser = await _adminDbHelper.GetByUsernameAsync(txtUsername);
+      var selectedLang = ddlLanguage ?? AppConstants.DefaultLanguage;
 
-      //string EnterPasswordHash = PasswordCryptoHelper.Encrypt(txtPassword);
-
-      //if (EnterPasswordHash == adminUser.PasswordHash)
-      //{
       var claims = new List<Claim>
       {
         new Claim(CookieConstants.SessionKeys.UserId, adminUser.Id.ToString()),
         new Claim(CookieConstants.SessionKeys.Username, adminUser.Username),
-        new Claim(CookieConstants.SessionKeys.LoginLanguage, optSelectedLanguage ?? AppConstants.DefaultLanguage)
+        new Claim(CookieConstants.SessionKeys.LoginLanguage, selectedLang)
       };
 
       var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -151,15 +130,11 @@ namespace MyApp.Areas.Admin.Pages
           new AuthenticationProperties
           {
             IsPersistent = chkRememberMe,
-            ExpiresUtc = DateTime.Now.AddDays(30)
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
           });
 
-      await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, optSelectedLanguage ?? AppConstants.DefaultLanguage);
+      await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, selectedLang);
 
-
-      AlertMessageType = MessageType.Success;
-      AlertMessageTitle = MessageTitle.Success;
-      AlertMessageContent = "";
       return RedirectToPage(Routes.AdminDashboard);
     }
 

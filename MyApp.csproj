@@ -52,7 +52,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Areas\Admin\Pages\Logout.cshtml.cs" />
     <Compile Remove="Dtos\CustomerDtos.cs" />
     <Compile Remove="Dtos\JobsheetDtos.cs" />
     <Compile Remove="Dtos\ProductDtos.cs" />
@@ -74,7 +73,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="Areas\Admin\Pages\Logout.cshtml" />
     <Content Remove="Areas\Admin\Pages\Page2.cshtml" />
     <Content Remove="Areas\Admin\Pages\Shared\_JobsheetOptionList.cshtml" />
     <Content Remove="Areas\Admin\Pages\Shared\_ValidationScriptsPartial.cshtml" />

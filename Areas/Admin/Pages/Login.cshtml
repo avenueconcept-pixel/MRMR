@@ -14,12 +14,14 @@
 
 @section VendorStyles {
 	<link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.dist.css" />
+	<link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
 }
 
 @section VendorScripts {
 	<script src="~/vendor/libs/&#64;form-validation/popular.dist.js"></script>
 	<script src="~/vendor/libs/&#64;form-validation/bootstrap5.dist.js"></script>
 	<script src="~/vendor/libs/&#64;form-validation/auto-focus.dist.js"></script>
+	<script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
 }
 
 @section PageStyles {
@@ -55,8 +57,8 @@
 
 					<form id="formAuthentication" class="mb-5" method="post">
 						<div class="form-floating form-floating-outline mb-5">
-							<input type="text" class="form-control" id="email-Username" name="txtUsername" value="@Model.DefaultUsername" placeholder="@await T.GetAsync("EnterYourUsername")" autofocus>
-							<label for="email">@await T.GetAsync("Username")</label>
+							<input type="text" class="form-control" id="txtUsername" name="txtUsername" value="@Model.DefaultUsername" placeholder="@await T.GetAsync("EnterYourUsername")" autofocus>
+							<label for="txtUsername">@await T.GetAsync("Username")</label>
 						</div>
 						<div class="mb-5">
 							<div class="form-password-toggle">
@@ -74,10 +76,13 @@
 
 						<div class="input-group">
 							<label class="input-group-text" for="inputGroupSelect01">@await T.GetAsync("Language") </label>
-							<select class="form-select" id="inputGroupSelect01" name="optSelectedLanguage" asp-for="optSelectedLanguage" onchange="changeCulture(this.value)">
-
-
-							
+							<select class="form-select" id="inputGroupSelect01" asp-for="ddlLanguage" onchange="changeCulture(this.value)">
+								@foreach (var lang in Model.Languages)
+								{
+									<option value="@lang.LanguageCode" selected="@(lang.LanguageCode == currentCulture ? "selected" : null)">
+										@lang.NativeName
+									</option>
+								}
 							</select>
 						</div>
 
@@ -120,35 +125,42 @@
 
 <script>
 	function changeCulture(culture) {
-
-	  document.cookie = ".AspNetCore.Culture=c=" + culture + "|uic=" + culture + "; path=/";
-
-	  window.location.href = window.location.pathname;
-
+		document.cookie = ".AspNetCore.Culture=c=" + culture + "|uic=" + culture + "; path=/";
+		document.cookie = "lang=" + culture + "; path=/";
+		window.location.href = window.location.pathname;
 	}
-</script>
 
+	var msgEnterUsername = '@await T.GetAsync("EnterYourUsername")';
+	var msgEnterPassword = '@await T.GetAsync("EnterYourPassword")';
+	var msgError = '@MessageTitle.Error';
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-		document.addEventListener("DOMContentLoaded", function () {
+	document.getElementById('formAuthentication').addEventListener('submit', function (e) {
+		var username = document.getElementById('txtUsername').value.trim();
+		var password = document.getElementById('txtPassword').value.trim();
+
+		if (username === '') {
+			e.preventDefault();
+			Swal.fire({ icon: 'error', title: msgError, text: msgEnterUsername });
+			return;
+		}
+		if (password === '') {
+			e.preventDefault();
+			Swal.fire({ icon: 'error', title: msgError, text: msgEnterPassword });
+			return;
+		}
+	});
+
+	document.addEventListener("DOMContentLoaded", function () {
 		var messageType = '@Model.AlertMessageType';
-		var messageTitle = '@Model.AlertMessageTitle';
-			var messageContent = '@Model.AlertMessageContent';
 
-
-		if (messageType != "" ) {
-				Swal.fire({
-			icon: messageType,
-			title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+		if (messageType !== '') {
+			Swal.fire({
+				icon: messageType,
+				title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
 				text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
-
-			 }).then(() => {
-		// Optional: trigger a reload or redirect
-
-				});
-			}
-		});
+			});
+		}
+	});
 </script>
 
 

@@ -55,4 +55,10 @@ public class AdminDbHelper : DbHelper
     var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
     return admin?.LastLoginLangCode ?? string.Empty;
   }
+
+  public async Task UpdateAsync(AdminUser adminUser)
+  {
+    _db.AdminUsers.Update(adminUser);
+    await _db.SaveChangesAsync();
+  }
 }

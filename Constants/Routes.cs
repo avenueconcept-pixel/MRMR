@@ -4,6 +4,8 @@ public class Routes
 {
   // Admin
   public const string AdminLogin = "/Admin/Login";
+  public const string AdminForgotPassword = "/Admin/ForgotPassword";
+  public const string AdminResetPassword = "/Admin/ResetPassword";
   public const string AdminDashboard = "/Admin/Dashboard";
   public const string AdminProducts = "/Admin/Products";
   public const string AdminCustomers = "/Admin/Customers";
