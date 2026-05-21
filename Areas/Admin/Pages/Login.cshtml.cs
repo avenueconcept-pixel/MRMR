@@ -1,24 +1,12 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Localization;
-//using Microsoft.IdentityModel.Tokens;
-using Microsoft.VisualBasic;
 using MyApp.Constants;
-using MyApp.Data;
 using MyApp.Helper;
 using MyApp.Helper.DB;
-using MyApp.Models;
 using MyApp.Services;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Reflection;
 using System.Security.Claims;
-//using MyApp.Constants;
 
 namespace MyApp.Areas.Admin.Pages
 {
@@ -26,7 +14,6 @@ namespace MyApp.Areas.Admin.Pages
   public class LoginModel : PageModel
   {
     private readonly TranslationService _translation;
-    private readonly AppDbContext _context;
     private readonly AdminDbHelper _adminDbHelper;
 
     [TempData]
@@ -57,13 +44,10 @@ namespace MyApp.Areas.Admin.Pages
 
 
 
-    public LoginModel(AppDbContext context, TranslationService translation, AdminDbHelper adminDbHelper)
+    public LoginModel(TranslationService translation, AdminDbHelper adminDbHelper)
     {
       _translation = translation;
-      _context = context;
       _adminDbHelper = adminDbHelper;
-
-
     }
 
     public void OnGet()
@@ -155,12 +139,9 @@ namespace MyApp.Areas.Admin.Pages
       //{
       var claims = new List<Claim>
       {
-        // Store user session data in claims
-        //new Claim(CookieConstants.SessionKeys.UserId, adminUser.UserId.ToString()),
-        //new Claim(CookieConstants.SessionKeys.Username, adminUser.Username.ToString()),
-        // new Claim(CookieConstants.SessionKeys.LoginLanguage, optSelectedLanguage) // e.g. "en", "zh", "ms"
-
-        // Add other claims if needed
+        new Claim(CookieConstants.SessionKeys.UserId, adminUser.Id.ToString()),
+        new Claim(CookieConstants.SessionKeys.Username, adminUser.Username),
+        new Claim(CookieConstants.SessionKeys.LoginLanguage, optSelectedLanguage ?? AppConstants.DefaultLanguage)
       };
 
       var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -169,18 +150,11 @@ namespace MyApp.Areas.Admin.Pages
       await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
           new AuthenticationProperties
           {
-            IsPersistent = chkRememberMe, // ✅ This makes the cookie persistent
-            ExpiresUtc = DateTime.UtcNow.AddDays(30)
+            IsPersistent = chkRememberMe,
+            ExpiresUtc = DateTime.Now.AddDays(30)
           });
 
-
-      // update last login time and language
-      if (adminUser != null)
-      {
-        adminUser.LastLogin = DateTime.Now;
-        adminUser.LastLoginLangCode = optSelectedLanguage;
-        await _context.SaveChangesAsync();
-      }
+      await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, optSelectedLanguage ?? AppConstants.DefaultLanguage);
 
 
       AlertMessageType = MessageType.Success;

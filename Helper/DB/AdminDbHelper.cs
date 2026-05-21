@@ -29,6 +29,17 @@ public class AdminDbHelper : DbHelper
     }
   }
 
+  public async Task UpdateLoginInfoAsync(string username, string langCode)
+  {
+    var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
+    if (admin != null)
+    {
+      admin.LastLogin = DateTime.Now;
+      admin.LastLoginLangCode = langCode;
+      await _db.SaveChangesAsync();
+    }
+  }
+
   public async Task UpdateLastLoginLangCodeAsync(string username, string langCode)
   {
     var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
