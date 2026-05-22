@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using MyApp.Constants;
 using MyApp.Helper;
 using MyApp.Helper.DB;
@@ -123,10 +122,10 @@ namespace MyApp.Areas.Admin.Pages
         new Claim(CookieConstants.SessionKeys.LoginLanguage, selectedLang)
       };
 
-      var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+      var identity = new ClaimsIdentity(claims, AuthSchemeConstants.Admin);
       var principal = new ClaimsPrincipal(identity);
 
-      await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
+      await HttpContext.SignInAsync(AuthSchemeConstants.Admin, principal,
           new AuthenticationProperties
           {
             IsPersistent = chkRememberMe,
@@ -135,7 +134,9 @@ namespace MyApp.Areas.Admin.Pages
 
       await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, selectedLang);
 
-      return RedirectToPage(Routes.AdminDashboard);
+      return RedirectToPage(Routes.AdminLogs);
+      //return RedirectToPage("/Logs/Index", new { area = "Admin" });
+      //return RedirectToPage("/Logs/");
     }
 
   }

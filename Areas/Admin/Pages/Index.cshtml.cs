@@ -1,9 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using MyApp.Helper;
 
 namespace MyApp.Pages
 {
-  public class IndexModel : PageModel
+  public class IndexModel : AdminPageModel
   {
     public void OnGet() { }
   }

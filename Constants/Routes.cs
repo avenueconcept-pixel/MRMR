@@ -9,6 +9,7 @@ public class Routes
   public const string AdminDashboard = "/Admin/Dashboard";
   public const string AdminProducts = "/Admin/Products";
   public const string AdminCustomers = "/Admin/Customers";
+  public const string AdminLogs = "/Logs/Index";
 
   // Customer
   public const string CustomerLogin = "/Customer/Login";

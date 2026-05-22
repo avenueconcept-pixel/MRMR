@@ -5,8 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyApp.Data;
 using MyApp.Helper;
+using MyApp.Constants;
 using MyApp.Helper.DB;
 using MyApp.Services;
+using MyApp.Services.Logging;
 // using MyApp.Data;
 // using MyApp.Models;
 
@@ -36,17 +38,28 @@ builder.Services.AddScoped<CustomerDbHelper>();
 builder.Services.AddScoped<EmailTemplateDbHelper>();
 builder.Services.AddScoped<LanguageDbHelper>();
 builder.Services.AddScoped<PasswordResetTokenDbHelper>();
+builder.Services.AddScoped<LogDbHelper>();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
 
 
 
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddHostedService<LogCleanupService>();
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+builder.Services.AddAuthentication()
+    .AddCookie(AuthSchemeConstants.Admin, options =>
     {
-      options.LoginPath = "/Login";
-      options.ExpireTimeSpan = TimeSpan.FromDays(30); // Persistent for 30 days
+      options.LoginPath = "/Admin/Login";
+      options.ExpireTimeSpan = TimeSpan.FromDays(30);
+      options.SlidingExpiration = true;
+    })
+    .AddCookie(AuthSchemeConstants.Customer, options =>
+    {
+      options.LoginPath = "/Customer/Login";
+      options.ExpireTimeSpan = TimeSpan.FromDays(30);
       options.SlidingExpiration = true;
     });
 

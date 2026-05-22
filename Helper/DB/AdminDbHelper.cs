@@ -2,63 +2,69 @@ using Microsoft.EntityFrameworkCore;
 using MyApp.Data;
 using MyApp.Models;
 using MyApp.Constants;
+using Microsoft.Extensions.Logging;
 
 namespace MyApp.Helper.DB;
 
 public class AdminDbHelper : DbHelper
 {
-  public AdminDbHelper(AppDbContext db) : base(db) { }
+  public AdminDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
 
   public async Task<AdminUser?> GetByUsernameAsync(string username)
-      => await _db.AdminUsers
-          .FirstOrDefaultAsync(a => a.Username == username && a.Status == UserStatusConstants.Active);
+      => await ExecuteAsync(() => _db.AdminUsers
+          .FirstOrDefaultAsync(a => a.Username == username && a.Status == UserStatusConstants.Active));
 
   public async Task<AdminUser?> GetByIdAsync(int id)
-      => await _db.AdminUsers.FindAsync(id);
+      => await ExecuteAsync(async () => await _db.AdminUsers.FindAsync(id));
 
   public async Task<bool> UsernameExistsAsync(string username)
-      => await _db.AdminUsers.AnyAsync(a => a.Username == username);
+      => await ExecuteAsync(() => _db.AdminUsers.AnyAsync(a => a.Username == username));
 
   public async Task UpdateLastLoginAsync(string username)
-  {
-    var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
-    if (admin != null)
-    {
-      admin.LastLogin = DateTime.Now;
-      await _db.SaveChangesAsync();
-    }
-  }
+      => await ExecuteAsync(async () =>
+      {
+        var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
+        if (admin != null)
+        {
+          admin.LastLogin = DateTime.UtcNow;
+          await _db.SaveChangesAsync();
+        }
+      });
 
   public async Task UpdateLoginInfoAsync(string username, string langCode)
-  {
-    var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
-    if (admin != null)
-    {
-      admin.LastLogin = DateTime.Now;
-      admin.LastLoginLangCode = langCode;
-      await _db.SaveChangesAsync();
-    }
-  }
+      => await ExecuteAsync(async () =>
+      {
+        var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
+        if (admin != null)
+        {
+          admin.LastLogin = DateTime.UtcNow;
+          admin.LastLoginLangCode = langCode;
+          await _db.SaveChangesAsync();
+        }
+      });
 
   public async Task UpdateLastLoginLangCodeAsync(string username, string langCode)
-  {
-    var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
-    if (admin != null)
-    {
-      admin.LastLoginLangCode = langCode;
-      await _db.SaveChangesAsync();
-    }
-  }
+      => await ExecuteAsync(async () =>
+      {
+        var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
+        if (admin != null)
+        {
+          admin.LastLoginLangCode = langCode;
+          await _db.SaveChangesAsync();
+        }
+      });
 
   public async Task<string> GetLastLoginLangCodeAsync(string username)
-  {
-    var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
-    return admin?.LastLoginLangCode ?? string.Empty;
-  }
+      => await ExecuteAsync(async () =>
+      {
+        var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
+        return admin?.LastLoginLangCode ?? string.Empty;
+      });
 
   public async Task UpdateAsync(AdminUser adminUser)
-  {
-    _db.AdminUsers.Update(adminUser);
-    await _db.SaveChangesAsync();
-  }
+      => await ExecuteAsync(async () =>
+      {
+        _db.AdminUsers.Update(adminUser);
+        await _db.SaveChangesAsync();
+      });
 }

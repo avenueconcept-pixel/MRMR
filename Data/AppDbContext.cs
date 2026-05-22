@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
   public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
   public DbSet<Language> Languages => Set<Language>();
   public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+  public DbSet<AppLog> AppLogs => Set<AppLog>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -82,6 +83,19 @@ public class AppDbContext : DbContext
       entity.Property(e => e.Token).HasColumnName("token").HasMaxLength(64).IsRequired();
       entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
       entity.Property(e => e.IsUsed).HasColumnName("is_used");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+    });
+
+    // AppLog
+    modelBuilder.Entity<AppLog>(entity =>
+    {
+      entity.ToTable("app_logs");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.LogLevel).HasColumnName("log_level").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Category).HasColumnName("category").HasMaxLength(255).IsRequired();
+      entity.Property(e => e.Message).HasColumnName("message").IsRequired();
+      entity.Property(e => e.Exception).HasColumnName("exception");
       entity.Property(e => e.CreatedAt).HasColumnName("created_at");
     });
 

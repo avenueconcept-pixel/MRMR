@@ -1,0 +1,109 @@
+@page
+@model MyApp.Areas.Admin.Pages.Logs.IndexModel
+@{
+	ViewData["title"] = "Application Logs";
+}
+
+@section VendorStyles {
+	<link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.dist.css" />
+}
+
+<h4 class="py-4 mb-2">Application Logs</h4>
+
+<div class="card">
+	<div class="card-header d-flex align-items-center justify-content-between">
+		<h5 class="mb-0">Recent Errors</h5>
+		<small class="text-muted">Last 500 records</small>
+	</div>
+	<div class="card-body">
+		<div class="table-responsive">
+			<table id="tblLogs" class="table table-striped table-hover">
+				<thead>
+					<tr>
+						<th>Exception</th>
+						<th>Time</th>
+						<th>Level</th>
+						<th>Source</th>
+						<th>Message</th>
+
+					</tr>
+				</thead>
+				<tbody>
+					@foreach (var log in Model.Logs)
+					{
+						<tr>
+							<td>
+								@if (!string.IsNullOrEmpty(log.Exception))
+								{
+									<button type="button" class="btn btn-sm btn-outline-danger btn-view-exception"
+											data-exception="@log.Exception">
+										View
+									</button>
+								}
+							</td>
+							<td class="text-nowrap">@log.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+							<td>
+								@{
+									var badgeClass = log.LogLevel switch
+									{
+										"Critical" => "bg-dark",
+										"Error" => "bg-danger",
+										"Warning" => "bg-warning",
+										"Information" => "bg-info",
+										_ => "bg-secondary"
+									};
+								}
+								<span class="badge @badgeClass">@log.LogLevel</span>
+							</td>
+							<td class="text-nowrap">
+								@{
+									var parts = log.Category.Split('.');
+									var shortCategory = parts.LastOrDefault() ?? log.Category;
+								}
+								<span title="@log.Category">@shortCategory</span>
+							</td>
+							<td>@log.Message</td>
+
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<div class="modal fade" id="modalException" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Exception Details</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<pre id="exceptionText" class="bg-light p-3 rounded"
+					 style="max-height:500px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;font-size:0.8rem;"></pre>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section VendorScripts {
+	<script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.dist.js"></script>
+}
+
+@section PageScripts {
+	<script>
+		$(document).ready(function () {
+		$('#tblLogs').DataTable({
+		order: [[0, 'desc']],
+		pageLength: 25,
+		columnDefs: [{ orderable: false, targets: 4 }]
+		});
+
+		$(document).on('click', '.btn-view-exception', function () {
+		document.getElementById('exceptionText').textContent = this.getAttribute('data-exception');
+		new bootstrap.Modal(document.getElementById('modalException')).show();
+		});
+		});
+	</script>
+}
