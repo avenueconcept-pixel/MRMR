@@ -5,7 +5,7 @@
 - **Framework:** ASP.NET Core Razor Pages, .NET 10
 - **Database:** PostgreSQL via `Npgsql.EntityFrameworkCore.PostgreSQL` 10.0.1
 - **ORM:** Entity Framework Core 10.0.8 (code-first, Fluent API)
-- **Auth:** Cookie authentication (`CookieAuthenticationDefaults`), 30-day sliding expiration
+- **Auth:** Two named cookie schemes — `AuthSchemeConstants.Admin` (`"AdminCookie"`) for admin area, `AuthSchemeConstants.Customer` (`"CustomerCookie"`) for customer area — 30-day sliding expiration each
 - **Email:** MailKit 4.16.0
 - **i18n:** DB-backed `LanguageResource` table + `TranslationService` (memory-cached)
 - **Frontend:** Bootstrap 5, jQuery, DataTables, ApexCharts, Select2 (vendor-bundled in `wwwroot/vendor/`)
@@ -48,7 +48,9 @@ Data/
 Dtos/                   ← data transfer objects, one file per domain
 Helper/
   DB/                   ← DbHelper subclasses (one per entity group)
-    DbHelper.cs         ← base class
+    DbHelper.cs         ← base class with ExecuteAsync logging wrappers
+  AdminPageModel.cs     ← base PageModel for admin area ([Authorize] AdminCookie)
+  CustomerPageModel.cs  ← base PageModel for customer area ([Authorize] CustomerCookie)
   PasswordCryptoHelper.cs
   ConvertHelper.cs
   SharedHelper.cs
@@ -114,16 +116,29 @@ Wire up in the form with `asp-page-handler`:
 ```
 
 ### DbHelper pattern
-All database access through scoped `DbHelper` subclasses injected into PageModels:
+All database access through scoped `DbHelper` subclasses injected into PageModels. Every method must wrap its operation in `ExecuteAsync` — this provides automatic error logging with method name, file, and line number:
 
 ```csharp
 // Helper/DB/ThingDbHelper.cs
 public class ThingDbHelper : DbHelper
 {
-  public ThingDbHelper(AppDbContext db) : base(db) { }
+  public ThingDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
 
+  // Query (returns value)
   public async Task<Thing?> GetByIdAsync(int id)
-      => await _db.Things.FindAsync(id);
+      => await ExecuteAsync(async () => await _db.Things.FindAsync(id));
+
+  // Command (no return value)
+  public async Task DeleteAsync(int id)
+      => await ExecuteAsync(async () =>
+      {
+        var thing = await _db.Things.FindAsync(id);
+        if (thing != null)
+        {
+          thing.Status = UserStatusConstants.Deleted;
+          await _db.SaveChangesAsync();
+        }
+      });
 }
 ```
 
@@ -181,6 +196,29 @@ public static class ThingConstants
   public const string Active = "active";
   public const int MaxItems = 50;
 }
+```
+
+### Page authorization — inherit from area base model
+Protected pages must inherit from `AdminPageModel` (admin area) or `CustomerPageModel` (customer area) instead of `PageModel` directly. Do not use `[Authorize]` on individual pages — the base model carries it.
+
+```csharp
+// Admin page
+public class IndexModel : AdminPageModel { ... }
+
+// Customer page
+public class DashboardModel : CustomerPageModel { ... }
+```
+
+Public pages (Login, ForgotPassword, ResetPassword) inherit from `BasePageModel` or `PageModel` directly — no `[Authorize]`.
+
+### BackgroundService — use raw Npgsql, not EF Core
+`BackgroundService` is a singleton. `AppDbContext` is scoped and cannot be injected directly into a singleton. Use raw `NpgsqlConnection` for any DB work in a hosted service:
+
+```csharp
+using var conn = new NpgsqlConnection(_connectionString);
+await conn.OpenAsync(stoppingToken);
+using var cmd = new NpgsqlCommand("DELETE FROM ...", conn);
+await cmd.ExecuteNonQueryAsync(stoppingToken);
 ```
 
 ### Localization — always use `TranslationService` for user-facing strings
@@ -251,6 +289,8 @@ Use `MessageConstants.*` keys when calling `TranslationService.GetAsync(key)`.
 - All UI-facing strings go through `TranslationService.GetAsync(key)` — no hardcoded strings in `.cshtml` or PageModels
 - Use SweetAlert2 for all alert/notification messages — vendor file at `~/vendor/libs/sweetalert2/sweetalert2.dist.js`, never use `alert()` or inline Bootstrap alerts
 - New pages follow the folder structure: admin pages under `Areas/Admin/Pages/`, customer pages under `Areas/Customer/Pages/`
+- All protected admin pages inherit from `AdminPageModel`; all protected customer pages inherit from `CustomerPageModel` — never use a bare `[Authorize]` attribute on individual pages
+- All DbHelper methods must wrap their body in `ExecuteAsync(...)` — never call `_db.*` directly in a DbHelper method
 - Use named handlers for CRUD: `OnPostCreateAsync`, `OnPostUpdateAsync`, `OnPostDeleteAsync` with matching `asp-page-handler` on form buttons
 
 ## Never
@@ -266,4 +306,6 @@ Use `MessageConstants.*` keys when calling `TranslationService.GetAsync(key)`.
 - Never skip `UseAuthentication` / `UseAuthorization` in the pipeline
 - Never physically delete records — always soft delete via `Status = UserStatusConstants.Deleted`
 - Never reorder the middleware pipeline without understanding the dependencies
+- Never inject `AppDbContext` into a `BackgroundService` — use raw `NpgsqlConnection` instead (EF Core's DbContext is scoped, BackgroundService is singleton)
+- Never use `[Authorize]` directly on a page model — use `AdminPageModel` or `CustomerPageModel` as the base class
 - Never commit real SMTP passwords or connection strings — move secrets to `appsettings.Development.json` or User Secrets
