@@ -10,7 +10,7 @@ public class AdminUser
   public string FullName { get; set; } = string.Empty;
   public string Email { get; set; } = string.Empty;
   public string CountryCode { get; set; } = string.Empty;
-  public string Status { get; set; } = UserStatusConstants.Active;
+  public string Status { get; set; } = StatusConstants.Active;
   public DateTime CreatedAt { get; set; }
   public DateTime? LastLogin { get; set; }
   public string LastLoginLangCode { get; set; } = string.Empty;

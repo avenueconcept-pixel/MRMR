@@ -1,6 +1,6 @@
 namespace MyApp.Constants;
 
-public static class UserStatusConstants
+public static class StatusConstants
 {
   public const string Active = "active";
   public const string Inactive = "inactive";

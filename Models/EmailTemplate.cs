@@ -9,6 +9,6 @@ public class EmailTemplate
   public string TemplateKey { get; set; } = string.Empty;
   public string Subject { get; set; } = string.Empty;
   public string BodyHtml { get; set; } = string.Empty;
-  public string Status { get; set; } = UserStatusConstants.Active;
+  public string Status { get; set; } = StatusConstants.Active;
   public DateTime CreatedAt { get; set; }
 }

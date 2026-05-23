@@ -81,7 +81,7 @@ namespace MyApp.Areas.Admin.Pages
         return null;
       }
 
-      if (adminUser.Status != UserStatusConstants.Active)
+      if (adminUser.Status != StatusConstants.Active)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;
@@ -102,6 +102,7 @@ namespace MyApp.Areas.Admin.Pages
 
     public async Task<IActionResult> OnPostAsync()
     {
+      DefaultUsername = txtUsername;
       Languages = await _languageDbHelper.GetAllActiveAsync();
 
       var adminUser = await ValidateLoginAsync();
@@ -110,8 +111,6 @@ namespace MyApp.Areas.Admin.Pages
       {
         return Page();
       }
-
-      DefaultUsername = txtUsername;
 
       var selectedLang = ddlLanguage ?? AppConstants.DefaultLanguage;
 
@@ -136,7 +135,7 @@ namespace MyApp.Areas.Admin.Pages
 
       await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, selectedLang);
 
-      return RedirectToPage(Routes.AdminDashboard);    
+      return RedirectToPage(Routes.AdminDashboard);
     }
 
   }

@@ -49,6 +49,9 @@
   <!-- Page Styles -->
   @RenderSection("PageStyles", required: false)
 
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+
   <!-- Include Scripts for customizer, helper, analytics, config -->
   @await Html.PartialAsync("Layouts/Sections/_ScriptsIncludes" + ViewData["frontVar"])
 </head>
@@ -65,6 +68,10 @@
   @RenderSection("VendorScripts", required: false)
 
   <script src='~/js/@ViewData["main"]main.dist.js'></script>
+
+  <!-- DataTables -->
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="~/js/admin-datatable.js"></script>
 
   <!-- Page Scripts-->
   @RenderSection("PageScripts", required: false)

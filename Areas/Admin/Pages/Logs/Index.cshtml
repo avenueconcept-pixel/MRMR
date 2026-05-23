@@ -5,10 +5,6 @@
   ViewData["title"] = await T.GetAsync("Logs.PageTitle");
 }
 
-@section VendorStyles {
-  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.dist.css" />
-}
-
 <h4 class="py-4 mb-2">@await T.GetAsync("Logs.PageTitle")</h4>
 
 <div class="card">
@@ -85,10 +81,6 @@
     </div>
   </div>
 </div>
-
-@section VendorScripts {
-  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.dist.js"></script>
-}
 
 @section PageScripts {
   <script>

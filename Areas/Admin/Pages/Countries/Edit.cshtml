@@ -21,18 +21,24 @@
 
       <div class="row g-4">
         <div class="col-md-6">
-          <label class="form-label">@await T.GetAsync("Country.CountryCode")</label>
+          <label class="form-label">@await T.GetAsync("CountryCode")</label>
           <input type="text" class="form-control" value="@Model.CountryCode" readonly />
         </div>
         <div class="col-md-6">
-          <label class="form-label" for="txtCurrencyCode">@await T.GetAsync("Country.CurrencyCode")</label>
+          <label class="form-label" for="txtCurrencyCode">@await T.GetAsync("CurrencyCode")</label>
           <input type="text" id="txtCurrencyCode" name="txtCurrencyCode" class="form-control"
-                 maxlength="3" value="@Model.txtCurrencyCode" placeholder="e.g. MYR" />
+                 maxlength="3" value="@Model.txtCurrencyCode" placeholder="@await T.GetAsync("Country.CurrencyCodePlaceholder")" />
           <div class="form-text">@await T.GetAsync("Country.CurrencyCodeHint")</div>
         </div>
         <div class="col-md-6">
           <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
           <select asp-for="ddlStatus" class="form-select" asp-items="@Model.StatusOptions"></select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlTimezone">@await T.GetAsync("Country.Timezone")</label>
+          <select asp-for="ddlTimezone" id="ddlTimezone" class="form-select" asp-items="@Model.TimezoneOptions">
+            <option value="">@await T.GetAsync("Placeholder.SelectTimezone")</option>
+          </select>
         </div>
       </div>
 
@@ -40,36 +46,52 @@
       <h6 class="mb-3">@await T.GetAsync("Country.NameTranslations")</h6>
 
       <div class="row g-4">
-        <div class="col-md-6">
-          <label class="form-label" for="txtNameEn">@await T.GetAsync("Language.En")</label>
-          <input type="text" id="txtNameEn" name="txtNameEn" class="form-control"
-                 value="@Model.txtNameEn" placeholder="@await T.GetAsync("Country.NamePlaceholderEn")" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="txtNameZhHans">@await T.GetAsync("Language.ZhHans")</label>
-          <input type="text" id="txtNameZhHans" name="txtNameZhHans" class="form-control"
-                 value="@Model.txtNameZhHans" placeholder="国家名称" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="txtNameZhHant">@await T.GetAsync("Language.ZhHant")</label>
-          <input type="text" id="txtNameZhHant" name="txtNameZhHant" class="form-control"
-                 value="@Model.txtNameZhHant" placeholder="國家名稱" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="txtNameTh">@await T.GetAsync("Language.Th")</label>
-          <input type="text" id="txtNameTh" name="txtNameTh" class="form-control"
-                 value="@Model.txtNameTh" placeholder="ชื่อประเทศ" />
-        </div>
+        @foreach (var lang in Model.TranslationInputs)
+        {
+          <div class="col-md-6">
+            <label class="form-label" for="txtName_@lang.LanguageCode">@lang.Label</label>
+            <input type="text" id="txtName_@lang.LanguageCode" name="txtName_@lang.LanguageCode"
+                   class="form-control" value="@lang.Value" placeholder="@lang.Placeholder" />
+          </div>
+        }
       </div>
 
       <div class="mt-4 d-flex gap-2">
         <button type="submit" class="btn btn-primary">@await T.GetAsync("SaveChanges")</button>
         <a asp-area="Admin" asp-page="/Countries/Index" class="btn btn-outline-secondary">@await T.GetAsync("Cancel")</a>
+        <a href="#" id="btnDelete" class="btn btn-outline-danger ms-auto" data-code="@Model.CountryCode">
+          <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+        </a>
       </div>
 
     </form>
+
+    <hr class="my-4" />
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("CreatedBy")</label>
+        <p class="mb-0">@Model.CreatedBy</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("CreatedAt")</label>
+        <p class="mb-0">@Model.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("UpdatedBy")</label>
+        <p class="mb-0">@Model.UpdatedBy</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("UpdatedAt")</label>
+        <p class="mb-0">@Model.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+      </div>
+    </div>
   </div>
 </div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
 
 @section VendorScripts {
   <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
@@ -77,6 +99,43 @@
 
 @section PageScripts {
 <script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)'
+  };
+
+  document.getElementById('btnDelete').addEventListener('click', function (e) {
+    e.preventDefault();
+    var code = this.getAttribute('data-code');
+    Swal.fire({
+      title: pageMsg.deleteConfirmTitle,
+      text: pageMsg.deleteConfirmText,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.deleteConfirmBtn,
+      cancelButtonText: pageMsg.cancelBtn
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=SoftDelete&countryCode=' + encodeURIComponent(code), {
+          __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+        }, function (data) {
+          if (data.success) {
+            Swal.fire({ icon: 'success', title: pageMsg.deleteSuccess, timer: 1500, showConfirmButton: false })
+              .then(function () { window.location.href = '@Url.Page(Routes.AdminCountry)'; });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+        });
+      }
+    });
+  });
+
   document.addEventListener("DOMContentLoaded", function () {
     var messageType = '@Model.AlertMessageType';
     if (messageType !== '') {

@@ -9,12 +9,12 @@
 }
 
 @{
-  var lblToggleTitle   = await T.GetAsync("Country.ToggleStatusTitle");
-  var lblToggleConfirm = await T.GetAsync("Country.ToggleStatusConfirm");
-  var lblToggleYes     = await T.GetAsync("Country.ToggleStatusYes");
+  var lblToggleTitle   = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes     = await T.GetAsync("ToggleStatusYes");
   var lblCancel        = await T.GetAsync("Cancel");
-  var lblToggleFailed  = await T.GetAsync("Country.ToggleFailed");
-  var lblToggleError   = await T.GetAsync("Country.ToggleError");
+  var lblToggleFailed  = await T.GetAsync("ToggleFailed");
+  var lblToggleError   = await T.GetAsync("ToggleError");
   var lblError         = "@MessageTitle.Error";
 }
 
@@ -31,11 +31,12 @@
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover align-middle">
+      <table id="tblCountries" class="table table-hover align-middle">
         <thead>
           <tr>
-            <th>@await T.GetAsync("Country.CountryCode")</th>
-            <th>@await T.GetAsync("Country.CountryName")</th>
+            <th>@await T.GetAsync("CountryCode")</th>
+            <th>@await T.GetAsync("CountryName")</th>
+            <th>@await T.GetAsync("CurrencyCode")</th>
             <th>@await T.GetAsync("Status")</th>
             <th>@await T.GetAsync("Actions")</th>
           </tr>
@@ -46,10 +47,11 @@
             <tr>
               <td><strong>@c.CountryCode</strong></td>
               <td>@(c.Translations.FirstOrDefault()?.CountryName ?? "-")</td>
+              <td>@c.CurrencyCode</td>
               <td>
                 @{
-                  var badgeClass  = c.Status == UserStatusConstants.Active ? "bg-success" : "bg-danger";
-                  var statusLabel = c.Status == UserStatusConstants.Active
+                  var badgeClass  = c.Status == StatusConstants.Active ? "bg-success" : "bg-danger";
+                  var statusLabel = c.Status == StatusConstants.Active
                       ? await T.GetAsync("status.active")
                       : await T.GetAsync("status.inactive");
                 }
@@ -59,7 +61,7 @@
                 <a asp-area="Admin" asp-page="/Countries/Edit" asp-route-countryCode="@c.CountryCode"
                    class="btn btn-sm btn-outline-primary me-1">@await T.GetAsync("Edit")</a>
                 <button type="button" class="btn btn-sm btn-outline-warning"
-                        onclick="toggleStatus('@c.CountryCode')">@await T.GetAsync("Country.ToggleStatus")</button>
+                        onclick="toggleStatus('@c.CountryCode')">@await T.GetAsync("ToggleStatus")</button>
               </td>
             </tr>
           }
@@ -119,6 +121,10 @@
       }
     });
   }
+
+  $(document).ready(function () {
+    initDataTable('#tblCountries', 4);
+  });
 
   document.addEventListener("DOMContentLoaded", function () {
     var messageType = '@Model.AlertMessageType';

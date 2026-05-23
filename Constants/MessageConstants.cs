@@ -3,12 +3,14 @@ namespace MyApp.Constants;
 public static class MessageConstants
 {
   // ─── Success ──────────────────────────────────────
-  public const string SaveSuccess = "MsgSaveSuccess";
-  public const string DeleteSuccess = "MsgDeleteSuccess";
-  public const string UpdateSuccess = "MsgUpdateSuccess";
+  public const string SaveSuccess    = "MsgSaveSuccess";
+  public const string RestoreSuccess = "MsgRestoreSuccess";
+  public const string DeleteSuccess  = "MsgDeleteSuccess";
+  public const string UpdateSuccess  = "MsgUpdateSuccess";
 
   // ─── Error ────────────────────────────────────────
-  public const string SaveError = "MsgSaveError";
+  public const string SaveError      = "MsgSaveError";
+  public const string DuplicateError = "MsgDuplicateError";
   public const string DeleteError = "MsgDeleteError";
   public const string NotFound = "MsgNotFound";
   public const string AccessDenied = "MsgAccessDenied";

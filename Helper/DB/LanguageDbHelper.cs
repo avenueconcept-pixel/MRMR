@@ -12,14 +12,14 @@ public class LanguageDbHelper : DbHelper
 
   public async Task<List<Language>> GetAllActiveAsync()
       => await ExecuteAsync(() => _db.Languages
-          .Where(l => l.Status == UserStatusConstants.Active)
+          .Where(l => l.Status == StatusConstants.Active)
           .OrderBy(l => l.SortOrder)
           .ToListAsync());
 
   public async Task<Language?> GetByCodeAsync(string languageCode)
       => await ExecuteAsync(() => _db.Languages
           .FirstOrDefaultAsync(l => l.LanguageCode == languageCode
-                                 && l.Status == UserStatusConstants.Active));
+                                 && l.Status == StatusConstants.Active));
 
   public async Task<Language?> GetByIdAsync(int id)
       => await ExecuteAsync(async () => await _db.Languages.FindAsync(id));
@@ -45,7 +45,7 @@ public class LanguageDbHelper : DbHelper
         var language = await _db.Languages.FindAsync(id);
         if (language != null)
         {
-          language.Status = UserStatusConstants.Deleted;
+          language.Status = StatusConstants.Deleted;
           await _db.SaveChangesAsync();
         }
       });

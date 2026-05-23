@@ -22,21 +22,27 @@
       <div class="row g-4">
         <div class="col-md-6">
           <label class="form-label" for="txtCountryCode">
-            @await T.GetAsync("Country.CountryCode") <span class="text-danger">*</span>
+            @await T.GetAsync("CountryCode") <span class="text-danger">*</span>
           </label>
           <input type="text" id="txtCountryCode" name="txtCountryCode" class="form-control"
-                 maxlength="2" value="@Model.txtCountryCode" placeholder="e.g. MY" />
+                 maxlength="2" value="@Model.txtCountryCode" placeholder="@await T.GetAsync("Country.CountryCodePlaceholder")" />
           <div class="form-text">@await T.GetAsync("Country.CountryCodeHint")</div>
         </div>
         <div class="col-md-6">
-          <label class="form-label" for="txtCurrencyCode">@await T.GetAsync("Country.CurrencyCode")</label>
+          <label class="form-label" for="txtCurrencyCode">@await T.GetAsync("CurrencyCode")</label>
           <input type="text" id="txtCurrencyCode" name="txtCurrencyCode" class="form-control"
-                 maxlength="3" value="@Model.txtCurrencyCode" placeholder="e.g. MYR" />
+                 maxlength="3" value="@Model.txtCurrencyCode" placeholder="@await T.GetAsync("Country.CurrencyCodePlaceholder")" />
           <div class="form-text">@await T.GetAsync("Country.CurrencyCodeHint")</div>
         </div>
         <div class="col-md-6">
           <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
           <select asp-for="ddlStatus" class="form-select" asp-items="@Model.StatusOptions"></select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlTimezone">@await T.GetAsync("Country.Timezone")</label>
+          <select asp-for="ddlTimezone" id="ddlTimezone" class="form-select" asp-items="@Model.TimezoneOptions">
+            <option value="">@await T.GetAsync("Placeholder.SelectTimezone")</option>
+          </select>
         </div>
       </div>
 
@@ -44,26 +50,14 @@
       <h6 class="mb-3">@await T.GetAsync("Country.NameTranslations")</h6>
 
       <div class="row g-4">
-        <div class="col-md-6">
-          <label class="form-label" for="txtNameEn">@await T.GetAsync("Language.En")</label>
-          <input type="text" id="txtNameEn" name="txtNameEn" class="form-control"
-                 value="@Model.txtNameEn" placeholder="@await T.GetAsync("Country.NamePlaceholderEn")" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="txtNameZhHans">@await T.GetAsync("Language.ZhHans")</label>
-          <input type="text" id="txtNameZhHans" name="txtNameZhHans" class="form-control"
-                 value="@Model.txtNameZhHans" placeholder="国家名称" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="txtNameZhHant">@await T.GetAsync("Language.ZhHant")</label>
-          <input type="text" id="txtNameZhHant" name="txtNameZhHant" class="form-control"
-                 value="@Model.txtNameZhHant" placeholder="國家名稱" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="txtNameTh">@await T.GetAsync("Language.Th")</label>
-          <input type="text" id="txtNameTh" name="txtNameTh" class="form-control"
-                 value="@Model.txtNameTh" placeholder="ชื่อประเทศ" />
-        </div>
+        @foreach (var lang in Model.TranslationInputs)
+        {
+          <div class="col-md-6">
+            <label class="form-label" for="txtName_@lang.LanguageCode">@lang.Label</label>
+            <input type="text" id="txtName_@lang.LanguageCode" name="txtName_@lang.LanguageCode"
+                   class="form-control" value="@lang.Value" placeholder="@lang.Placeholder" />
+          </div>
+        }
       </div>
 
       <div class="mt-4 d-flex gap-2">

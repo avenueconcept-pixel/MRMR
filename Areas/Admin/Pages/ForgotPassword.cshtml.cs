@@ -52,7 +52,7 @@ namespace MyApp.Areas.Admin.Pages
         return null;
       }
 
-      if (adminUser.Status != UserStatusConstants.Active)
+      if (adminUser.Status != StatusConstants.Active)
       {
         AlertMessageType = MessageType.Error;
         AlertMessageTitle = MessageTitle.Error;

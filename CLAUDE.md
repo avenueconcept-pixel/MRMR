@@ -135,17 +135,34 @@ public class ThingDbHelper : DbHelper
         var thing = await _db.Things.FindAsync(id);
         if (thing != null)
         {
-          thing.Status = UserStatusConstants.Deleted;
+          thing.Status = StatusConstants.Deleted;
           await _db.SaveChangesAsync();
         }
       });
 }
 ```
 
+**DbHelper method naming — use generic, entity-agnostic names within each class.** Since each DbHelper is already scoped to one entity, the entity name is redundant in the method name:
+
+| Method | Not |
+|---|---|
+| `GetAllAsync` | `GetAllThingsAsync` |
+| `GetByIdAsync` | `GetThingByIdAsync` |
+| `GetByCodeAsync` | `GetThingByCodeAsync` |
+| `AddAsync` | `AddThingAsync` |
+| `UpdateAsync` | `UpdateThingAsync` |
+| `UpdateStatusAsync` | `UpdateThingStatusAsync` |
+| `DeleteAsync` | `DeleteThingAsync` |
+
 Register in `Program.cs`:
 ```csharp
 builder.Services.AddScoped<ThingDbHelper>();
 ```
+
+**When adding, renaming, or removing a field on any Model or PageModel, always check the corresponding DbHelper and update every affected method:**
+- `Add*Async` — ensure the new field is assigned before insert
+- `Update*Async` — ensure the new field is included in the update block
+- Missing a field here means silent data loss — EF Core will not warn you
 
 ### Models — plain POCOs, no logic
 ```csharp
@@ -266,6 +283,180 @@ document.getElementById('btnTogglePwd').addEventListener('click', function () {
 > **Icon note:** Remix icons require both the base `ri` class AND the specific icon class (e.g. `ri ri-eye-off-line`). The base class applies the CSS mask; the specific class sets the SVG variable. Omitting `ri` renders an empty box.
 
 If a page has multiple password fields (e.g. Password + Confirm Password), give each toggle button and icon a unique `id` (e.g. `btnTogglePwd`, `btnToggleConfirmPwd`).
+
+### DataTables — standard pattern for all Admin listing pages
+
+DataTables CSS and JS are loaded globally in `_CommonMasterLayout.cshtml` (CDN 1.13.6) — do **not** import them per page.
+
+A shared initializer lives at `wwwroot/js/admin-datatable.js` and is also loaded globally.
+
+**Every listing table must have a unique `id`:**
+```html
+<table id="tblThings" class="table table-hover align-middle">
+```
+
+**Call `initDataTable` in `@section PageScripts` inside `$(document).ready()`:**
+```js
+$(document).ready(function () {
+  initDataTable('#tblThings', 3); // pass the 0-based index of the Actions column
+});
+```
+
+Rules:
+- Actions column is always last and its index is always passed to disable sorting
+- `initDataTable` defaults: `pageLength: 25`, `order: [[0, 'asc']]`
+- For tables that need non-standard options (different order direction, extra `columnDefs`), call `.DataTable({...})` directly — do not override `initDataTable`
+
+### Edit pages — audit fields and soft delete
+
+Every Admin Edit page must display audit metadata below the form, and include a soft delete button.
+
+**PageModel properties (add to every EditModel):**
+```csharp
+public string   CreatedBy { get; set; } = string.Empty;
+public DateTime CreatedAt { get; set; }
+public string   UpdatedBy { get; set; } = string.Empty;
+public DateTime UpdatedAt { get; set; }
+```
+
+Populate in `OnGetAsync` directly from the loaded entity:
+```csharp
+CreatedBy = entity.CreatedBy;
+CreatedAt = entity.CreatedAt;
+UpdatedBy = entity.UpdatedBy;
+UpdatedAt = entity.UpdatedAt;
+```
+
+**Audit section in `.cshtml`** — placed inside `card-body`, after `</form>`, before closing `</div>`:
+```cshtml
+<hr class="my-4" />
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label text-muted small">@await T.GetAsync("CreatedBy")</label>
+    <p class="mb-0">@Model.CreatedBy</p>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label text-muted small">@await T.GetAsync("CreatedAt")</label>
+    <p class="mb-0">@Model.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label text-muted small">@await T.GetAsync("UpdatedBy")</label>
+    <p class="mb-0">@Model.UpdatedBy</p>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label text-muted small">@await T.GetAsync("UpdatedAt")</label>
+    <p class="mb-0">@Model.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+  </div>
+</div>
+```
+
+Dates must always use `.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)` — never render raw `DateTime` values.
+
+**Soft delete** — see the `pageMsg` pattern below; every Edit page also needs a Delete button and `OnPostSoftDeleteAsync`.
+
+### Edit pages — pageMsg JS object and soft delete
+
+Every Admin Edit page must use the `pageMsg` JS object to pass all translated strings to JavaScript, and must include a soft delete button wired to `OnPostSoftDeleteAsync`.
+
+**PageModel properties:**
+```csharp
+public string MsgDeleteConfirmTitle { get; set; } = string.Empty;
+public string MsgDeleteConfirmText  { get; set; } = string.Empty;
+public string MsgDeleteConfirmBtn   { get; set; } = string.Empty;
+public string MsgCancelBtn          { get; set; } = string.Empty;
+public string MsgDeleteSuccess      { get; set; } = string.Empty;
+public string MsgDeleteError        { get; set; } = string.Empty;
+public string LabelDelete           { get; set; } = string.Empty;
+```
+
+Load in `OnGetAsync`:
+```csharp
+var entityName        = await _translation.GetAsync("Menu.<Entity>");
+MsgDeleteConfirmTitle = $"{await _translation.GetAsync("Confirm.DeleteTitle")} {entityName}";
+MsgDeleteConfirmText  = await _translation.GetAsync("Confirm.DeleteText");
+MsgDeleteConfirmBtn   = await _translation.GetAsync("Btn.YesDelete");
+MsgCancelBtn          = await _translation.GetAsync("Btn.Cancel");
+MsgDeleteSuccess      = await _translation.GetAsync(MessageConstants.DeleteSuccess);
+MsgDeleteError        = await _translation.GetAsync(MessageConstants.DeleteError);
+LabelDelete           = await _translation.GetAsync("Btn.Delete");
+```
+
+**Handler:**
+```csharp
+public async Task<IActionResult> OnPostSoftDeleteAsync(string entityCode)
+{
+  try
+  {
+    await _thingDbHelper.UpdateStatusAsync(entityCode, StatusConstants.Deleted, CurrentUsername);
+    var msg = await _translation.GetAsync(MessageConstants.DeleteSuccess);
+    return new JsonResult(new { success = true, message = msg });
+  }
+  catch
+  {
+    var msg = await _translation.GetAsync(MessageConstants.DeleteError);
+    return new JsonResult(new { success = false, message = msg });
+  }
+}
+```
+
+**Delete button** — inside the form's button row, pushed right with `ms-auto`:
+```cshtml
+<a href="#" id="btnDelete" class="btn btn-outline-danger ms-auto" data-code="@Model.EntityCode">
+  <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+</a>
+```
+
+**Hidden antiforgery form** — placed outside the main form (before `@section VendorScripts`):
+```cshtml
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+```
+
+**`pageMsg` object and AJAX in `@section PageScripts`:**
+```cshtml
+@section PageScripts {
+<script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)'
+  };
+
+  document.getElementById('btnDelete').addEventListener('click', function (e) {
+    e.preventDefault();
+    var code = this.getAttribute('data-code');
+    Swal.fire({
+      title: pageMsg.deleteConfirmTitle,
+      text: pageMsg.deleteConfirmText,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.deleteConfirmBtn,
+      cancelButtonText: pageMsg.cancelBtn
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=SoftDelete&entityCode=' + encodeURIComponent(code), {
+          __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+        }, function (data) {
+          if (data.success) {
+            Swal.fire({ icon: 'success', title: pageMsg.deleteSuccess, timer: 1500, showConfirmButton: false })
+              .then(function () { window.location.href = '@Url.Page(Routes.AdminXxx)'; });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+        });
+      }
+    });
+  });
+</script>
+}
+```
 
 ### Localization — every user-facing string in .cshtml must use `T.GetAsync`
 
@@ -413,7 +604,7 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 - Use `DbSet<T>` with expression-bodied property syntax: `public DbSet<Thing> Things => Set<Thing>();`
 - Create a new `*DbHelper` class per entity group (one for Admin, one for Customer, etc.)
 - After model changes, provide a raw SQL script for pgAdmin — do not suggest `dotnet ef migrations`
-- Use soft delete — set `Status = UserStatusConstants.Deleted` instead of physically deleting records, unless explicitly told otherwise
+- Use soft delete — set `Status = StatusConstants.Deleted` instead of physically deleting records, unless explicitly told otherwise
 - All `<select>` element names and `[BindProperty]` properties for dropdowns use `ddl` prefix — e.g. `ddlLanguage`, `ddlStatus`
 - All UI-facing strings go through `TranslationService.GetAsync(key)` — no hardcoded strings in `.cshtml` or PageModels
 - Use SweetAlert2 for all alert/notification messages — vendor file at `~/vendor/libs/sweetalert2/sweetalert2.dist.js`, never use `alert()` or inline Bootstrap alerts
@@ -433,7 +624,7 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 - Never edit files under `wwwroot/vendor/` — those are third-party libs
 - Never edit `*.dist.js` or `*.dist.css` files directly — edit the source and rebuild via Webpack/Gulp
 - Never skip `UseAuthentication` / `UseAuthorization` in the pipeline
-- Never physically delete records — always soft delete via `Status = UserStatusConstants.Deleted`
+- Never physically delete records — always soft delete via `Status = StatusConstants.Deleted`
 - Never reorder the middleware pipeline without understanding the dependencies
 - Never inject `AppDbContext` into a `BackgroundService` — use raw `NpgsqlConnection` instead (EF Core's DbContext is scoped, BackgroundService is singleton)
 - Never use `[Authorize]` directly on a page model — use `AdminPageModel` or `CustomerPageModel` as the base class

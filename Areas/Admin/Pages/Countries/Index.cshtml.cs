@@ -22,20 +22,20 @@ public class IndexModel : AdminPageModel
 
   public async Task OnGetAsync()
   {
-    Countries = await _countryDbHelper.GetAllCountriesAsync("en");
+    Countries = await _countryDbHelper.GetAllAsync("en");
   }
 
   public async Task<IActionResult> OnPostToggleStatusAsync([FromForm] string countryCode)
   {
-    var country = await _countryDbHelper.GetCountryByCodeAsync(countryCode);
+    var country = await _countryDbHelper.GetByCodeAsync(countryCode);
     if (country == null)
       return new JsonResult(new { success = false });
 
-    var newStatus = country.Status == UserStatusConstants.Active
-        ? UserStatusConstants.Inactive
-        : UserStatusConstants.Active;
+    var newStatus = country.Status == StatusConstants.Active
+        ? StatusConstants.Inactive
+        : StatusConstants.Active;
 
-    await _countryDbHelper.UpdateCountryStatusAsync(countryCode, newStatus, CurrentUsername);
+    await _countryDbHelper.UpdateStatusAsync(countryCode, newStatus, CurrentUsername);
     return new JsonResult(new { success = true, newStatus });
   }
 }

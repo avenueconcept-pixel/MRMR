@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using MyApp.Constants;
+using MyApp.Dtos;
 using MyApp.Helper;
 using MyApp.Helper.DB;
 using MyApp.Models;
@@ -10,71 +11,57 @@ namespace MyApp.Areas.Admin.Pages.Countries;
 
 public class CreateModel : AdminPageModel
 {
-  private readonly CountryDbHelper _countryDbHelper;
+  private readonly CountryDbHelper  _countryDbHelper;
+  private readonly LanguageDbHelper _languageDbHelper;
   private readonly TranslationService _translation;
 
-  [BindProperty]
-  public string txtCountryCode { get; set; } = string.Empty;
+  [BindProperty] public string  txtCountryCode  { get; set; } = string.Empty;
+  [BindProperty] public string? txtCurrencyCode { get; set; }
+  [BindProperty] public string  ddlStatus       { get; set; } = StatusConstants.Active;
+  [BindProperty] public string  ddlTimezone     { get; set; } = string.Empty;
 
-  [BindProperty]
-  public string? txtCurrencyCode { get; set; }
+  public List<TranslationInputDto> TranslationInputs { get; set; } = new();
+  public List<SelectListItem>      StatusOptions     { get; set; } = new();
+  public List<SelectListItem>      TimezoneOptions   { get; set; } = new();
 
-  [BindProperty]
-  public string ddlStatus { get; set; } = UserStatusConstants.Active;
-
-  [BindProperty]
-  public string? txtNameEn { get; set; }
-
-  [BindProperty]
-  public string? txtNameZhHans { get; set; }
-
-  [BindProperty]
-  public string? txtNameZhHant { get; set; }
-
-  [BindProperty]
-  public string? txtNameTh { get; set; }
-
-  public List<SelectListItem> StatusOptions { get; set; } = new();
-
-  public CreateModel(CountryDbHelper countryDbHelper, TranslationService translation)
+  public CreateModel(CountryDbHelper countryDbHelper, LanguageDbHelper languageDbHelper, TranslationService translation)
   {
-    _countryDbHelper = countryDbHelper;
-    _translation = translation;
+    _countryDbHelper  = countryDbHelper;
+    _languageDbHelper = languageDbHelper;
+    _translation      = translation;
   }
 
   public async Task OnGetAsync()
   {
-    StatusOptions = await SelectListHelper.GetStatusOptions(_translation);
+    AlertMessageType = "";
+    StatusOptions     = await SelectListHelper.GetStatusOptions(_translation);
+    TimezoneOptions   = SelectListHelper.GetTimezoneOptions();
+    TranslationInputs = await BuildInputsAsync(fromForm: false);
   }
 
   public async Task<IActionResult> OnPostCreateAsync()
   {
-    StatusOptions = await SelectListHelper.GetStatusOptions(_translation);
+    StatusOptions     = await SelectListHelper.GetStatusOptions(_translation);
+    TimezoneOptions   = SelectListHelper.GetTimezoneOptions();
+    TranslationInputs = await BuildInputsAsync(fromForm: true);
 
     if (string.IsNullOrWhiteSpace(txtCountryCode))
     {
-      AlertMessageType = MessageType.Error;
-      AlertMessageTitle = MessageTitle.Error;
-      AlertMessageContent = await _translation.GetAsync(MessageConstants.RequiredField);
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
       return Page();
     }
 
     var code = txtCountryCode.Trim().ToUpper();
 
-    if (code.Length > 3)
+    if (code.Length > 2)
     {
-      AlertMessageType = MessageType.Error;
-      AlertMessageTitle = MessageTitle.Error;
-      AlertMessageContent = await _translation.GetAsync(MessageConstants.RequiredField);
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
       return Page();
     }
 
-    var existing = await _countryDbHelper.GetCountryByCodeAsync(code);
-    if (existing != null)
+    if (string.IsNullOrEmpty(ddlTimezone))
     {
-      AlertMessageType = MessageType.Error;
-      AlertMessageTitle = MessageTitle.Error;
-      AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveError);
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
       return Page();
     }
 
@@ -82,25 +69,54 @@ public class CreateModel : AdminPageModel
     {
       CountryCode  = code,
       CurrencyCode = txtCurrencyCode?.Trim().ToUpper() ?? string.Empty,
-      Status       = ddlStatus
+      Status       = ddlStatus,
+      Timezone     = ddlTimezone
     };
 
-    var translations = new List<CountryTranslation>();
-    if (!string.IsNullOrWhiteSpace(txtNameEn))
-      translations.Add(new CountryTranslation { CountryCode = code, LanguageCode = "en",      CountryName = txtNameEn.Trim() });
-    if (!string.IsNullOrWhiteSpace(txtNameZhHans))
-      translations.Add(new CountryTranslation { CountryCode = code, LanguageCode = "zh-Hans", CountryName = txtNameZhHans.Trim() });
-    if (!string.IsNullOrWhiteSpace(txtNameZhHant))
-      translations.Add(new CountryTranslation { CountryCode = code, LanguageCode = "zh-Hant", CountryName = txtNameZhHant.Trim() });
-    if (!string.IsNullOrWhiteSpace(txtNameTh))
-      translations.Add(new CountryTranslation { CountryCode = code, LanguageCode = "th",       CountryName = txtNameTh.Trim() });
+    var languages    = await _languageDbHelper.GetAllActiveAsync();
+    var translations = languages
+        .Select(l => new CountryTranslation
+        {
+          CountryCode  = code,
+          LanguageCode = l.LanguageCode,
+          CountryName  = Request.Form[$"txtName_{l.LanguageCode}"].ToString().Trim()
+        })
+        .Where(t => !string.IsNullOrEmpty(t.CountryName))
+        .ToList();
 
-    await _countryDbHelper.AddCountryAsync(country, translations, CurrentUsername);
+    var result = await _countryDbHelper.AddAsync(country, translations, CurrentUsername);
 
-    AlertMessageType = MessageType.Success;
-    AlertMessageTitle = MessageTitle.Success;
-    AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveSuccess);
+    if (result == CountryAddResult.DuplicateActive)
+    {
+      SetError(await _translation.GetAsync(MessageConstants.DuplicateError));
+      return Page();
+    }
+
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = await _translation.GetAsync(
+        result == CountryAddResult.Restored ? MessageConstants.RestoreSuccess : MessageConstants.SaveSuccess);
 
     return RedirectToPage(Routes.AdminCountry);
+  }
+
+  private async Task<List<TranslationInputDto>> BuildInputsAsync(bool fromForm)
+  {
+    var languages   = await _languageDbHelper.GetAllActiveAsync();
+    var placeholder = await _translation.GetAsync("Country.NamePlaceholder");
+    return languages.Select(l => new TranslationInputDto
+    {
+      LanguageCode = l.LanguageCode,
+      Label        = $"{l.LanguageName} ({l.LanguageCode})",
+      Value        = fromForm ? Request.Form[$"txtName_{l.LanguageCode}"].ToString() : string.Empty,
+      Placeholder  = placeholder
+    }).ToList();
+  }
+
+  private void SetError(string message)
+  {
+    AlertMessageType    = MessageType.Error;
+    AlertMessageTitle   = MessageTitle.Error;
+    AlertMessageContent = message;
   }
 }

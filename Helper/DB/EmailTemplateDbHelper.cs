@@ -14,11 +14,11 @@ public class EmailTemplateDbHelper : DbHelper
       => await ExecuteAsync(() => _db.EmailTemplates
           .FirstOrDefaultAsync(e => e.TemplateKey == templateKey
                                  && e.LanguageCode == languageCode
-                                 && e.Status == UserStatusConstants.Active));
+                                 && e.Status == StatusConstants.Active));
 
   public async Task<List<EmailTemplate>> GetAllAsync()
       => await ExecuteAsync(() => _db.EmailTemplates
-          .Where(e => e.Status != UserStatusConstants.Deleted)
+          .Where(e => e.Status != StatusConstants.Deleted)
           .OrderBy(e => e.TemplateKey)
           .ToListAsync());
 
@@ -43,7 +43,7 @@ public class EmailTemplateDbHelper : DbHelper
         var template = await _db.EmailTemplates.FindAsync(id);
         if (template != null)
         {
-          template.Status = UserStatusConstants.Deleted;
+          template.Status = StatusConstants.Deleted;
           await _db.SaveChangesAsync();
         }
       });
