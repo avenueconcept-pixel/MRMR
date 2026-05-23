@@ -119,7 +119,9 @@ namespace MyApp.Areas.Admin.Pages
       {
         new Claim(CookieConstants.SessionKeys.UserId, adminUser.Id.ToString()),
         new Claim(CookieConstants.SessionKeys.Username, adminUser.Username),
-        new Claim(CookieConstants.SessionKeys.LoginLanguage, selectedLang)
+        new Claim(CookieConstants.SessionKeys.FullName, adminUser.FullName),
+        new Claim(CookieConstants.SessionKeys.LoginLanguage, selectedLang),
+        new Claim(CookieConstants.SessionKeys.Timezone, adminUser.Country?.Timezone ?? "UTC")
       };
 
       var identity = new ClaimsIdentity(claims, AuthSchemeConstants.Admin);
@@ -134,9 +136,7 @@ namespace MyApp.Areas.Admin.Pages
 
       await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, selectedLang);
 
-      return RedirectToPage(Routes.AdminDashboard);
-      //return RedirectToPage("/Logs/Index", new { area = "Admin" });
-      //return RedirectToPage("/Logs/");
+      return RedirectToPage(Routes.AdminDashboard);    
     }
 
   }

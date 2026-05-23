@@ -43,10 +43,12 @@ namespace MyApp.Areas.Admin.Pages.Dashboard
     public string ChartCountryLabels { get; set; } = string.Empty;
     public string ChartCountrySales { get; set; } = string.Empty;
 
+
+
     public void OnGet()
     {
       // Replace all values below with real DB queries via AdminDbHelper
-      AdminName = "Admin";
+      AdminName = CurrentFullName;
 
       TotalCustomers = 1_284;
       NewCustomersThisMonth = 47;

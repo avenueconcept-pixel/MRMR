@@ -2,7 +2,16 @@
 @model MyApp.Areas.Admin.Pages.Dashboard.IndexModel
 @using System.Text.Json
 @{
-  ViewData["title"] = "Dashboard";
+  ViewData["title"] = await T.GetAsync("Dashboard.PageTitle");
+
+  var lblOrders          = await T.GetAsync("Orders");
+  var lblNewCustomers    = await T.GetAsync("Dashboard.NewCustomers");
+  var lblThisYear        = await T.GetAsync("Dashboard.ThisYear");
+  var lblLastYear        = await T.GetAsync("Dashboard.LastYear");
+  var lblSalesRM         = await T.GetAsync("Dashboard.SalesRM");
+  var lblAxisRevenue     = await T.GetAsync("RevenueRM");
+  var lblSuffixOrders    = await T.GetAsync("Dashboard.SuffixOrders");
+  var lblSuffixCustomers = await T.GetAsync("Dashboard.SuffixCustomers");
 }
 
 @section VendorStyles {
@@ -15,7 +24,7 @@
   string Arrow(double pct) => pct >= 0 ? "&#8593;" : "&#8595;";
 }
 
-<h4 class="py-3 mb-4">Dashboard <span class="text-muted fs-6 fw-normal">— Welcome back, @Model.AdminName</span></h4>
+<h4 class="py-3 mb-4">@await T.GetAsync("Dashboard.PageTitle") <span class="text-muted fs-6 fw-normal">— @await T.GetAsync("Dashboard.WelcomeBack"), @Model.AdminName</span></h4>
 
 @* ── Stat Cards ──────────────────────────────────────────── *@
 <div class="row g-4 mb-4">
@@ -23,12 +32,12 @@
   <div class="col-sm-6 col-xl-3">
     <div class="card h-100">
       <div class="card-body">
-        <p class="text-muted small text-uppercase fw-semibold mb-1">Total Customers</p>
+        <p class="text-muted small text-uppercase fw-semibold mb-1">@await T.GetAsync("Dashboard.TotalCustomers")</p>
         <h3 class="mb-1">@Model.TotalCustomers.ToString("N0")</h3>
         <small class="@Trend(Model.CustomerGrowth)">@Html.Raw(Arrow(Model.CustomerGrowth)) @Math.Abs(Model.CustomerGrowth)%</small>
-        <small class="text-muted"> vs last month</small>
+        <small class="text-muted"> @await T.GetAsync("Dashboard.VsLastMonth")</small>
         <div class="mt-2">
-          <span class="badge bg-primary bg-opacity-10 text-primary">@Model.NewCustomersThisMonth new this month</span>
+          <span class="badge bg-primary bg-opacity-10 text-primary">@Model.NewCustomersThisMonth @await T.GetAsync("Dashboard.NewThisMonth")</span>
         </div>
       </div>
     </div>
@@ -37,12 +46,12 @@
   <div class="col-sm-6 col-xl-3">
     <div class="card h-100">
       <div class="card-body">
-        <p class="text-muted small text-uppercase fw-semibold mb-1">Total Orders</p>
+        <p class="text-muted small text-uppercase fw-semibold mb-1">@await T.GetAsync("Dashboard.TotalOrders")</p>
         <h3 class="mb-1">@Model.TotalOrders.ToString("N0")</h3>
         <small class="@Trend(Model.OrderGrowth)">@Html.Raw(Arrow(Model.OrderGrowth)) @Math.Abs(Model.OrderGrowth)%</small>
-        <small class="text-muted"> vs last month</small>
+        <small class="text-muted"> @await T.GetAsync("Dashboard.VsLastMonth")</small>
         <div class="mt-2">
-          <span class="badge bg-warning bg-opacity-10 text-warning">@Model.NewOrdersThisMonth new this month</span>
+          <span class="badge bg-warning bg-opacity-10 text-warning">@Model.NewOrdersThisMonth @await T.GetAsync("Dashboard.NewThisMonth")</span>
         </div>
       </div>
     </div>
@@ -51,12 +60,12 @@
   <div class="col-sm-6 col-xl-3">
     <div class="card h-100">
       <div class="card-body">
-        <p class="text-muted small text-uppercase fw-semibold mb-1">Revenue This Month</p>
+        <p class="text-muted small text-uppercase fw-semibold mb-1">@await T.GetAsync("Dashboard.RevenueThisMonth")</p>
         <h3 class="mb-1">RM @Model.RevenueThisMonth.ToString("N2")</h3>
         <small class="@Trend(Model.RevenueGrowth)">@Html.Raw(Arrow(Model.RevenueGrowth)) @Math.Abs(Model.RevenueGrowth)%</small>
-        <small class="text-muted"> vs last month</small>
+        <small class="text-muted"> @await T.GetAsync("Dashboard.VsLastMonth")</small>
         <div class="mt-2">
-          <span class="badge bg-success bg-opacity-10 text-success">Monthly target</span>
+          <span class="badge bg-success bg-opacity-10 text-success">@await T.GetAsync("Dashboard.MonthlyTarget")</span>
         </div>
       </div>
     </div>
@@ -65,12 +74,12 @@
   <div class="col-sm-6 col-xl-3">
     <div class="card h-100">
       <div class="card-body">
-        <p class="text-muted small text-uppercase fw-semibold mb-1">Total Revenue</p>
+        <p class="text-muted small text-uppercase fw-semibold mb-1">@await T.GetAsync("Dashboard.TotalRevenue")</p>
         <h3 class="mb-1">RM @Model.TotalRevenue.ToString("N2")</h3>
         <small class="@Trend(Model.TotalRevenueGrowth)">@Html.Raw(Arrow(Model.TotalRevenueGrowth)) @Math.Abs(Model.TotalRevenueGrowth)%</small>
-        <small class="text-muted"> vs last year</small>
+        <small class="text-muted"> @await T.GetAsync("Dashboard.VsLastYear")</small>
         <div class="mt-2">
-          <span class="badge bg-info bg-opacity-10 text-info">All time</span>
+          <span class="badge bg-info bg-opacity-10 text-info">@await T.GetAsync("Dashboard.AllTime")</span>
         </div>
       </div>
     </div>
@@ -84,8 +93,8 @@
   <div class="col-xl-8">
     <div class="card h-100">
       <div class="card-header">
-        <h5 class="mb-0">Sales Analysis</h5>
-        <small class="text-muted">Monthly orders — last 6 months</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.SalesAnalysis")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.SalesAnalysisSubtitle")</small>
       </div>
       <div class="card-body">
         <div id="chartSales"></div>
@@ -96,8 +105,8 @@
   <div class="col-xl-4">
     <div class="card h-100">
       <div class="card-header">
-        <h5 class="mb-0">Customer Growth</h5>
-        <small class="text-muted">New customers — last 6 months</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.CustomerGrowth")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.CustomerGrowthSubtitle")</small>
       </div>
       <div class="card-body">
         <div id="chartCustomers"></div>
@@ -112,8 +121,8 @@
   <div class="col-12">
     <div class="card">
       <div class="card-header">
-        <h5 class="mb-0">Sales Comparison</h5>
-        <small class="text-muted">This year vs last year — monthly revenue (RM)</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.SalesComparison")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.SalesComparisonSubtitle")</small>
       </div>
       <div class="card-body">
         <div id="chartComparison"></div>
@@ -128,19 +137,19 @@
   <div class="col-xl-6">
     <div class="card h-100">
       <div class="card-header">
-        <h5 class="mb-0">Top Product Sales</h5>
-        <small class="text-muted">By units sold</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.TopProductSales")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.TopProductSalesSubtitle")</small>
       </div>
       <div class="card-body">
         <div class="table-responsive">
           <table id="tblProducts" class="table table-hover">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Units Sold</th>
-                <th>Revenue (RM)</th>
+                <th>@await T.GetAsync("No")</th>
+                <th>@await T.GetAsync("Product")</th>
+                <th>@await T.GetAsync("Category")</th>
+                <th>@await T.GetAsync("UnitsSold")</th>
+                <th>@await T.GetAsync("RevenueRM")</th>
               </tr>
             </thead>
             <tbody>
@@ -165,19 +174,19 @@
   <div class="col-xl-6">
     <div class="card h-100">
       <div class="card-header">
-        <h5 class="mb-0">Top Referral Customers</h5>
-        <small class="text-muted">By referral count</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.TopReferralCustomers")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.TopReferralCustomersSubtitle")</small>
       </div>
       <div class="card-body">
         <div class="table-responsive">
           <table id="tblReferrals" class="table table-hover">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Customer</th>
-                <th>Email</th>
-                <th>Referrals</th>
-                <th>Revenue (RM)</th>
+                <th>@await T.GetAsync("No")</th>
+                <th>@await T.GetAsync("Customer")</th>
+                <th>@await T.GetAsync("Email")</th>
+                <th>@await T.GetAsync("Referrals")</th>
+                <th>@await T.GetAsync("RevenueRM")</th>
               </tr>
             </thead>
             <tbody>
@@ -207,8 +216,8 @@
   <div class="col-xl-7">
     <div class="card h-100">
       <div class="card-header">
-        <h5 class="mb-0">Sales by Country</h5>
-        <small class="text-muted">Total revenue per country (RM)</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.SalesByCountry")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.SalesByCountrySubtitle")</small>
       </div>
       <div class="card-body">
         <div id="chartSalesByCountry"></div>
@@ -219,17 +228,17 @@
   <div class="col-xl-5">
     <div class="card h-100">
       <div class="card-header">
-        <h5 class="mb-0">Country Breakdown</h5>
-        <small class="text-muted">Sorted by total sales</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.CountryBreakdown")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.CountryBreakdownSubtitle")</small>
       </div>
       <div class="card-body">
         <div class="table-responsive">
           <table class="table table-hover align-middle">
             <thead>
               <tr>
-                <th>Country</th>
-                <th class="text-end">Total Sales (RM)</th>
-                <th class="text-end">Orders</th>
+                <th>@await T.GetAsync("Country")</th>
+                <th class="text-end">@await T.GetAsync("Dashboard.TotalSalesRM")</th>
+                <th class="text-end">@await T.GetAsync("Orders")</th>
               </tr>
             </thead>
             <tbody>
@@ -256,8 +265,8 @@
   <div class="col-xl-5">
     <div class="card h-100">
       <div class="card-header">
-        <h5 class="mb-0">Customer Distribution by Country</h5>
-        <small class="text-muted">Share of total customers</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.CustomerDistributionByCountry")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.CustomerDistributionSubtitle")</small>
       </div>
       <div class="card-body d-flex align-items-center justify-content-center">
         <div id="chartCountryDonut" style="width:100%;max-width:380px;"></div>
@@ -268,18 +277,18 @@
   <div class="col-xl-7">
     <div class="card h-100">
       <div class="card-header">
-        <h5 class="mb-0">Customers by Country</h5>
-        <small class="text-muted">Sorted by total customers</small>
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.CustomersByCountry")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.CustomersByCountrySubtitle")</small>
       </div>
       <div class="card-body">
         <div class="table-responsive">
           <table class="table table-hover align-middle">
             <thead>
               <tr>
-                <th>Country</th>
-                <th class="text-end">Total Customers</th>
-                <th class="text-end">New This Month</th>
-                <th class="text-end">% of Total</th>
+                <th>@await T.GetAsync("Country")</th>
+                <th class="text-end">@await T.GetAsync("Dashboard.TotalCustomers")</th>
+                <th class="text-end">@await T.GetAsync("Dashboard.ColNewThisMonth")</th>
+                <th class="text-end">@await T.GetAsync("Dashboard.PercentageOfTotal")</th>
               </tr>
             </thead>
             <tbody>
@@ -317,43 +326,43 @@
 
   // Sales Analysis — bar chart
   new ApexCharts(document.querySelector('#chartSales'), {
-    series: [{ name: 'Orders', data: ordersData }],
+    series: [{ name: '@lblOrders', data: ordersData }],
     chart: { type: 'bar', height: 280, toolbar: { show: false } },
     colors: ['#7367f0'],
     plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
     dataLabels: { enabled: false },
     xaxis: { categories: monthLabels },
-    yaxis: { title: { text: 'Orders' } },
+    yaxis: { title: { text: '@lblOrders' } },
     grid: { borderColor: '#f1f1f1' },
-    tooltip: { y: { formatter: v => v.toLocaleString() + ' orders' } }
+    tooltip: { y: { formatter: v => v.toLocaleString() + '@lblSuffixOrders' } }
   }).render();
 
   // Customer Growth — area chart
   new ApexCharts(document.querySelector('#chartCustomers'), {
-    series: [{ name: 'New Customers', data: customersData }],
+    series: [{ name: '@lblNewCustomers', data: customersData }],
     chart: { type: 'area', height: 280, toolbar: { show: false } },
     colors: ['#28c76f'],
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
     dataLabels: { enabled: false },
     stroke: { curve: 'smooth', width: 2 },
     xaxis: { categories: monthLabels },
-    yaxis: { title: { text: 'Customers' } },
+    yaxis: { title: { text: '@lblNewCustomers' } },
     grid: { borderColor: '#f1f1f1' },
-    tooltip: { y: { formatter: v => v + ' customers' } }
+    tooltip: { y: { formatter: v => v + '@lblSuffixCustomers' } }
   }).render();
 
   // Sales Comparison — multi-line chart
   new ApexCharts(document.querySelector('#chartComparison'), {
     series: [
-      { name: 'This Year',  data: thisYearData },
-      { name: 'Last Year',  data: lastYearData }
+      { name: '@lblThisYear', data: thisYearData },
+      { name: '@lblLastYear', data: lastYearData }
     ],
     chart: { type: 'line', height: 320, toolbar: { show: false } },
     colors: ['#7367f0', '#ff9f43'],
     stroke: { curve: 'smooth', width: [2, 2], dashArray: [0, 5] },
     dataLabels: { enabled: false },
     xaxis: { categories: cmpLabels },
-    yaxis: { title: { text: 'Revenue (RM)' }, labels: { formatter: v => 'RM ' + v.toLocaleString() } },
+    yaxis: { title: { text: '@lblAxisRevenue' }, labels: { formatter: v => 'RM ' + v.toLocaleString() } },
     legend: { position: 'top' },
     grid: { borderColor: '#f1f1f1' },
     tooltip: { y: { formatter: v => 'RM ' + v.toLocaleString() } }
@@ -368,7 +377,7 @@
   const countryBarSales  = @Html.Raw(Model.ChartCountrySales);
 
   new ApexCharts(document.querySelector('#chartSalesByCountry'), {
-    series: [{ name: 'Sales (RM)', data: countryBarSales }],
+    series: [{ name: '@lblSalesRM', data: countryBarSales }],
     chart: { type: 'bar', height: 300, toolbar: { show: false } },
     plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '55%' } },
     colors: ['rgba(0,150,136,0.75)'],
@@ -390,7 +399,7 @@
     colors: countryColors,
     legend: { position: 'bottom' },
     dataLabels: { enabled: true, formatter: (val) => val.toFixed(1) + '%' },
-    tooltip: { y: { formatter: (v) => v.toLocaleString() + ' customers' } },
+    tooltip: { y: { formatter: (v) => v.toLocaleString() + '@lblSuffixCustomers' } },
     plotOptions: { pie: { donut: { size: '65%' } } }
   }).render();
 </script>

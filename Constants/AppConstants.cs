@@ -33,6 +33,22 @@ public static class AppConstants
 
 }
 
+public static class DateTimeExtensions
+{
+  public static string ToUserLocalTime(this DateTime utcDateTime, string timezoneId, string format)
+  {
+    try
+    {
+      var tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+      return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tz).ToString(format);
+    }
+    catch
+    {
+      return utcDateTime.ToString(format);
+    }
+  }
+}
+
 public static class YesNo
 {
   public const string Yes = "Y";

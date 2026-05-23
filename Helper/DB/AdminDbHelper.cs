@@ -12,6 +12,7 @@ public class AdminDbHelper : DbHelper
 
   public async Task<AdminUser?> GetByUsernameAsync(string username)
       => await ExecuteAsync(() => _db.AdminUsers
+          .Include(a => a.Country)
           .FirstOrDefaultAsync(a => a.Username == username && a.Status == UserStatusConstants.Active));
 
   public async Task<AdminUser?> GetByIdAsync(int id)

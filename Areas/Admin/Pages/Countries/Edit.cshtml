@@ -1,0 +1,91 @@
+@page "{countryCode}"
+@model MyApp.Areas.Admin.Pages.Countries.EditModel
+@{
+  ViewData["title"] = await T.GetAsync("Country.EditTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Country.EditTitle") — <span class="text-muted">@Model.CountryCode</span></h4>
+  <a asp-area="Admin" asp-page="/Countries/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i> @await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" asp-page-handler="Update">
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label">@await T.GetAsync("Country.CountryCode")</label>
+          <input type="text" class="form-control" value="@Model.CountryCode" readonly />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtCurrencyCode">@await T.GetAsync("Country.CurrencyCode")</label>
+          <input type="text" id="txtCurrencyCode" name="txtCurrencyCode" class="form-control"
+                 maxlength="3" value="@Model.txtCurrencyCode" placeholder="e.g. MYR" />
+          <div class="form-text">@await T.GetAsync("Country.CurrencyCodeHint")</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
+          <select asp-for="ddlStatus" class="form-select" asp-items="@Model.StatusOptions"></select>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+      <h6 class="mb-3">@await T.GetAsync("Country.NameTranslations")</h6>
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label" for="txtNameEn">@await T.GetAsync("Language.En")</label>
+          <input type="text" id="txtNameEn" name="txtNameEn" class="form-control"
+                 value="@Model.txtNameEn" placeholder="@await T.GetAsync("Country.NamePlaceholderEn")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtNameZhHans">@await T.GetAsync("Language.ZhHans")</label>
+          <input type="text" id="txtNameZhHans" name="txtNameZhHans" class="form-control"
+                 value="@Model.txtNameZhHans" placeholder="国家名称" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtNameZhHant">@await T.GetAsync("Language.ZhHant")</label>
+          <input type="text" id="txtNameZhHant" name="txtNameZhHant" class="form-control"
+                 value="@Model.txtNameZhHant" placeholder="國家名稱" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtNameTh">@await T.GetAsync("Language.Th")</label>
+          <input type="text" id="txtNameTh" name="txtNameTh" class="form-control"
+                 value="@Model.txtNameTh" placeholder="ชื่อประเทศ" />
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">@await T.GetAsync("SaveChanges")</button>
+        <a asp-area="Admin" asp-page="/Countries/Index" class="btn btn-outline-secondary">@await T.GetAsync("Cancel")</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

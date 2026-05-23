@@ -162,6 +162,9 @@ public class Thing
 ```
 
 ### AppDbContext — Fluent API only, one entity block per table
+
+Timestamp columns (`created_at`, `updated_at`) must always default to UTC in PostgreSQL using `HasDefaultValueSql("now() AT TIME ZONE 'utc'")`. This ensures the DB itself writes UTC if a row is ever inserted outside the application:
+
 ```csharp
 modelBuilder.Entity<Thing>(entity =>
 {
@@ -170,8 +173,17 @@ modelBuilder.Entity<Thing>(entity =>
   entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
   entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
   entity.Property(e => e.IsActive).HasColumnName("is_active");
-  entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+  entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+        .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+  entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
+        .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
 });
+```
+
+The corresponding raw SQL when creating the table in pgAdmin:
+```sql
+created_at  TIMESTAMPTZ NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
+updated_at  TIMESTAMPTZ NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
 ```
 
 ### Services — inject DbContext + IMemoryCache + IHttpContextAccessor as needed
@@ -255,7 +267,43 @@ document.getElementById('btnTogglePwd').addEventListener('click', function () {
 
 If a page has multiple password fields (e.g. Password + Confirm Password), give each toggle button and icon a unique `id` (e.g. `btnTogglePwd`, `btnToggleConfirmPwd`).
 
-### Localization — always use `TranslationService` for user-facing strings
+### Localization — every user-facing string in .cshtml must use `T.GetAsync`
+
+This applies to **all** visible text — no exceptions:
+
+- Page titles, card headings, section headings, subtitle/hint text
+- Form `<label>` elements and `placeholder` attributes
+- Button and link text
+- Table headers (`<th>`)
+- Badge and status labels
+- Modal titles
+- SweetAlert message text
+
+**Inline HTML** — use `@await T.GetAsync("key")` directly:
+```cshtml
+<label class="form-label">@await T.GetAsync("FieldName")</label>
+<input placeholder="@await T.GetAsync("FieldName.Placeholder")" />
+<th>@await T.GetAsync("ColumnHeader")</th>
+<h5 class="mb-0">@await T.GetAsync("Section.Title")</h5>
+<small class="text-muted">@await T.GetAsync("Section.Subtitle")</small>
+```
+
+**JavaScript strings** (chart series names, axis titles, tooltip text, SweetAlert messages) must be pre-declared as Razor variables in a top-level `@{ }` block, then referenced with `'@varName'` inside script:
+```cshtml
+@{
+  var lblOrders      = await T.GetAsync("Orders");
+  var lblToggleTitle = await T.GetAsync("Thing.ToggleStatusTitle");
+}
+
+@section PageScripts {
+<script>
+  series: [{ name: '@lblOrders', data: ordersData }]
+  var msgTitle = '@lblToggleTitle';
+</script>
+}
+```
+
+**C# (PageModels and services):**
 ```csharp
 var label = await _translationService.GetAsync(MessageConstants.SaveSuccess);
 ```
@@ -300,9 +348,36 @@ MapRazorPages
 
 ## Localization
 
-Supported cultures: `en`, `zh`, `ms`. Language stored in `lang` cookie.  
+Supported cultures: `en` (English), `zh-Hans` (Simplified Chinese). Language stored in `lang` cookie.  
 All translations live in the `language_resources` DB table — never hard-code user-facing strings.  
 Use `MessageConstants.*` keys when calling `TranslationService.GetAsync(key)`.
+
+### Language selector on Login page
+The login page renders a `<select>` populated from the `languages` DB table (active records only). On change it writes both the ASP.NET Core culture cookie and the `lang` cookie, then reloads the page:
+
+```html
+<div class="input-group">
+  <label class="input-group-text" for="inputGroupSelect01">@await T.GetAsync("Language")</label>
+  <select class="form-select" id="inputGroupSelect01" asp-for="ddlLanguage" onchange="changeCulture(this.value)">
+    @foreach (var lang in Model.Languages)
+    {
+      <option value="@lang.LanguageCode" selected="@(lang.LanguageCode == currentCulture ? "selected" : null)">
+        @lang.NativeName
+      </option>
+    }
+  </select>
+</div>
+```
+
+```javascript
+function changeCulture(culture) {
+  document.cookie = ".AspNetCore.Culture=c=" + culture + "|uic=" + culture + "; path=/";
+  document.cookie = "lang=" + culture + "; path=/";
+  window.location.href = window.location.pathname;
+}
+```
+
+The `currentCulture` variable comes from `CultureInfo.CurrentUICulture.TwoLetterISOLanguageName` declared in a Razor `@{ }` block at the top of the page. The PageModel exposes `List<Language> Languages` loaded via `LanguageDbHelper.GetAllActiveAsync()`.
 
 ---
 
@@ -327,6 +402,8 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 ## Always
 
 - Use `async/await` for all database and I/O operations
+- Use `DateTime.UtcNow` for all timestamp fields (`created_at`, `updated_at`, etc.)
+- Always set `HasDefaultValueSql("now() AT TIME ZONE 'utc'")` on every `created_at` / `updated_at` column in `AppDbContext` — and use `TIMESTAMPTZ NOT NULL DEFAULT (now() AT TIME ZONE 'utc')` in the raw SQL CREATE TABLE script
 - Map DB columns explicitly with `.HasColumnName("snake_case")` in `AppDbContext`
 - Keep Models as plain POCOs — no methods, no business logic
 - Put all EF queries in `DbHelper` subclasses, not in PageModels or Services — use `AdminDbHelper` for admin entities, `CustomerDbHelper` for customer entities

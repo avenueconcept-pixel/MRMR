@@ -11,5 +11,7 @@ public static class CookieConstants
     public const string UserId = "UserId";
     public const string Username = "Username";
     public const string LoginLanguage = "LoginLanguage";
+    public const string FullName = "FullName";
+    public const string Timezone = "Timezone";
   }
 }
