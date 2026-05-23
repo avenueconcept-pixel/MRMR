@@ -221,6 +221,40 @@ using var cmd = new NpgsqlCommand("DELETE FROM ...", conn);
 await cmd.ExecuteNonQueryAsync(stoppingToken);
 ```
 
+### Password fields — always include show/hide toggle
+Every `<input type="password">` must have a show/hide toggle button. Use a plain Bootstrap 5 `input-group` button with a Remix icon — never use `input-group-merge` (it makes the icon invisible):
+
+```html
+<div class="input-group">
+  <div class="form-floating form-floating-outline flex-grow-1">
+    <input type="password" id="txtPassword" class="form-control" name="txtPassword" placeholder="············" />
+    <label for="txtPassword">@await T.GetAsync("Password")</label>
+  </div>
+  <button class="btn btn-outline-secondary" type="button" id="btnTogglePwd" tabindex="-1">
+    <i id="iconTogglePwd" class="ri ri-eye-off-line"></i>
+  </button>
+</div>
+```
+
+Toggle JS (inline on the page or in a shared script):
+```javascript
+document.getElementById('btnTogglePwd').addEventListener('click', function () {
+  var input = document.getElementById('txtPassword');
+  var icon = document.getElementById('iconTogglePwd');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.replace('ri-eye-off-line', 'ri-eye-line');
+  } else {
+    input.type = 'password';
+    icon.classList.replace('ri-eye-line', 'ri-eye-off-line');
+  }
+});
+```
+
+> **Icon note:** Remix icons require both the base `ri` class AND the specific icon class (e.g. `ri ri-eye-off-line`). The base class applies the CSS mask; the specific class sets the SVG variable. Omitting `ri` renders an empty box.
+
+If a page has multiple password fields (e.g. Password + Confirm Password), give each toggle button and icon a unique `id` (e.g. `btnTogglePwd`, `btnToggleConfirmPwd`).
+
 ### Localization — always use `TranslationService` for user-facing strings
 ```csharp
 var label = await _translationService.GetAsync(MessageConstants.SaveSuccess);
@@ -269,6 +303,24 @@ MapRazorPages
 Supported cultures: `en`, `zh`, `ms`. Language stored in `lang` cookie.  
 All translations live in the `language_resources` DB table — never hard-code user-facing strings.  
 Use `MessageConstants.*` keys when calling `TranslationService.GetAsync(key)`.
+
+---
+
+## Razor (.cshtml) Comments
+
+Always use Razor comment syntax in `.cshtml` files — never HTML comments for code notes, and never Handlebars syntax:
+
+```cshtml
+@* This is a Razor comment — not rendered in HTML output *@
+
+@* ── Section label ────────────────────────────────────── *@
+```
+
+| Syntax | Renders in HTML? | Use for |
+|---|---|---|
+| `@* ... *@` | No | All comments in `.cshtml` |
+| `<!-- ... -->` | Yes | Intentional HTML comments only |
+| `{{!-- ... --}}` | Yes (as plain text) | Never — this is Handlebars, not Razor |
 
 ---
 

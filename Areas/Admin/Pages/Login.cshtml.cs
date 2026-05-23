@@ -134,7 +134,7 @@ namespace MyApp.Areas.Admin.Pages
 
       await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, selectedLang);
 
-      return RedirectToPage(Routes.AdminLogs);
+      return RedirectToPage(Routes.AdminDashboard);
       //return RedirectToPage("/Logs/Index", new { area = "Admin" });
       //return RedirectToPage("/Logs/");
     }

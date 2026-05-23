@@ -1,0 +1,397 @@
+@page
+@model MyApp.Areas.Admin.Pages.Dashboard.IndexModel
+@using System.Text.Json
+@{
+  ViewData["title"] = "Dashboard";
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.dist.css" />
+  <link rel="stylesheet" href="~/vendor/libs/datatables-bs5/datatables.bootstrap5.dist.css" />
+}
+
+@{
+  string Trend(double pct) => pct >= 0 ? "text-success" : "text-danger";
+  string Arrow(double pct) => pct >= 0 ? "&#8593;" : "&#8595;";
+}
+
+<h4 class="py-3 mb-4">Dashboard <span class="text-muted fs-6 fw-normal">— Welcome back, @Model.AdminName</span></h4>
+
+@* ── Stat Cards ──────────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <p class="text-muted small text-uppercase fw-semibold mb-1">Total Customers</p>
+        <h3 class="mb-1">@Model.TotalCustomers.ToString("N0")</h3>
+        <small class="@Trend(Model.CustomerGrowth)">@Html.Raw(Arrow(Model.CustomerGrowth)) @Math.Abs(Model.CustomerGrowth)%</small>
+        <small class="text-muted"> vs last month</small>
+        <div class="mt-2">
+          <span class="badge bg-primary bg-opacity-10 text-primary">@Model.NewCustomersThisMonth new this month</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <p class="text-muted small text-uppercase fw-semibold mb-1">Total Orders</p>
+        <h3 class="mb-1">@Model.TotalOrders.ToString("N0")</h3>
+        <small class="@Trend(Model.OrderGrowth)">@Html.Raw(Arrow(Model.OrderGrowth)) @Math.Abs(Model.OrderGrowth)%</small>
+        <small class="text-muted"> vs last month</small>
+        <div class="mt-2">
+          <span class="badge bg-warning bg-opacity-10 text-warning">@Model.NewOrdersThisMonth new this month</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <p class="text-muted small text-uppercase fw-semibold mb-1">Revenue This Month</p>
+        <h3 class="mb-1">RM @Model.RevenueThisMonth.ToString("N2")</h3>
+        <small class="@Trend(Model.RevenueGrowth)">@Html.Raw(Arrow(Model.RevenueGrowth)) @Math.Abs(Model.RevenueGrowth)%</small>
+        <small class="text-muted"> vs last month</small>
+        <div class="mt-2">
+          <span class="badge bg-success bg-opacity-10 text-success">Monthly target</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <p class="text-muted small text-uppercase fw-semibold mb-1">Total Revenue</p>
+        <h3 class="mb-1">RM @Model.TotalRevenue.ToString("N2")</h3>
+        <small class="@Trend(Model.TotalRevenueGrowth)">@Html.Raw(Arrow(Model.TotalRevenueGrowth)) @Math.Abs(Model.TotalRevenueGrowth)%</small>
+        <small class="text-muted"> vs last year</small>
+        <div class="mt-2">
+          <span class="badge bg-info bg-opacity-10 text-info">All time</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@* ── Sales Analysis + Customer Growth ───────────────────── *@
+<div class="row g-4 mb-4">
+
+  <div class="col-xl-8">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">Sales Analysis</h5>
+        <small class="text-muted">Monthly orders — last 6 months</small>
+      </div>
+      <div class="card-body">
+        <div id="chartSales"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">Customer Growth</h5>
+        <small class="text-muted">New customers — last 6 months</small>
+      </div>
+      <div class="card-body">
+        <div id="chartCustomers"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@* ── Sales Comparison ────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Sales Comparison</h5>
+        <small class="text-muted">This year vs last year — monthly revenue (RM)</small>
+      </div>
+      <div class="card-body">
+        <div id="chartComparison"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── Top Products + Top Referrals ───────────────────────── *@
+<div class="row g-4 mb-4">
+
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">Top Product Sales</h5>
+        <small class="text-muted">By units sold</small>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="tblProducts" class="table table-hover">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Units Sold</th>
+                <th>Revenue (RM)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @{ int pRank = 1; }
+              @foreach (var p in Model.TopProducts)
+              {
+                <tr>
+                  <td>@pRank++</td>
+                  <td>@p.ProductName</td>
+                  <td><span class="badge bg-secondary bg-opacity-10 text-secondary">@p.Category</span></td>
+                  <td>@p.UnitsSold.ToString("N0")</td>
+                  <td>@p.Revenue.ToString("N2")</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">Top Referral Customers</h5>
+        <small class="text-muted">By referral count</small>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="tblReferrals" class="table table-hover">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th>Email</th>
+                <th>Referrals</th>
+                <th>Revenue (RM)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @{ int rRank = 1; }
+              @foreach (var r in Model.TopReferrals)
+              {
+                <tr>
+                  <td>@rRank++</td>
+                  <td>@r.CustomerName</td>
+                  <td>@r.Email</td>
+                  <td><span class="badge bg-primary">@r.ReferralCount</span></td>
+                  <td>@r.Revenue.ToString("N2")</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@* ── Sales by Country ────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">Sales by Country</h5>
+        <small class="text-muted">Total revenue per country (RM)</small>
+      </div>
+      <div class="card-body">
+        <div id="chartSalesByCountry"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">Country Breakdown</h5>
+        <small class="text-muted">Sorted by total sales</small>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Country</th>
+                <th class="text-end">Total Sales (RM)</th>
+                <th class="text-end">Orders</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach (var s in Model.SalesByCountry)
+              {
+                <tr>
+                  <td>@s.CountryName</td>
+                  <td class="text-end">@s.TotalSales.ToString("N2")</td>
+                  <td class="text-end">@s.OrderCount.ToString("N0")</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@* ── Customer Distribution by Country ───────────────────── *@
+<div class="row g-4 mb-4">
+
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">Customer Distribution by Country</h5>
+        <small class="text-muted">Share of total customers</small>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <div id="chartCountryDonut" style="width:100%;max-width:380px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">Customers by Country</h5>
+        <small class="text-muted">Sorted by total customers</small>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Country</th>
+                <th class="text-end">Total Customers</th>
+                <th class="text-end">New This Month</th>
+                <th class="text-end">% of Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach (var c in Model.CustomersByCountry)
+              {
+                <tr>
+                  <td>@c.CountryName</td>
+                  <td class="text-end">@c.TotalCustomers.ToString("N0")</td>
+                  <td class="text-end">@c.NewThisMonth.ToString("N0")</td>
+                  <td class="text-end">@c.PercentageOfTotal.ToString("F1")%</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/apex-charts/apexcharts.dist.js"></script>
+  <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  const monthLabels    = @Html.Raw(JsonSerializer.Serialize(Model.MonthLabels));
+  const ordersData     = @Html.Raw(JsonSerializer.Serialize(Model.OrdersData));
+  const customersData  = @Html.Raw(JsonSerializer.Serialize(Model.NewCustomersData));
+  const cmpLabels      = @Html.Raw(JsonSerializer.Serialize(Model.ComparisonLabels));
+  const thisYearData   = @Html.Raw(JsonSerializer.Serialize(Model.ThisYearRevenue));
+  const lastYearData   = @Html.Raw(JsonSerializer.Serialize(Model.LastYearRevenue));
+
+  // Sales Analysis — bar chart
+  new ApexCharts(document.querySelector('#chartSales'), {
+    series: [{ name: 'Orders', data: ordersData }],
+    chart: { type: 'bar', height: 280, toolbar: { show: false } },
+    colors: ['#7367f0'],
+    plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
+    dataLabels: { enabled: false },
+    xaxis: { categories: monthLabels },
+    yaxis: { title: { text: 'Orders' } },
+    grid: { borderColor: '#f1f1f1' },
+    tooltip: { y: { formatter: v => v.toLocaleString() + ' orders' } }
+  }).render();
+
+  // Customer Growth — area chart
+  new ApexCharts(document.querySelector('#chartCustomers'), {
+    series: [{ name: 'New Customers', data: customersData }],
+    chart: { type: 'area', height: 280, toolbar: { show: false } },
+    colors: ['#28c76f'],
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+    dataLabels: { enabled: false },
+    stroke: { curve: 'smooth', width: 2 },
+    xaxis: { categories: monthLabels },
+    yaxis: { title: { text: 'Customers' } },
+    grid: { borderColor: '#f1f1f1' },
+    tooltip: { y: { formatter: v => v + ' customers' } }
+  }).render();
+
+  // Sales Comparison — multi-line chart
+  new ApexCharts(document.querySelector('#chartComparison'), {
+    series: [
+      { name: 'This Year',  data: thisYearData },
+      { name: 'Last Year',  data: lastYearData }
+    ],
+    chart: { type: 'line', height: 320, toolbar: { show: false } },
+    colors: ['#7367f0', '#ff9f43'],
+    stroke: { curve: 'smooth', width: [2, 2], dashArray: [0, 5] },
+    dataLabels: { enabled: false },
+    xaxis: { categories: cmpLabels },
+    yaxis: { title: { text: 'Revenue (RM)' }, labels: { formatter: v => 'RM ' + v.toLocaleString() } },
+    legend: { position: 'top' },
+    grid: { borderColor: '#f1f1f1' },
+    tooltip: { y: { formatter: v => 'RM ' + v.toLocaleString() } }
+  }).render();
+
+  // DataTables
+  $('#tblProducts').DataTable({ pageLength: 5, lengthChange: false, searching: false, info: false });
+  $('#tblReferrals').DataTable({ pageLength: 5, lengthChange: false, searching: false, info: false });
+
+  // Sales by Country — horizontal bar chart
+  const countryBarLabels = @Html.Raw(Model.ChartCountryLabels);
+  const countryBarSales  = @Html.Raw(Model.ChartCountrySales);
+
+  new ApexCharts(document.querySelector('#chartSalesByCountry'), {
+    series: [{ name: 'Sales (RM)', data: countryBarSales }],
+    chart: { type: 'bar', height: 300, toolbar: { show: false } },
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '55%' } },
+    colors: ['rgba(0,150,136,0.75)'],
+    dataLabels: { enabled: false },
+    xaxis: { categories: countryBarLabels, labels: { formatter: v => 'RM ' + Number(v).toLocaleString() } },
+    tooltip: { y: { formatter: v => 'RM ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 }) } },
+    grid: { borderColor: '#f1f1f1' }
+  }).render();
+
+  // Customer Distribution by Country — donut chart
+  const countryLabels = @Html.Raw(Model.ChartCustomerLabels);
+  const countryCounts = @Html.Raw(Model.ChartCustomerCounts);
+  const countryColors = ['#009688', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#4CAF50'];
+
+  new ApexCharts(document.querySelector('#chartCountryDonut'), {
+    series: countryCounts,
+    labels: countryLabels,
+    chart: { type: 'donut', height: 320 },
+    colors: countryColors,
+    legend: { position: 'bottom' },
+    dataLabels: { enabled: true, formatter: (val) => val.toFixed(1) + '%' },
+    tooltip: { y: { formatter: (v) => v.toLocaleString() + ' customers' } },
+    plotOptions: { pie: { donut: { size: '65%' } } }
+  }).render();
+</script>
+}

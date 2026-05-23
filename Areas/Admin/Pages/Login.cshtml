@@ -61,6 +61,17 @@
 							<label for="txtUsername">@await T.GetAsync("Username")</label>
 						</div>
 						<div class="mb-5">
+							<div class="input-group">
+								<div class="form-floating form-floating-outline flex-grow-1">
+									<input type="password" id="txtPassword" class="form-control" name="txtPassword" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" />
+									<label for="txtPassword">@await T.GetAsync("Password")</label>
+								</div>
+								<button class="btn btn-outline-secondary" type="button" id="btnTogglePwd" tabindex="-1">
+									<i id="iconTogglePwd" class="ri ri-eye-off-line"></i>
+								</button>
+							</div>
+						</div>
+						@* <div class="mb-5">
 							<div class="form-password-toggle">
 								<div class="input-group input-group-merge">
 									<div class="form-floating form-floating-outline">
@@ -70,7 +81,7 @@
 									<span class="input-group-text cursor-pointer"><i class="ri-eye-off-line"></i></span>
 								</div>
 							</div>
-						</div>
+						</div> *@
 
 
 
@@ -133,6 +144,18 @@
 	var msgEnterUsername = '@await T.GetAsync("EnterYourUsername")';
 	var msgEnterPassword = '@await T.GetAsync("EnterYourPassword")';
 	var msgError = '@MessageTitle.Error';
+
+	document.getElementById('btnTogglePwd').addEventListener('click', function () {
+		var input = document.getElementById('txtPassword');
+		var icon = document.getElementById('iconTogglePwd');
+		if (input.type === 'password') {
+			input.type = 'text';
+			icon.classList.replace('ri-eye-off-line', 'ri-eye-line');
+		} else {
+			input.type = 'password';
+			icon.classList.replace('ri-eye-line', 'ri-eye-off-line');
+		}
+	});
 
 	document.getElementById('formAuthentication').addEventListener('submit', function (e) {
 		var username = document.getElementById('txtUsername').value.trim();
