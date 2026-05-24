@@ -1,14 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MyApp.Constants;
 using MyApp.Data;
 using MyApp.Dtos;
+using MyApp.Helper;
 using MyApp.Models;
 
 namespace MyApp.Helper.DB;
 
 public class PaymentMethodDbHelper : DbHelper
 {
-  public PaymentMethodDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public PaymentMethodDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<List<PaymentMethod>> GetAllAsync(string languageCode)
       => await ExecuteAsync(async () =>
@@ -65,6 +67,7 @@ public class PaymentMethodDbHelper : DbHelper
           }
 
           await _db.SaveChangesAsync();
+          await _audit.LogActionAsync("payment_methods", existing.PaymentCode, AuditConstants.Actions.Restore, createdBy, remarks: "Restored from deleted");
           return PaymentMethodAddResult.Restored;
         }
 
@@ -78,6 +81,7 @@ public class PaymentMethodDbHelper : DbHelper
         _db.PaymentMethods.Add(pm);
         _db.PaymentMethodTranslations.AddRange(translations);
         await _db.SaveChangesAsync();
+        await _audit.LogInsertAsync("payment_methods", pm.PaymentCode, pm, createdBy);
         return PaymentMethodAddResult.Created;
       });
 
@@ -86,6 +90,12 @@ public class PaymentMethodDbHelper : DbHelper
       {
         var existing = await _db.PaymentMethods.FindAsync(pm.PaymentCode);
         if (existing == null) return;
+
+        var old = new PaymentMethod
+        {
+          PaymentCode = existing.PaymentCode,
+          Status      = existing.Status
+        };
 
         existing.Status    = pm.Status;
         existing.UpdatedAt = DateTime.UtcNow;
@@ -105,6 +115,7 @@ public class PaymentMethodDbHelper : DbHelper
         }
 
         await _db.SaveChangesAsync();
+        await _audit.LogUpdateAsync("payment_methods", existing.PaymentCode, old, existing, updatedBy);
       });
 
   public async Task UpdateStatusAsync(string paymentCode, string status, string updatedBy)
@@ -113,10 +124,16 @@ public class PaymentMethodDbHelper : DbHelper
         var pm = await _db.PaymentMethods.FindAsync(paymentCode);
         if (pm != null)
         {
+          var oldStatus = pm.Status;
           pm.Status    = status;
           pm.UpdatedAt = DateTime.UtcNow;
           pm.UpdatedBy = updatedBy;
           await _db.SaveChangesAsync();
+          var action = status == StatusConstants.Deleted
+              ? AuditConstants.Actions.Delete
+              : AuditConstants.Actions.Update;
+          await _audit.LogActionAsync("payment_methods", paymentCode, action, updatedBy,
+              remarks: $"Status changed from {oldStatus} to {status}");
         }
       });
 }

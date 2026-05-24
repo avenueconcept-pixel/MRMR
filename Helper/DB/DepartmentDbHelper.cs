@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MyApp.Constants;
 using MyApp.Data;
+using MyApp.Helper;
 using MyApp.Models;
 
 namespace MyApp.Helper.DB;
@@ -14,7 +16,7 @@ public enum DeptAddResult
 
 public class DepartmentDbHelper : DbHelper
 {
-  public DepartmentDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public DepartmentDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<List<Department>> GetAllAsync()
       => await ExecuteAsync<List<Department>>(() => _db.Departments
@@ -52,6 +54,7 @@ public class DepartmentDbHelper : DbHelper
             existing.UpdatedAt = DateTime.UtcNow;
             existing.UpdatedBy = createdBy;
             await _db.SaveChangesAsync();
+            await _audit.LogActionAsync("departments", existing.Id.ToString(), AuditConstants.Actions.Restore, createdBy, remarks: "Restored from deleted");
             return DeptAddResult.Restored;
           }
           return DeptAddResult.DuplicateActive;
@@ -68,6 +71,7 @@ public class DepartmentDbHelper : DbHelper
         };
         _db.Departments.Add(entity);
         await _db.SaveChangesAsync();
+        await _audit.LogInsertAsync("departments", entity.Id.ToString(), entity, createdBy);
         return DeptAddResult.Created;
       });
 
@@ -77,11 +81,19 @@ public class DepartmentDbHelper : DbHelper
         var existing = await _db.Departments.FindAsync(dept.Id);
         if (existing == null) return;
 
+        var old = new Department
+        {
+          Id       = existing.Id,
+          DeptName = existing.DeptName,
+          Status   = existing.Status
+        };
+
         existing.DeptName  = dept.DeptName;
         existing.Status    = dept.Status;
         existing.UpdatedAt = DateTime.UtcNow;
         existing.UpdatedBy = updatedBy;
         await _db.SaveChangesAsync();
+        await _audit.LogUpdateAsync("departments", existing.Id.ToString(), old, existing, updatedBy);
       });
 
   public async Task UpdateStatusAsync(int id, string status, string updatedBy)
@@ -90,10 +102,16 @@ public class DepartmentDbHelper : DbHelper
         var dept = await _db.Departments.FindAsync(id);
         if (dept != null)
         {
+          var oldStatus = dept.Status;
           dept.Status    = status;
           dept.UpdatedAt = DateTime.UtcNow;
           dept.UpdatedBy = updatedBy;
           await _db.SaveChangesAsync();
+          var action = status == StatusConstants.Deleted
+              ? AuditConstants.Actions.Delete
+              : AuditConstants.Actions.Update;
+          await _audit.LogActionAsync("departments", id.ToString(), action, updatedBy,
+              remarks: $"Status changed from {oldStatus} to {status}");
         }
       });
 }

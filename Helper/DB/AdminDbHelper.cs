@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Data;
+using MyApp.Helper;
 using MyApp.Models;
 using MyApp.Constants;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ namespace MyApp.Helper.DB;
 
 public class AdminDbHelper : DbHelper
 {
-  public AdminDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public AdminDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<AdminUser?> GetByUsernameAsync(string username)
       => await ExecuteAsync(() => _db.AdminUsers

@@ -64,6 +64,12 @@
         <div>Logs</div>
       </a>
     </li>
+    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/AuditLogs") ? " active" : "")'>
+      <a asp-page="/AuditLogs/Index" class="menu-link">
+        <i class="menu-icon icon-base ri ri-shield-check-line"></i>
+        <div>@await T.GetAsync("AuditLog.PageTitle")</div>
+      </a>
+    </li>
   </ul>
 
 </aside>

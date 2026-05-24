@@ -13,8 +13,9 @@ namespace MyApp.Areas.Admin.Pages
   public class LoginModel : BasePageModel
   {
     private readonly TranslationService _translation;
-    private readonly AdminDbHelper _adminDbHelper;
-    private readonly LanguageDbHelper _languageDbHelper;
+    private readonly AdminDbHelper      _adminDbHelper;
+    private readonly LanguageDbHelper   _languageDbHelper;
+    private readonly AuditHelper        _audit;
 
     public List<Language> Languages { get; set; } = new();
     public string CurrentLang { get; set; } = AppConstants.DefaultLanguage;
@@ -38,11 +39,12 @@ namespace MyApp.Areas.Admin.Pages
 
 
 
-    public LoginModel(TranslationService translation, AdminDbHelper adminDbHelper, LanguageDbHelper languageDbHelper)
+    public LoginModel(TranslationService translation, AdminDbHelper adminDbHelper, LanguageDbHelper languageDbHelper, AuditHelper audit)
     {
-      _translation = translation;
-      _adminDbHelper = adminDbHelper;
+      _translation      = translation;
+      _adminDbHelper    = adminDbHelper;
       _languageDbHelper = languageDbHelper;
+      _audit            = audit;
     }
 
     public async Task OnGetAsync(string? username = null)
@@ -138,6 +140,7 @@ namespace MyApp.Areas.Admin.Pages
             ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
           });
 
+      await _audit.LogLoginAsync(adminUser.Username, AuditConstants.Actions.Login);
       await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, selectedLang);
 
       return RedirectToPage(Routes.AdminDashboard);

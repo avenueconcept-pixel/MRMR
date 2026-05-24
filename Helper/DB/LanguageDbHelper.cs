@@ -1,14 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MyApp.Constants;
 using MyApp.Data;
+using MyApp.Helper;
 using MyApp.Models;
-using Microsoft.Extensions.Logging;
 
 namespace MyApp.Helper.DB;
 
 public class LanguageDbHelper : DbHelper
 {
-  public LanguageDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public LanguageDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<List<Language>> GetAllAsync()
       => await ExecuteAsync(() => _db.Languages
@@ -47,6 +48,7 @@ public class LanguageDbHelper : DbHelper
         };
         _db.Languages.Add(entity);
         await _db.SaveChangesAsync();
+        await _audit.LogInsertAsync("languages", entity.Id.ToString(), entity, createdBy);
       });
 
   public async Task UpdateAsync(Language language, string updatedBy)
@@ -54,6 +56,16 @@ public class LanguageDbHelper : DbHelper
       {
         var existing = await _db.Languages.FindAsync(language.Id);
         if (existing == null) return;
+
+        var old = new Language
+        {
+          Id           = existing.Id,
+          LanguageCode = existing.LanguageCode,
+          LanguageName = existing.LanguageName,
+          NativeName   = existing.NativeName,
+          SortOrder    = existing.SortOrder,
+          Status       = existing.Status
+        };
 
         existing.LanguageCode = language.LanguageCode;
         existing.LanguageName = language.LanguageName;
@@ -63,6 +75,7 @@ public class LanguageDbHelper : DbHelper
         existing.UpdatedAt    = DateTime.UtcNow;
         existing.UpdatedBy    = updatedBy;
         await _db.SaveChangesAsync();
+        await _audit.LogUpdateAsync("languages", existing.Id.ToString(), old, existing, updatedBy);
       });
 
   public async Task UpdateStatusAsync(int id, string status, string updatedBy)
@@ -71,10 +84,16 @@ public class LanguageDbHelper : DbHelper
         var language = await _db.Languages.FindAsync(id);
         if (language != null)
         {
+          var oldStatus  = language.Status;
           language.Status    = status;
           language.UpdatedAt = DateTime.UtcNow;
           language.UpdatedBy = updatedBy;
           await _db.SaveChangesAsync();
+          var action = status == StatusConstants.Deleted
+              ? AuditConstants.Actions.Delete
+              : AuditConstants.Actions.Update;
+          await _audit.LogActionAsync("languages", id.ToString(), action, updatedBy,
+              remarks: $"Status changed from {oldStatus} to {status}");
         }
       });
 }

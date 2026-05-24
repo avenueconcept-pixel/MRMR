@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MyApp.Data;
+using MyApp.Helper;
 using MyApp.Models;
 
 namespace MyApp.Helper.DB;
 
 public class LogDbHelper : DbHelper
 {
-  public LogDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public LogDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<List<AppLog>> GetRecentAsync(int count = 500)
       => await ExecuteAsync(() => _db.AppLogs

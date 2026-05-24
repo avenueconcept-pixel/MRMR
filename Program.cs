@@ -22,6 +22,11 @@ builder.Services.AddRazorPages();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddDbContext<AuditDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("AuditConnection")));
+
+builder.Services.AddScoped<AuditHelper>();
+
 builder.Services.AddSession(options =>
 {
   options.IdleTimeout = TimeSpan.FromMinutes(45);
@@ -42,6 +47,7 @@ builder.Services.AddScoped<LogDbHelper>();
 builder.Services.AddScoped<CountryDbHelper>();
 builder.Services.AddScoped<DepartmentDbHelper>();
 builder.Services.AddScoped<PaymentMethodDbHelper>();
+builder.Services.AddScoped<AuditLogDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));

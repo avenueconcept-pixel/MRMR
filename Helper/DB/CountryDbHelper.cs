@@ -3,13 +3,14 @@ using Microsoft.Extensions.Logging;
 using MyApp.Constants;
 using MyApp.Data;
 using MyApp.Dtos;
+using MyApp.Helper;
 using MyApp.Models;
 
 namespace MyApp.Helper.DB;
 
 public class CountryDbHelper : DbHelper
 {
-  public CountryDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public CountryDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<List<Country>> GetAllAsync(string languageCode)
       => await ExecuteAsync(async () =>
@@ -56,6 +57,7 @@ public class CountryDbHelper : DbHelper
           }
 
           await _db.SaveChangesAsync();
+          await _audit.LogActionAsync("countries", existing.CountryCode, AuditConstants.Actions.Restore, createdBy, remarks: "Restored from deleted");
           return CountryAddResult.Restored;
         }
 
@@ -69,6 +71,7 @@ public class CountryDbHelper : DbHelper
         _db.Countries.Add(country);
         _db.CountryTranslations.AddRange(translations);
         await _db.SaveChangesAsync();
+        await _audit.LogInsertAsync("countries", country.CountryCode, country, createdBy);
         return CountryAddResult.Created;
       });
 
@@ -77,6 +80,14 @@ public class CountryDbHelper : DbHelper
       {
         var existing = await _db.Countries.FindAsync(country.CountryCode);
         if (existing == null) return;
+
+        var old = new Country
+        {
+          CountryCode  = existing.CountryCode,
+          CurrencyCode = existing.CurrencyCode,
+          Timezone     = existing.Timezone,
+          Status       = existing.Status
+        };
 
         existing.CurrencyCode = country.CurrencyCode;
         existing.Status       = country.Status;
@@ -98,6 +109,7 @@ public class CountryDbHelper : DbHelper
         }
 
         await _db.SaveChangesAsync();
+        await _audit.LogUpdateAsync("countries", existing.CountryCode, old, existing, updatedBy);
       });
 
   public async Task UpdateStatusAsync(string countryCode, string status, string updatedBy)
@@ -106,10 +118,16 @@ public class CountryDbHelper : DbHelper
         var country = await _db.Countries.FindAsync(countryCode);
         if (country != null)
         {
-          country.Status = status;
+          var oldStatus = country.Status;
+          country.Status    = status;
           country.UpdatedAt = DateTime.UtcNow;
           country.UpdatedBy = updatedBy;
           await _db.SaveChangesAsync();
+          var action = status == StatusConstants.Deleted
+              ? AuditConstants.Actions.Delete
+              : AuditConstants.Actions.Update;
+          await _audit.LogActionAsync("countries", countryCode, action, updatedBy,
+              remarks: $"Status changed from {oldStatus} to {status}");
         }
       });
 }

@@ -1,4 +1,5 @@
 using MyApp.Data;
+using MyApp.Helper;
 using Microsoft.Extensions.Logging;
 using System.Runtime.CompilerServices;
 
@@ -7,11 +8,13 @@ namespace MyApp.Helper.DB;
 public class DbHelper
 {
   protected readonly AppDbContext _db;
-  private readonly ILogger _logger;
+  protected readonly ILogger      _logger;
+  protected readonly AuditHelper  _audit;
 
-  public DbHelper(AppDbContext db, ILoggerFactory loggerFactory)
+  public DbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory)
   {
-    _db = db;
+    _db     = db;
+    _audit  = audit;
     _logger = loggerFactory.CreateLogger(GetType());
   }
 

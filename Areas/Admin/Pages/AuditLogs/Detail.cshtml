@@ -1,0 +1,90 @@
+@page
+@model MyApp.Areas.Admin.Pages.AuditLogs.DetailModel
+@{
+  ViewData["title"] = await T.GetAsync("AuditLog.DetailTitle");
+}
+
+<h4 class="py-4 mb-2">@await T.GetAsync("AuditLog.DetailTitle")</h4>
+
+@* ── Record Info ───────────────────────────────────────── *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <span class="text-muted">@await T.GetAsync("AuditLog.TableName"):</span>
+        <strong class="ms-2">@Model.TableName</strong>
+      </div>
+      <div class="col-md-6">
+        <span class="text-muted">@await T.GetAsync("AuditLog.RecordId"):</span>
+        <strong class="ms-2">@Model.RecordId</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mb-3">
+  <a asp-area="Admin" asp-page="/AuditLogs/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Btn.Back")
+  </a>
+</div>
+
+@* ── Detail Table ──────────────────────────────────────── *@
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">
+      @await T.GetAsync("AuditLog.ChangeHistory")
+      <span class="badge bg-secondary ms-2">@Model.AuditLogs.Count</span>
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblAuditDetail" class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("AuditLog.Action")</th>
+            <th>@await T.GetAsync("AuditLog.FieldName")</th>
+            <th>@await T.GetAsync("AuditLog.OldValue")</th>
+            <th>@await T.GetAsync("AuditLog.NewValue")</th>
+            <th>@await T.GetAsync("AuditLog.ChangedBy")</th>
+            <th>@await T.GetAsync("AuditLog.ChangedAt")</th>
+            <th>@await T.GetAsync("AuditLog.Remarks")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var log in Model.AuditLogs)
+          {
+            var badgeClass = log.Action switch
+            {
+              "INSERT"  => "bg-success",
+              "UPDATE"  => "bg-primary",
+              "DELETE"  => "bg-danger",
+              "RESTORE" => "bg-warning text-dark",
+              "LOGIN"   => "bg-info text-dark",
+              "LOGOUT"  => "bg-secondary",
+              _         => "bg-secondary"
+            };
+            <tr>
+              <td><span class="badge @badgeClass">@log.Action</span></td>
+              <td>@log.FieldName</td>
+              <td class="text-danger">@log.OldValue</td>
+              <td class="text-success">@log.NewValue</td>
+              <td>@log.ChangedBy</td>
+              <td class="text-nowrap">
+                @log.ChangedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)
+              </td>
+              <td>@log.Remarks</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@section PageScripts {
+<script>
+  $(document).ready(function () {
+    initDataTable('#tblAuditDetail', -1, [[5, 'desc']]);
+  });
+</script>
+}

@@ -1,0 +1,128 @@
+@page
+@model MyApp.Areas.Admin.Pages.AuditLogs.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("AuditLog.PageTitle");
+}
+
+<h4 class="py-4 mb-2">@await T.GetAsync("AuditLog.PageTitle")</h4>
+
+@* ── Filter Bar ────────────────────────────────────────── *@
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="post" asp-page-handler="Filter">
+      @Html.AntiForgeryToken()
+      <div class="row g-3 align-items-end">
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("AuditLog.TableName")</label>
+          <select asp-for="FilterTableName" asp-items="Model.TableNameOptions" class="form-select">
+            <option value="">@await T.GetAsync("All")</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("AuditLog.Action")</label>
+          <select asp-for="FilterAction" asp-items="Model.ActionOptions" class="form-select">
+            <option value="">@await T.GetAsync("All")</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("AuditLog.ChangedBy")</label>
+          <input type="text" asp-for="FilterChangedBy" class="form-control"
+                 placeholder="@await T.GetAsync("AuditLog.ChangedByPlaceholder")" />
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("Logs.DateFrom")</label>
+          <input type="date" asp-for="FilterDateFrom" class="form-control" value="@Model.FilterDateFrom" />
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("Logs.DateTo")</label>
+          <input type="date" asp-for="FilterDateTo" class="form-control" value="@Model.FilterDateTo" />
+        </div>
+
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="ri ri-search-line me-1"></i>@await T.GetAsync("Search")
+          </button>
+          <a asp-page="/AuditLogs/Index" class="btn btn-outline-secondary">
+            @await T.GetAsync("Clear")
+          </a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+@* ── Audit Logs Table ──────────────────────────────────── *@
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">
+      @await T.GetAsync("AuditLog.PageTitle")
+      <span class="badge bg-secondary ms-2">@Model.AuditLogs.Count</span>
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblAuditLogs" class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("AuditLog.TableName")</th>
+            <th>@await T.GetAsync("AuditLog.RecordId")</th>
+            <th>@await T.GetAsync("AuditLog.Action")</th>
+            <th>@await T.GetAsync("AuditLog.FieldName")</th>
+            <th>@await T.GetAsync("AuditLog.OldValue")</th>
+            <th>@await T.GetAsync("AuditLog.NewValue")</th>
+            <th>@await T.GetAsync("AuditLog.ChangedBy")</th>
+            <th>@await T.GetAsync("AuditLog.ChangedAt")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var log in Model.AuditLogs)
+          {
+            var badgeClass = log.Action switch
+            {
+              "INSERT"  => "bg-success",
+              "UPDATE"  => "bg-primary",
+              "DELETE"  => "bg-danger",
+              "RESTORE" => "bg-warning text-dark",
+              "LOGIN"   => "bg-info text-dark",
+              "LOGOUT"  => "bg-secondary",
+              _         => "bg-secondary"
+            };
+            <tr>
+              <td>@log.TableName</td>
+              <td>
+                <a asp-area="Admin" asp-page="/AuditLogs/Detail"
+                   asp-route-tableName="@log.TableName"
+                   asp-route-recordId="@log.RecordId"
+                   class="text-decoration-none fw-semibold">
+                  @log.RecordId
+                </a>
+              </td>
+              <td><span class="badge @badgeClass">@log.Action</span></td>
+              <td>@log.FieldName</td>
+              <td class="text-danger">@log.OldValue</td>
+              <td class="text-success">@log.NewValue</td>
+              <td>@log.ChangedBy</td>
+              <td class="text-nowrap">
+                @log.ChangedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@section PageScripts {
+<script>
+  $(document).ready(function () {
+    initDataTable('#tblAuditLogs', -1, [[7, 'desc']]);
+  });
+</script>
+}

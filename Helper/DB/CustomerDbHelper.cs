@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Data;
+using MyApp.Helper;
 using MyApp.Models;
 using Microsoft.Extensions.Logging;
 
@@ -7,7 +8,7 @@ namespace MyApp.Helper.DB;
 
 public class CustomerDbHelper : DbHelper
 {
-  public CustomerDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public CustomerDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<Customer?> GetByEmailAsync(string email)
       => await ExecuteAsync(() => _db.Customers

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Constants;
 using MyApp.Data;
+using MyApp.Helper;
 using MyApp.Models;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +9,7 @@ namespace MyApp.Helper.DB;
 
 public class EmailTemplateDbHelper : DbHelper
 {
-  public EmailTemplateDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public EmailTemplateDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<EmailTemplate?> GetByKeyAsync(string templateKey, string languageCode)
       => await ExecuteAsync(() => _db.EmailTemplates

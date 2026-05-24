@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Data;
+using MyApp.Helper;
 using MyApp.Models;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
@@ -8,7 +9,7 @@ namespace MyApp.Helper.DB;
 
 public class PasswordResetTokenDbHelper : DbHelper
 {
-  public PasswordResetTokenDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public PasswordResetTokenDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<PasswordResetToken> CreateAsync(string userType, int userId)
       => await ExecuteAsync(async () =>
