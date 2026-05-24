@@ -1,0 +1,85 @@
+@page
+@model MyApp.Areas.Admin.Pages.Languages.CreateModel
+@{
+  ViewData["title"] = await T.GetAsync("Language.AddTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Language.AddTitle")</h4>
+  <a asp-area="Admin" asp-page="/Languages/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i> @await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" asp-page-handler="Create">
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label" for="txtLanguageCode">
+            @await T.GetAsync("LanguageCode") <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="txtLanguageCode" name="txtLanguageCode" class="form-control"
+                 maxlength="10" value="@Model.txtLanguageCode"
+                 placeholder="@await T.GetAsync("Language.LanguageCodePlaceholder")" />
+          <div class="form-text">@await T.GetAsync("Language.LanguageCodeHint")</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
+          <select asp-for="ddlStatus" id="ddlStatus" class="form-select" asp-items="@Model.StatusOptions"></select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtLanguageName">
+            @await T.GetAsync("LanguageName") <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="txtLanguageName" name="txtLanguageName" class="form-control"
+                 maxlength="100" value="@Model.txtLanguageName"
+                 placeholder="@await T.GetAsync("Language.LanguageNamePlaceholder")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtNativeName">
+            @await T.GetAsync("NativeName") <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="txtNativeName" name="txtNativeName" class="form-control"
+                 maxlength="100" value="@Model.txtNativeName"
+                 placeholder="@await T.GetAsync("Language.NativeNamePlaceholder")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtSortOrder">@await T.GetAsync("SortOrder")</label>
+          <input type="number" id="txtSortOrder" name="txtSortOrder" class="form-control"
+                 min="0" value="@Model.txtSortOrder" />
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">@await T.GetAsync("Save")</button>
+        <a asp-area="Admin" asp-page="/Languages/Index" class="btn btn-outline-secondary">@await T.GetAsync("Cancel")</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

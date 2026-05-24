@@ -28,16 +28,28 @@
 
   @* ! Starter Kit menu-items *@
   <ul class="menu-inner py-1">
-    <li class='menu-item@(currentPage == "/Index" ? " active" : "")'>
-      <a asp-page="/Index" class="menu-link">
+    <li class='menu-item@(currentPage == "/Dashboard/Index" ? " active" : "")'>
+      <a asp-page="/Dashboard/Index" class="menu-link">
         <i class="menu-icon icon-base ri ri-home-smile-line"></i>
-        <div data-i18n="Page 1">Page 1</div>
+        <div>Dashboard</div>
       </a>
     </li>
-    <li class='menu-item@(currentPage == "/Page2" ? " active" : "")'>
-      <a asp-page="/Page2" class="menu-link">
-        <i class="menu-icon icon-base ri ri-file-3-line"></i>
-        <div data-i18n="Page 2">Page 2</div>
+    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/Countries") ? " active" : "")'>
+      <a asp-page="/Countries/Index" class="menu-link">
+        <i class="menu-icon icon-base ri ri-map-2-line"></i>
+        <div>Countries</div>
+      </a>
+    </li>
+    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/Languages") ? " active" : "")'>
+      <a asp-page="/Languages/Index" class="menu-link">
+        <i class="menu-icon icon-base ri ri-translate-2"></i>
+        <div>Languages</div>
+      </a>
+    </li>
+    <li class='menu-item@(currentPage == "/Logs/Index" ? " active" : "")'>
+      <a asp-page="/Logs/Index" class="menu-link">
+        <i class="menu-icon icon-base ri ri-file-list-3-line"></i>
+        <div>Logs</div>
       </a>
     </li>
   </ul>

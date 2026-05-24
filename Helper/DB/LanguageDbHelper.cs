@@ -10,6 +10,12 @@ public class LanguageDbHelper : DbHelper
 {
   public LanguageDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
 
+  public async Task<List<Language>> GetAllAsync()
+      => await ExecuteAsync(() => _db.Languages
+          .Where(l => l.Status != StatusConstants.Deleted)
+          .OrderBy(l => l.SortOrder)
+          .ToListAsync());
+
   public async Task<List<Language>> GetAllActiveAsync()
       => await ExecuteAsync(() => _db.Languages
           .Where(l => l.Status == StatusConstants.Active)
@@ -59,13 +65,15 @@ public class LanguageDbHelper : DbHelper
         await _db.SaveChangesAsync();
       });
 
-  public async Task DeleteAsync(int id)
+  public async Task UpdateStatusAsync(int id, string status, string updatedBy)
       => await ExecuteAsync(async () =>
       {
         var language = await _db.Languages.FindAsync(id);
         if (language != null)
         {
-          language.Status = StatusConstants.Deleted;
+          language.Status    = status;
+          language.UpdatedAt = DateTime.UtcNow;
+          language.UpdatedBy = updatedBy;
           await _db.SaveChangesAsync();
         }
       });

@@ -1,0 +1,142 @@
+@page
+@model MyApp.Areas.Admin.Pages.Languages.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Language.PageTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@{
+  var lblToggleTitle   = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes     = await T.GetAsync("ToggleStatusYes");
+  var lblCancel        = await T.GetAsync("Cancel");
+  var lblToggleFailed  = await T.GetAsync("ToggleFailed");
+  var lblToggleError   = await T.GetAsync("ToggleError");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Language.PageTitle")</h4>
+  <a asp-area="Admin" asp-page="/Languages/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i> @await T.GetAsync("Language.AddLanguage")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Language.LanguageList")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblLanguages" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("LanguageCode")</th>
+            <th>@await T.GetAsync("LanguageName")</th>
+            <th>@await T.GetAsync("NativeName")</th>
+            <th>@await T.GetAsync("SortOrder")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("UpdatedAt")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var lang in Model.Languages)
+          {
+            <tr>
+              <td><strong>@lang.LanguageCode</strong></td>
+              <td>@lang.LanguageName</td>
+              <td>@lang.NativeName</td>
+              <td>@lang.SortOrder</td>
+              <td>
+                @{
+                  var badgeClass  = lang.Status == StatusConstants.Active ? "bg-success" : "bg-danger";
+                  var statusLabel = lang.Status == StatusConstants.Active
+                      ? await T.GetAsync("status.active")
+                      : await T.GetAsync("status.inactive");
+                }
+                <span class="badge @badgeClass">@statusLabel</span>
+              </td>
+              <td>@lang.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td>
+                <a asp-area="Admin" asp-page="/Languages/Edit" asp-route-id="@lang.Id"
+                   class="btn btn-sm btn-outline-primary me-1">@await T.GetAsync("Edit")</a>
+                <button type="button" class="btn btn-sm btn-outline-warning"
+                        onclick="toggleStatus(@lang.Id)">@await T.GetAsync("ToggleStatus")</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var msgToggleTitle   = '@lblToggleTitle';
+  var msgToggleConfirm = '@lblToggleConfirm';
+  var msgToggleYes     = '@lblToggleYes';
+  var msgCancel        = '@lblCancel';
+  var msgToggleFailed  = '@lblToggleFailed';
+  var msgToggleError   = '@lblToggleError';
+
+  function toggleStatus(id) {
+    Swal.fire({
+      title: msgToggleTitle,
+      text: msgToggleConfirm,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: msgToggleYes,
+      cancelButtonText: msgCancel
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '?handler=ToggleStatus',
+          type: 'POST',
+          data: {
+            id: id,
+            __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+          },
+          success: function (data) {
+            if (data.success) {
+              location.reload();
+            } else {
+              Swal.fire({ icon: 'error', text: msgToggleFailed });
+            }
+          },
+          error: function () {
+            Swal.fire({ icon: 'error', text: msgToggleError });
+          }
+        });
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    initDataTable('#tblLanguages', 6);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}
