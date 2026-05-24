@@ -512,6 +512,75 @@ public async Task<IActionResult> OnPostSoftDeleteAsync(string entityCode)
 }
 ```
 
+### Translation-enabled entities (entity + `*Translation` table)
+
+Some entities pair a main table with a `*Translation` child table (e.g. `payment_methods` + `payment_method_translations`, `countries` + `country_translations`). Follow these rules for every such entity:
+
+**DbContext — cascade delete on the `HasMany` side:**
+```csharp
+entity.HasMany(e => e.Translations)
+      .WithOne(t => t.PaymentMethod)
+      .HasForeignKey(t => t.PaymentCode)
+      .OnDelete(DeleteBehavior.Cascade);
+```
+Configure the relationship only once, on the parent entity block. The child entity block maps columns and the FK but does not repeat `.WithMany`.
+
+**DbHelper — `GetAllAsync` and `GetAllActiveAsync` always take `string languageCode`:**
+```csharp
+public async Task<List<PaymentMethod>> GetAllAsync(string languageCode)
+    => await ExecuteAsync(async () =>
+    {
+      var items = await _db.PaymentMethods
+          .Where(p => p.Status != StatusConstants.Deleted)
+          .Include(p => p.Translations.Where(t => t.LanguageCode == languageCode))
+          .ToListAsync();
+      return items
+          .OrderBy(p => p.Translations.FirstOrDefault()?.PaymentName ?? p.PaymentCode)
+          .ToList();
+    });
+```
+
+**Index PageModel — use `CurrentLangCode`, never hardcode `"en"`:**
+```csharp
+public async Task OnGetAsync()
+{
+  AlertMessageType = "";
+  var langCode = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+  Items = await _dbHelper.GetAllAsync(langCode);
+}
+```
+
+**`*AddResult` enum — lives in `Dtos/*Dtos.cs`, not inline in the DbHelper:**
+```csharp
+// Dtos/PaymentMethodDtos.cs
+public enum PaymentMethodAddResult { Created, Restored, DuplicateActive }
+```
+
+**`BuildInputsAsync` — private helper used on both GET and POST-error paths in Create/Edit PageModels:**
+```csharp
+// Pass existing translations on GET; pass null to re-read from Request.Form on POST error
+private async Task<List<TranslationInputDto>> BuildInputsAsync(IList<PaymentMethodTranslation>? existing)
+{
+  var languages   = await _languageDbHelper.GetAllActiveAsync();
+  var placeholder = await _translation.GetAsync("Entity.NamePlaceholder");
+  return languages.Select(l => new TranslationInputDto
+  {
+    LanguageCode = l.LanguageCode,
+    Label        = l.LanguageName,
+    Value        = existing != null
+        ? existing.FirstOrDefault(t => t.LanguageCode == l.LanguageCode)?.Name ?? string.Empty
+        : Request.Form[$"txtName_{l.LanguageCode}"].ToString(),
+    Placeholder  = placeholder
+  }).ToList();
+}
+```
+
+**Edit page entity name for delete confirm title** — use the English translation, fall back to the code:
+```csharp
+var entityName = entity.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.PaymentName ?? paymentCode;
+MsgDeleteConfirmTitle = $"{await _translation.GetAsync("Confirm.DeleteTitle")} {entityName}";
+```
+
 ### Localization — every user-facing string in .cshtml must use `T.GetAsync`
 
 This applies to **all** visible text — no exceptions:

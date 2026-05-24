@@ -23,7 +23,8 @@ public class IndexModel : AdminPageModel
   public async Task OnGetAsync()
   {
     AlertMessageType = "";
-    Countries = await _countryDbHelper.GetAllAsync("en");
+    var langCode = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    Countries = await _countryDbHelper.GetAllAsync(langCode);
   }
 
   public async Task<IActionResult> OnPostToggleStatusAsync([FromForm] string countryCode)
