@@ -122,5 +122,6 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
+PasswordCryptoHelper.Configure(app.Configuration);
 
 app.Run();

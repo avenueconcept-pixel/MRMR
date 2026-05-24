@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -5,7 +6,25 @@ namespace MyApp.Helper
 {
 public static class PasswordCryptoHelper
 {
-  private static readonly string EncryptionKey = "NathamSoo@StrongKey123!"; // Store securely!
+  private static string _encryptionKey = string.Empty;
+
+  public static void Configure(IConfiguration configuration)
+  {
+    _encryptionKey = configuration["Security:EncryptionKey"]
+        ?? throw new InvalidOperationException(
+            "EncryptionKey is not configured. Add 'Security:EncryptionKey' to appsettings.json.");
+  }
+
+  private static string EncryptionKey
+  {
+    get
+    {
+      if (string.IsNullOrEmpty(_encryptionKey))
+        throw new InvalidOperationException(
+            "PasswordCryptoHelper is not configured. Call Configure() at startup.");
+      return _encryptionKey;
+    }
+  }
 
   public static string Encrypt(string plainText)
   {

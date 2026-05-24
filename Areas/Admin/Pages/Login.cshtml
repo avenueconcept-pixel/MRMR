@@ -7,11 +7,6 @@
 
 
 
-@{
-	var currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-}
-
-
 @section VendorStyles {
 	<link rel="stylesheet" href="~/vendor/libs/&#64;form-validation/form-validation.dist.css" />
 	<link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
@@ -90,7 +85,7 @@
 							<select class="form-select" id="inputGroupSelect01" asp-for="ddlLanguage" onchange="changeCulture(this.value)">
 								@foreach (var lang in Model.Languages)
 								{
-									<option value="@lang.LanguageCode" selected="@(lang.LanguageCode == currentCulture ? "selected" : null)">
+									<option value="@lang.LanguageCode" selected="@(lang.LanguageCode == Model.CurrentLang ? "selected" : null)">
 										@lang.NativeName
 									</option>
 								}
@@ -138,12 +133,17 @@
 	function changeCulture(culture) {
 		document.cookie = ".AspNetCore.Culture=c=" + culture + "|uic=" + culture + "; path=/";
 		document.cookie = "lang=" + culture + "; path=/";
-		window.location.href = window.location.pathname;
+		var username = document.getElementById('txtUsername').value.trim();
+		var url = window.location.pathname;
+		if (username !== '') {
+			url += '?username=' + encodeURIComponent(username);
+		}
+		window.location.href = url;
 	}
 
 	var msgEnterUsername = '@await T.GetAsync("EnterYourUsername")';
 	var msgEnterPassword = '@await T.GetAsync("EnterYourPassword")';
-	var msgError = '@MessageTitle.Error';
+	var msgError = '@await T.GetAsync("Error")';
 
 	document.getElementById('btnTogglePwd').addEventListener('click', function () {
 		var input = document.getElementById('txtPassword');

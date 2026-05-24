@@ -22,6 +22,7 @@ public class IndexModel : AdminPageModel
 
   public async Task OnGetAsync()
   {
+    AlertMessageType = "";
     Countries = await _countryDbHelper.GetAllAsync("en");
   }
 

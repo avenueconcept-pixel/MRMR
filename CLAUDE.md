@@ -284,6 +284,20 @@ document.getElementById('btnTogglePwd').addEventListener('click', function () {
 
 If a page has multiple password fields (e.g. Password + Confirm Password), give each toggle button and icon a unique `id` (e.g. `btnTogglePwd`, `btnToggleConfirmPwd`).
 
+### Index pages — always reset AlertMessageType in OnGetAsync
+
+Every Index `OnGetAsync()` must start with `AlertMessageType = "";` to clear any TempData alert left over from a preceding redirect (e.g. after a create or delete):
+
+```csharp
+public async Task OnGetAsync()
+{
+  AlertMessageType = "";
+  Items = await _dbHelper.GetAllAsync();
+}
+```
+
+Without this, a success toast from a previous action can re-fire if the user navigates back via the browser.
+
 ### DataTables — standard pattern for all Admin listing pages
 
 DataTables CSS and JS are loaded globally in `_CommonMasterLayout.cshtml` (CDN 1.13.6) — do **not** import them per page.

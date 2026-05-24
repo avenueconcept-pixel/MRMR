@@ -419,6 +419,7 @@ ASALocalRun/
 
 # Local secrets — never commit real credentials
 appsettings.Development.json
+appsettings.Production.json
 
 # Claude Code local settings
 .claude/

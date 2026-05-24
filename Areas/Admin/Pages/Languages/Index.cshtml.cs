@@ -22,6 +22,7 @@ public class IndexModel : AdminPageModel
 
   public async Task OnGetAsync()
   {
+    AlertMessageType = "";
     Languages = await _languageDbHelper.GetAllAsync();
   }
 

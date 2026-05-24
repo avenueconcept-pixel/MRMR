@@ -17,6 +17,7 @@ namespace MyApp.Areas.Admin.Pages
     private readonly LanguageDbHelper _languageDbHelper;
 
     public List<Language> Languages { get; set; } = new();
+    public string CurrentLang { get; set; } = AppConstants.DefaultLanguage;
 
     [TempData]
     public string? DefaultUsername { get; set; }
@@ -44,12 +45,16 @@ namespace MyApp.Areas.Admin.Pages
       _languageDbHelper = languageDbHelper;
     }
 
-    public async Task OnGetAsync()
+    public async Task OnGetAsync(string? username = null)
     {
-      AlertMessageType = null;
+      AlertMessageType    = null;
       AlertMessageContent = null;
-      AlertMessageTitle = null;
-      Languages = await _languageDbHelper.GetAllActiveAsync();
+      AlertMessageTitle   = null;
+      CurrentLang         = Request.Cookies["lang"] ?? AppConstants.DefaultLanguage;
+      Languages           = await _languageDbHelper.GetAllActiveAsync();
+
+      if (!string.IsNullOrEmpty(username))
+        DefaultUsername = username;
     }
 
 
