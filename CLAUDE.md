@@ -594,6 +594,8 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 
 - Use `async/await` for all database and I/O operations
 - Use `DateTime.UtcNow` for all timestamp fields (`created_at`, `updated_at`, etc.)
+- In `CreateAsync`, always explicitly assign **all** entity fields plus set `CreatedAt = DateTime.UtcNow`, `CreatedBy = createdBy`, `UpdatedAt = DateTime.UtcNow`, `UpdatedBy = createdBy` — use an object initializer so nothing is silently omitted
+- In `UpdateAsync`, fetch the existing record first, then explicitly assign each mutable field plus set `UpdatedAt = DateTime.UtcNow`, `UpdatedBy = updatedBy` — never call `_db.Update(entity)` directly on a detached object
 - Always set `HasDefaultValueSql("now() AT TIME ZONE 'utc'")` on every `created_at` / `updated_at` column in `AppDbContext` — and use `TIMESTAMPTZ NOT NULL DEFAULT (now() AT TIME ZONE 'utc')` in the raw SQL CREATE TABLE script
 - Map DB columns explicitly with `.HasColumnName("snake_case")` in `AppDbContext`
 - Keep Models as plain POCOs — no methods, no business logic

@@ -24,18 +24,38 @@ public class LanguageDbHelper : DbHelper
   public async Task<Language?> GetByIdAsync(int id)
       => await ExecuteAsync(async () => await _db.Languages.FindAsync(id));
 
-  public async Task CreateAsync(Language language)
+  public async Task CreateAsync(Language language, string createdBy)
       => await ExecuteAsync(async () =>
       {
-        language.CreatedAt = DateTime.Now;
-        _db.Languages.Add(language);
+        var entity = new Language
+        {
+          LanguageCode = language.LanguageCode,
+          LanguageName = language.LanguageName,
+          NativeName   = language.NativeName,
+          SortOrder    = language.SortOrder,
+          Status       = language.Status,
+          CreatedAt    = DateTime.UtcNow,
+          CreatedBy    = createdBy,
+          UpdatedAt    = DateTime.UtcNow,
+          UpdatedBy    = createdBy
+        };
+        _db.Languages.Add(entity);
         await _db.SaveChangesAsync();
       });
 
-  public async Task UpdateAsync(Language language)
+  public async Task UpdateAsync(Language language, string updatedBy)
       => await ExecuteAsync(async () =>
       {
-        _db.Languages.Update(language);
+        var existing = await _db.Languages.FindAsync(language.Id);
+        if (existing == null) return;
+
+        existing.LanguageCode = language.LanguageCode;
+        existing.LanguageName = language.LanguageName;
+        existing.NativeName   = language.NativeName;
+        existing.SortOrder    = language.SortOrder;
+        existing.Status       = language.Status;
+        existing.UpdatedAt    = DateTime.UtcNow;
+        existing.UpdatedBy    = updatedBy;
         await _db.SaveChangesAsync();
       });
 

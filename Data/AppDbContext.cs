@@ -73,7 +73,10 @@ public class AppDbContext : DbContext
       entity.Property(e => e.NativeName).HasColumnName("native_name").HasMaxLength(100).IsRequired();
       entity.Property(e => e.SortOrder).HasColumnName("sort_order");
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
     });
 
     // PasswordResetToken
