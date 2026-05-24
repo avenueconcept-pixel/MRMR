@@ -86,6 +86,18 @@ appsettings.json        ← connection strings, SMTP, upload paths
 | Dropdown `<select>` elements | `ddl` prefix | `ddlLanguage`, `ddlStatus` |
 | Textbox `<input type="text/password">` | `txt` prefix | `txtUsername`, `txtEmail` |
 
+### Page folder names — always plural
+
+Razor Pages folders under `Areas/Admin/Pages/` must always use the **plural** form of the entity name, even when the model class is singular:
+
+| Model class | Folder name | Namespace |
+|---|---|---|
+| `Country` | `Countries/` | `MyApp.Areas.Admin.Pages.Countries` |
+| `Language` | `Languages/` | `MyApp.Areas.Admin.Pages.Languages` |
+| `Department` | `Departments/` | `MyApp.Areas.Admin.Pages.Departments` |
+
+**Why:** C# resolves an unqualified name to the enclosing namespace first. A folder named `Department/` produces namespace `MyApp.Areas.Admin.Pages.Department`, making `Department` refer to the namespace rather than `MyApp.Models.Department`. Using the plural form avoids the collision entirely — no `using` alias required.
+
 ### Database
 | Thing | Convention | Example |
 |---|---|---|

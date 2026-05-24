@@ -11,7 +11,8 @@ public class Routes
   public const string AdminCustomers = "/Customers";
   public const string AdminLogs = "/Logs/Index";
   public const string AdminCountry  = "/Countries/Index";
-  public const string AdminLanguage = "/Languages/Index";
+  public const string AdminLanguage    = "/Languages/Index";
+  public const string AdminDepartment  = "/Departments/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

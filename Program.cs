@@ -40,6 +40,7 @@ builder.Services.AddScoped<LanguageDbHelper>();
 builder.Services.AddScoped<PasswordResetTokenDbHelper>();
 builder.Services.AddScoped<LogDbHelper>();
 builder.Services.AddScoped<CountryDbHelper>();
+builder.Services.AddScoped<DepartmentDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));

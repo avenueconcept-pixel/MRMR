@@ -46,6 +46,12 @@
         <div>Languages</div>
       </a>
     </li>
+    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/Departments") ? " active" : "")'>
+      <a asp-page="/Departments/Index" class="menu-link">
+        <i class="menu-icon icon-base ri ri-building-4-line"></i>
+        <div>@await T.GetAsync("Menu.Department")</div>
+      </a>
+    </li>
     <li class='menu-item@(currentPage == "/Logs/Index" ? " active" : "")'>
       <a asp-page="/Logs/Index" class="menu-link">
         <i class="menu-icon icon-base ri ri-file-list-3-line"></i>

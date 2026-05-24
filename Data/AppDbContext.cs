@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
   public DbSet<AppLog> AppLogs => Set<AppLog>();
   public DbSet<Country> Countries => Set<Country>();
   public DbSet<CountryTranslation> CountryTranslations => Set<CountryTranslation>();
+  public DbSet<Department> Departments => Set<Department>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -131,6 +132,20 @@ public class AppDbContext : DbContext
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.CountryName).HasColumnName("country_name").HasMaxLength(150).IsRequired();
       entity.HasOne(e => e.Country).WithMany(c => c.Translations).HasForeignKey(e => e.CountryCode);
+    });
+
+    // Department
+    modelBuilder.Entity<Department>(entity =>
+    {
+      entity.ToTable("departments");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.DeptName).HasColumnName("dept_name").HasMaxLength(150).IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
     });
 
     // Customer
