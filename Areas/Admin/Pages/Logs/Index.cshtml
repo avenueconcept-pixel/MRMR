@@ -7,10 +7,43 @@
 
 <h4 class="py-4 mb-2">@await T.GetAsync("Logs.PageTitle")</h4>
 
+@* ── Filter Bar ────────────────────────────────────────── *@
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="post" asp-page-handler="Filter">
+      @Html.AntiForgeryToken()
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">@await T.GetAsync("Logs.LogLevel")</label>
+          <select asp-for="FilterLogLevel" asp-items="Model.LogLevelOptions" class="form-select">
+            <option value="">@await T.GetAsync("Logs.AllLevels")</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">@await T.GetAsync("Logs.DateFrom")</label>
+          <input type="date" asp-for="FilterDateFrom" class="form-control" value="@Model.FilterDateFrom" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">@await T.GetAsync("Logs.DateTo")</label>
+          <input type="date" asp-for="FilterDateTo" class="form-control" value="@Model.FilterDateTo" />
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="ri ri-search-line me-1"></i>@await T.GetAsync("Search")
+          </button>
+          <a asp-page="/Logs/Index" class="btn btn-outline-secondary">
+            @await T.GetAsync("Clear")
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+@* ── Logs Table ────────────────────────────────────────── *@
 <div class="card">
   <div class="card-header d-flex align-items-center justify-content-between">
     <h5 class="mb-0">@await T.GetAsync("Logs.RecentErrors")</h5>
-    <small class="text-muted">@await T.GetAsync("Logs.Last500Records")</small>
   </div>
   <div class="card-body">
     <div class="table-responsive">
@@ -37,23 +70,25 @@
                   </button>
                 }
               </td>
-              <td class="text-nowrap">@log.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td class="text-nowrap">
+                @log.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)
+              </td>
               <td>
                 @{
                   var badgeClass = log.LogLevel switch
                   {
-                    "Critical" => "bg-dark",
-                    "Error"    => "bg-danger",
-                    "Warning"  => "bg-warning",
-                    "Information" => "bg-info",
-                    _ => "bg-secondary"
+                    "Critical"    => "bg-dark",
+                    "Error"       => "bg-danger",
+                    "Warning"     => "bg-warning text-dark",
+                    "Information" => "bg-info text-dark",
+                    _             => "bg-secondary"
                   };
                 }
                 <span class="badge @badgeClass">@log.LogLevel</span>
               </td>
               <td class="text-nowrap">
                 @{
-                  var parts = log.Category.Split('.');
+                  var parts         = log.Category.Split('.');
                   var shortCategory = parts.LastOrDefault() ?? log.Category;
                 }
                 <span title="@log.Category">@shortCategory</span>
@@ -67,6 +102,7 @@
   </div>
 </div>
 
+@* ── Exception Modal ───────────────────────────────────── *@
 <div class="modal fade" id="modalException" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -83,18 +119,14 @@
 </div>
 
 @section PageScripts {
-  <script>
-    $(document).ready(function () {
-      $('#tblLogs').DataTable({
-        order: [[0, 'desc']],
-        pageLength: 25,
-        columnDefs: [{ orderable: false, targets: 4 }]
-      });
+<script>
+  $(document).ready(function () {
+    initDataTable('#tblLogs', 0, [[1, 'desc']]);
 
-      $(document).on('click', '.btn-view-exception', function () {
-        document.getElementById('exceptionText').textContent = this.getAttribute('data-exception');
-        new bootstrap.Modal(document.getElementById('modalException')).show();
-      });
+    $(document).on('click', '.btn-view-exception', function () {
+      document.getElementById('exceptionText').textContent = this.getAttribute('data-exception');
+      new bootstrap.Modal(document.getElementById('modalException')).show();
     });
-  </script>
+  });
+</script>
 }

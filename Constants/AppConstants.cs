@@ -47,6 +47,20 @@ public static class DateTimeExtensions
       return utcDateTime.ToString(format);
     }
   }
+
+  public static DateTime ToUtcFromUserTimezone(this DateTime localDateTime, string timezoneId)
+  {
+    try
+    {
+      var tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+      return TimeZoneInfo.ConvertTimeToUtc(
+          DateTime.SpecifyKind(localDateTime, DateTimeKind.Unspecified), tz);
+    }
+    catch
+    {
+      return localDateTime;
+    }
+  }
 }
 
 public static class YesNo

@@ -146,7 +146,7 @@ public class EditModel : AdminPageModel
     return languages.Select(l => new TranslationInputDto
     {
       LanguageCode = l.LanguageCode,
-      Label        = $"{l.LanguageName} ({l.LanguageCode})",
+      Label        = $"{l.LanguageName}",
       Value        = existingTranslations != null
           ? existingTranslations.FirstOrDefault(t => t.LanguageCode == l.LanguageCode)?.CountryName ?? string.Empty
           : Request.Form[$"txtName_{l.LanguageCode}"].ToString(),

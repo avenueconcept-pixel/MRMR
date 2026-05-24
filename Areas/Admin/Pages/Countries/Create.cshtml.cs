@@ -107,7 +107,7 @@ public class CreateModel : AdminPageModel
     return languages.Select(l => new TranslationInputDto
     {
       LanguageCode = l.LanguageCode,
-      Label        = $"{l.LanguageName} ({l.LanguageCode})",
+      Label        = $"{l.LanguageName}",
       Value        = fromForm ? Request.Form[$"txtName_{l.LanguageCode}"].ToString() : string.Empty,
       Placeholder  = placeholder
     }).ToList();

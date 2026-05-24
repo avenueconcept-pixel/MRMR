@@ -333,6 +333,34 @@ Rules:
 - `initDataTable` defaults: `pageLength: 25`, `order: [[0, 'asc']]`
 - For tables that need non-standard options (different order direction, extra `columnDefs`), call `.DataTable({...})` directly — do not override `initDataTable`
 
+### Index pages — Actions column dropdown
+
+Every Admin listing page must use a Bootstrap dropdown for row actions — never inline buttons. The trigger is icon-only (`ri-more-2-fill`), no text label. Menu opens with `dropdown-menu-end` to avoid overflow. Edit is always first, Toggle Status always second.
+
+```cshtml
+<td>
+  <div class="dropdown">
+    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+            data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="ri ri-more-2-fill"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li>
+        <a class="dropdown-item" asp-area="Admin" asp-page="/Things/Edit"
+           asp-route-id="@thing.Id">
+          <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+        </a>
+      </li>
+      <li>
+        <button class="dropdown-item" type="button" onclick="toggleStatus(@thing.Id)">
+          <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+        </button>
+      </li>
+    </ul>
+  </div>
+</td>
+```
+
 ### Edit pages — audit fields and soft delete
 
 Every Admin Edit page must display audit metadata below the form, and include a soft delete button.

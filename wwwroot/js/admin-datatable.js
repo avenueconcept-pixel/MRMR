@@ -1,9 +1,9 @@
 // Standard DataTables init for all Admin listing pages.
-// Usage: initDataTable('#tableId', actionsColumnIndex)
-function initDataTable(tableSelector, actionsColumnIndex) {
+// Usage: initDataTable('#tableId', actionsColumnIndex, order?)
+function initDataTable(tableSelector, actionsColumnIndex, order = [[0, 'asc']]) {
     $(tableSelector).DataTable({
         pageLength: 25,
-        order: [[0, 'asc']],
+        order: order,
         columnDefs: [
             { orderable: false, targets: actionsColumnIndex }
         ],

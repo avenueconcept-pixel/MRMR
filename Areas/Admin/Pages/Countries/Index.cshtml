@@ -60,10 +60,26 @@
               </td>
               <td>@c.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
               <td>
-                <a asp-area="Admin" asp-page="/Countries/Edit" asp-route-countryCode="@c.CountryCode"
-                   class="btn btn-sm btn-outline-primary me-1">@await T.GetAsync("Edit")</a>
-                <button type="button" class="btn btn-sm btn-outline-warning"
-                        onclick="toggleStatus('@c.CountryCode')">@await T.GetAsync("ToggleStatus")</button>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Countries/Edit"
+                         asp-route-countryCode="@c.CountryCode">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button"
+                              onclick="toggleStatus('@c.CountryCode')">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
               </td>
             </tr>
           }
