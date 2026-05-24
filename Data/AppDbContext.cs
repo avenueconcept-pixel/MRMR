@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
   public DbSet<Country> Countries => Set<Country>();
   public DbSet<CountryTranslation> CountryTranslations => Set<CountryTranslation>();
   public DbSet<Department> Departments => Set<Department>();
+  public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+  public DbSet<PaymentMethodTranslation> PaymentMethodTranslations => Set<PaymentMethodTranslation>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -146,6 +148,31 @@ public class AppDbContext : DbContext
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+    });
+
+    // PaymentMethod
+    modelBuilder.Entity<PaymentMethod>(entity =>
+    {
+      entity.ToTable("payment_methods");
+      entity.HasKey(e => e.PaymentCode);
+      entity.Property(e => e.PaymentCode).HasColumnName("payment_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.HasMany(e => e.Translations).WithOne(t => t.PaymentMethod).HasForeignKey(t => t.PaymentCode).OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // PaymentMethodTranslation
+    modelBuilder.Entity<PaymentMethodTranslation>(entity =>
+    {
+      entity.ToTable("payment_method_translations");
+      entity.HasKey(e => new { e.PaymentCode, e.LanguageCode });
+      entity.Property(e => e.PaymentCode).HasColumnName("payment_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.PaymentName).HasColumnName("payment_name").HasMaxLength(150).IsRequired();
+      entity.HasOne(e => e.PaymentMethod).WithMany(p => p.Translations).HasForeignKey(e => e.PaymentCode);
     });
 
     // Customer

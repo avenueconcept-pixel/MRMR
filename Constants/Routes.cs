@@ -13,6 +13,7 @@ public class Routes
   public const string AdminCountry  = "/Countries/Index";
   public const string AdminLanguage    = "/Languages/Index";
   public const string AdminDepartment  = "/Departments/Index";
+  public const string AdminPaymentMethod = "/PaymentMethods/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

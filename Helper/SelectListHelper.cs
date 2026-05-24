@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using MyApp.Constants;
+using MyApp.Helper.DB;
 using MyApp.Services;
 using TimeZoneConverter;
 
@@ -24,4 +25,19 @@ public static class SelectListHelper
           .DistinctBy(x => x.Value)
           .OrderBy(x => x.Text)
           .ToList();
+
+  public static async Task<List<SelectListItem>> GetPaymentMethodOptions(
+      PaymentMethodDbHelper pmDb,
+      string languageCode)
+  {
+    var methods = await pmDb.GetAllActiveAsync(languageCode);
+    return methods
+        .SelectMany(pm => pm.Translations)
+        .Select(t => new SelectListItem
+        {
+          Value = t.PaymentCode,
+          Text  = t.PaymentName
+        })
+        .ToList();
+  }
 }
