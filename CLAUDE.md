@@ -728,7 +728,7 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 - Use `Constants/` classes for any magic strings or numbers used in multiple places
 - Use `DbSet<T>` with expression-bodied property syntax: `public DbSet<Thing> Things => Set<Thing>();`
 - Create a new `*DbHelper` class per entity group (one for Admin, one for Customer, etc.)
-- After model changes, provide a raw SQL script for pgAdmin — do not suggest `dotnet ef migrations`
+- After model changes, provide a raw SQL script for pgAdmin — do not suggest `dotnet ef migrations`. Save all generated `.sql` files to `D:\CRMCore\Script\` (not the project root)
 - Use soft delete — set `Status = StatusConstants.Deleted` instead of physically deleting records, unless explicitly told otherwise
 - All `<select>` element names and `[BindProperty]` properties for dropdowns use `ddl` prefix — e.g. `ddlLanguage`, `ddlStatus`
 - All UI-facing strings go through `TranslationService.GetAsync(key)` — no hardcoded strings in `.cshtml` or PageModels
