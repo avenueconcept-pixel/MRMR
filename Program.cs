@@ -47,6 +47,7 @@ builder.Services.AddScoped<LogDbHelper>();
 builder.Services.AddScoped<CountryDbHelper>();
 builder.Services.AddScoped<DepartmentDbHelper>();
 builder.Services.AddScoped<PaymentMethodDbHelper>();
+builder.Services.AddScoped<ProductCategoryDbHelper>();
 builder.Services.AddScoped<AuditLogDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;

@@ -14,6 +14,7 @@ public class Routes
   public const string AdminLanguage    = "/Languages/Index";
   public const string AdminDepartment  = "/Departments/Index";
   public const string AdminPaymentMethod    = "/PaymentMethods/Index";
+  public const string AdminProductCategory  = "/ProductCategories/Index";
   public const string AdminAuditLogs       = "/AuditLogs/Index";
   public const string AdminAuditLogsDetail = "/AuditLogs/Detail";
 

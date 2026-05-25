@@ -58,6 +58,12 @@
         <div>@await T.GetAsync("Menu.PaymentMethod")</div>
       </a>
     </li>
+    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/ProductCategories") ? " active" : "")'>
+      <a asp-page="/ProductCategories/Index" class="menu-link">
+        <i class="menu-icon icon-base ri ri-price-tag-3-line"></i>
+        <div>@await T.GetAsync("Menu.ProductCategory")</div>
+      </a>
+    </li>
     <li class='menu-item@(currentPage == "/Logs/Index" ? " active" : "")'>
       <a asp-page="/Logs/Index" class="menu-link">
         <i class="menu-icon icon-base ri ri-file-list-3-line"></i>

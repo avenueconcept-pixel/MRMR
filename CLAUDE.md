@@ -737,6 +737,7 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 - All protected admin pages inherit from `AdminPageModel`; all protected customer pages inherit from `CustomerPageModel` — never use a bare `[Authorize]` attribute on individual pages
 - All DbHelper methods must wrap their body in `ExecuteAsync(...)` — never call `_db.*` directly in a DbHelper method
 - Use named handlers for CRUD: `OnPostCreateAsync`, `OnPostUpdateAsync`, `OnPostDeleteAsync` with matching `asp-page-handler` on form buttons
+- After generating any admin CRUD module (Index + Create + Edit pages), immediately output a `language_resources` SQL upsert covering every `T.GetAsync(...)` key used across all new `.cshtml` files — page titles, labels, placeholders, hints, button text, column headers, and any module-specific keys. Format: `INSERT INTO language_resources (language_code, key, value) VALUES (...) ON CONFLICT (language_code, key) DO UPDATE SET value = EXCLUDED.value;`. Cover both `en` and `zh-Hans` rows.
 
 ## Never
 

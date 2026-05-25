@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
   public DbSet<Department> Departments => Set<Department>();
   public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
   public DbSet<PaymentMethodTranslation> PaymentMethodTranslations => Set<PaymentMethodTranslation>();
+  public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
+  public DbSet<ProductCategoryTranslation> ProductCategoryTranslations => Set<ProductCategoryTranslation>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -173,6 +175,31 @@ public class AppDbContext : DbContext
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.PaymentName).HasColumnName("payment_name").HasMaxLength(150).IsRequired();
       entity.HasOne(e => e.PaymentMethod).WithMany(p => p.Translations).HasForeignKey(e => e.PaymentCode);
+    });
+
+    // ProductCategory
+    modelBuilder.Entity<ProductCategory>(entity =>
+    {
+      entity.ToTable("product_categories");
+      entity.HasKey(e => e.CategoryCode);
+      entity.Property(e => e.CategoryCode).HasColumnName("category_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.HasMany(e => e.Translations).WithOne(t => t.ProductCategory).HasForeignKey(t => t.CategoryCode).OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // ProductCategoryTranslation
+    modelBuilder.Entity<ProductCategoryTranslation>(entity =>
+    {
+      entity.ToTable("product_category_translations");
+      entity.HasKey(e => new { e.CategoryCode, e.LanguageCode });
+      entity.Property(e => e.CategoryCode).HasColumnName("category_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.CategoryName).HasColumnName("category_name").HasMaxLength(150).IsRequired();
+      entity.HasOne(e => e.ProductCategory).WithMany(p => p.Translations).HasForeignKey(e => e.CategoryCode);
     });
 
     // Customer
