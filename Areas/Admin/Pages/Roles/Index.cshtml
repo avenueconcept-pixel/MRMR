@@ -1,0 +1,168 @@
+@page
+@model MyApp.Areas.Admin.Pages.Roles.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Role.PageTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@{
+  var lblToggleTitle   = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes     = await T.GetAsync("ToggleStatusYes");
+  var lblCancel        = await T.GetAsync("Cancel");
+  var lblToggleFailed  = await T.GetAsync("ToggleFailed");
+  var lblToggleError   = await T.GetAsync("ToggleError");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Role.PageTitle")</h4>
+  <a asp-area="Admin" asp-page="/Roles/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i> @await T.GetAsync("Role.AddRole")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Role.RoleList")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblRoles" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("RoleCode")</th>
+            <th>@await T.GetAsync("RoleName")</th>
+            <th>@await T.GetAsync("Role.DataScope")</th>
+            <th>@await T.GetAsync("Role.SuperAdmin")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("UpdatedAt")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var role in Model.Roles)
+          {
+            <tr>
+              @{
+                var statusBadge = role.Status == StatusConstants.Active ? "bg-success" : "bg-danger";
+                var statusLabel = role.Status == StatusConstants.Active
+                    ? await T.GetAsync("status.active")
+                    : await T.GetAsync("status.inactive");
+                var scopeBadge = role.DataScope switch
+                {
+                  "all"        => "bg-dark",
+                  "department" => "bg-primary",
+                  "location"   => "bg-info text-dark",
+                  "own"        => "bg-secondary",
+                  _            => "bg-secondary"
+                };
+                var scopeLabel = await T.GetAsync($"DataScope.{role.DataScope}");
+              }
+              <td><strong>@role.RoleCode</strong></td>
+              <td>@role.RoleName</td>
+              <td><span class="badge @scopeBadge">@scopeLabel</span></td>
+              <td>
+                @if (role.IsSuperAdmin)
+                {
+                  <i class="ri ri-shield-star-fill text-warning" title="@await T.GetAsync("Role.SuperAdmin")"></i>
+                }
+              </td>
+              <td><span class="badge @statusBadge">@statusLabel</span></td>
+              <td>@role.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Roles/Edit" asp-route-id="@role.Id">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button" onclick="toggleStatus(@role.Id)">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var msgToggleTitle   = '@Html.Raw(lblToggleTitle)';
+  var msgToggleConfirm = '@Html.Raw(lblToggleConfirm)';
+  var msgToggleYes     = '@Html.Raw(lblToggleYes)';
+  var msgCancel        = '@Html.Raw(lblCancel)';
+  var msgToggleFailed  = '@Html.Raw(lblToggleFailed)';
+  var msgToggleError   = '@Html.Raw(lblToggleError)';
+
+  function toggleStatus(id) {
+    Swal.fire({
+      title: msgToggleTitle,
+      text: msgToggleConfirm,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: msgToggleYes,
+      cancelButtonText: msgCancel
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '?handler=ToggleStatus',
+          type: 'POST',
+          data: {
+            id: id,
+            __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+          },
+          success: function (data) {
+            if (data.success) {
+              window.location.reload();
+            } else {
+              Swal.fire({ icon: 'error', text: msgToggleFailed });
+            }
+          },
+          error: function () {
+            Swal.fire({ icon: 'error', text: msgToggleError });
+          }
+        });
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    initDataTable('#tblRoles', 6);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

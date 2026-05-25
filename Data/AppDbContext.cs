@@ -26,6 +26,11 @@ public class AppDbContext : DbContext
   public DbSet<Region>           Regions           => Set<Region>();
   public DbSet<RegionCountry>    RegionCountries   => Set<RegionCountry>();
   public DbSet<Location>         Locations         => Set<Location>();
+  public DbSet<Role>             Roles             => Set<Role>();
+  public DbSet<RoleMenu>         RoleMenus         => Set<RoleMenu>();
+  public DbSet<RolePermission>   RolePermissions   => Set<RolePermission>();
+  public DbSet<Menu>             Menus             => Set<Menu>();
+  public DbSet<Permission>       Permissions       => Set<Permission>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -295,6 +300,84 @@ public class AppDbContext : DbContext
       entity.HasIndex(e => e.LocationCode).IsUnique();
       entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode);
       entity.HasOne(e => e.State).WithMany().HasForeignKey(e => e.StateId).OnDelete(DeleteBehavior.SetNull);
+    });
+
+    // Role
+    modelBuilder.Entity<Role>(entity =>
+    {
+      entity.ToTable("roles");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.RoleCode).HasColumnName("role_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.RoleName).HasColumnName("role_name").HasMaxLength(150).IsRequired();
+      entity.Property(e => e.Description).HasColumnName("description");
+      entity.Property(e => e.IsSuperAdmin).HasColumnName("is_super_admin").HasDefaultValue(false);
+      entity.Property(e => e.DataScope).HasColumnName("data_scope").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.HasIndex(e => e.RoleCode).IsUnique();
+      entity.HasMany(e => e.RoleMenus)
+            .WithOne(rm => rm.Role)
+            .HasForeignKey(rm => rm.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+      entity.HasMany(e => e.RolePermissions)
+            .WithOne(rp => rp.Role)
+            .HasForeignKey(rp => rp.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // RoleMenu
+    modelBuilder.Entity<RoleMenu>(entity =>
+    {
+      entity.ToTable("role_menus");
+      entity.HasKey(e => new { e.RoleId, e.MenuId });
+      entity.Property(e => e.RoleId).HasColumnName("role_id");
+      entity.Property(e => e.MenuId).HasColumnName("menu_id");
+      entity.HasOne(e => e.Menu).WithMany().HasForeignKey(e => e.MenuId);
+    });
+
+    // RolePermission
+    modelBuilder.Entity<RolePermission>(entity =>
+    {
+      entity.ToTable("role_permissions");
+      entity.HasKey(e => new { e.RoleId, e.PermissionId });
+      entity.Property(e => e.RoleId).HasColumnName("role_id");
+      entity.Property(e => e.PermissionId).HasColumnName("permission_id");
+      entity.Property(e => e.IsGranted).HasColumnName("is_granted");
+      entity.HasOne(e => e.Permission).WithMany().HasForeignKey(e => e.PermissionId);
+    });
+
+    // Menu
+    modelBuilder.Entity<Menu>(entity =>
+    {
+      entity.ToTable("menus");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.MenuCode).HasColumnName("menu_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.ParentId).HasColumnName("parent_id");
+      entity.Property(e => e.MenuName).HasColumnName("menu_name").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.Icon).HasColumnName("icon").HasMaxLength(50);
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.Level).HasColumnName("level");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.HasOne(e => e.Parent).WithMany(m => m.Children).HasForeignKey(e => e.ParentId).OnDelete(DeleteBehavior.Restrict);
+      entity.HasMany(e => e.Permissions).WithOne(p => p.Menu).HasForeignKey(p => p.MenuId).OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // Permission
+    modelBuilder.Entity<Permission>(entity =>
+    {
+      entity.ToTable("permissions");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.PermissionCode).HasColumnName("permission_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.MenuId).HasColumnName("menu_id");
+      entity.Property(e => e.PermissionName).HasColumnName("permission_name").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
     });
 
     // Customer

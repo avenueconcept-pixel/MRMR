@@ -1,0 +1,410 @@
+@page "{id:int}"
+@model MyApp.Areas.Admin.Pages.Roles.EditModel
+@{
+  ViewData["title"] = await T.GetAsync("Role.EditTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Role.EditTitle") — <span class="text-muted">@Model.RoleCode</span></h4>
+  <a asp-area="Admin" asp-page="/Roles/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i> @await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<form method="post" asp-page-handler="Update" asp-route-id="@Model.Id">
+
+  @* Card 1 — Basic Info *@
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">@await T.GetAsync("Role.BasicInfo")</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label">@await T.GetAsync("RoleCode")</label>
+          <input type="text" class="form-control" value="@Model.RoleCode" readonly />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtRoleName">
+            @await T.GetAsync("RoleName") <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="txtRoleName" name="txtRoleName"
+                 class="form-control" maxlength="150" value="@Model.txtRoleName" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlDataScope">
+            @await T.GetAsync("Role.DataScope") <span class="text-danger">*</span>
+          </label>
+          <select asp-for="ddlDataScope" id="ddlDataScope" class="form-select"
+                  asp-items="@Model.DataScopeOptions">
+            <option value="">@await T.GetAsync("Role.SelectDataScope")</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
+          <select asp-for="ddlStatus" id="ddlStatus" class="form-select"
+                  asp-items="@Model.StatusOptions"></select>
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="txtDescription">@await T.GetAsync("Description")</label>
+          <textarea id="txtDescription" name="txtDescription" class="form-control"
+                    rows="2" maxlength="500">@Model.txtDescription</textarea>
+        </div>
+        <div class="col-12">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="chkIsSuperAdmin"
+                   name="chkIsSuperAdmin" value="true" @(Model.chkIsSuperAdmin ? "checked" : "") />
+            <label class="form-check-label" for="chkIsSuperAdmin">
+              @await T.GetAsync("Role.SuperAdmin")
+            </label>
+            <div class="form-text">@await T.GetAsync("Role.SuperAdminHint")</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @* Card 2 — Menu Access *@
+  <div class="card mb-4" id="cardMenuAccess">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">@await T.GetAsync("Role.MenuAccess")</h5>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="grantAllMenus()">
+          @await T.GetAsync("Role.SelectAll")
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="revokeAllMenus()">
+          @await T.GetAsync("Role.ClearAll")
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      @if (!Model.AllMenus.Any())
+      {
+        <p class="text-muted mb-0">@await T.GetAsync("Role.NoMenus")</p>
+      }
+      else
+      {
+        foreach (var l1 in Model.AllMenus)
+        {
+          <div class="mb-3">
+            @* L1 *@
+            <div class="form-check fw-bold">
+              <input class="form-check-input menu-l1" type="checkbox"
+                     id="menu_@l1.Id" value="@l1.Id" name="SelectedMenus"
+                     @(Model.SelectedMenus.Contains(l1.Id) ? "checked" : "") />
+              <label class="form-check-label" for="menu_@l1.Id">
+                @if (!string.IsNullOrEmpty(l1.Icon))
+                {
+                  <i class="ri @l1.Icon me-1"></i>
+                }
+                @l1.MenuName
+              </label>
+            </div>
+            @* L2 *@
+            @if (l1.Children.Any())
+            {
+              <div class="ms-4 mt-1">
+                @foreach (var l2 in l1.Children.OrderBy(c => c.SortOrder))
+                {
+                  <div class="mb-2">
+                    <div class="form-check">
+                      <input class="form-check-input menu-l2" type="checkbox"
+                             id="menu_@l2.Id" value="@l2.Id" name="SelectedMenus"
+                             data-parent="menu_@l1.Id"
+                             @(Model.SelectedMenus.Contains(l2.Id) ? "checked" : "") />
+                      <label class="form-check-label" for="menu_@l2.Id">@l2.MenuName</label>
+                    </div>
+                    @* L3 *@
+                    @if (l2.Children.Any())
+                    {
+                      <div class="ms-4">
+                        @foreach (var l3 in l2.Children.OrderBy(c => c.SortOrder))
+                        {
+                          <div class="form-check">
+                            <input class="form-check-input menu-l3" type="checkbox"
+                                   id="menu_@l3.Id" value="@l3.Id" name="SelectedMenus"
+                                   data-parent="menu_@l2.Id"
+                                   @(Model.SelectedMenus.Contains(l3.Id) ? "checked" : "") />
+                            <label class="form-check-label" for="menu_@l3.Id">@l3.MenuName</label>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+  @* Card 3 — Default Permissions *@
+  <div class="card mb-4" id="cardPermissions">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">@await T.GetAsync("Role.DefaultPermissions")</h5>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-success" onclick="grantAllPerms()">
+          @await T.GetAsync("Role.GrantAll")
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="revokeAllPerms()">
+          @await T.GetAsync("Role.RevokeAll")
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      @if (!Model.AllMenus.Any())
+      {
+        <p class="text-muted mb-0">@await T.GetAsync("Role.NoPermissions")</p>
+      }
+      else
+      {
+        foreach (var l1 in Model.AllMenus)
+        {
+          var allPerms = l1.Permissions
+              .Concat(l1.Children.SelectMany(c => c.Permissions.Concat(c.Children.SelectMany(gc => gc.Permissions))))
+              .ToList();
+          if (!allPerms.Any()) { continue; }
+
+          <div class="mb-4">
+            <h6 class="text-muted small text-uppercase mb-2">@l1.MenuName</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>@await T.GetAsync("Role.PermissionName")</th>
+                    <th class="text-center" style="width:90px">@await T.GetAsync("Role.Grant")</th>
+                    <th class="text-center" style="width:90px">@await T.GetAsync("Role.Deny")</th>
+                    <th class="text-center" style="width:90px">@await T.GetAsync("Role.NotSet")</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach (var perm in allPerms)
+                  {
+                    var currentVal = Model.SelectedPerms
+                        .FirstOrDefault(s => s.StartsWith($"{perm.Id}:"));
+                    var isGranted = currentVal == $"{perm.Id}:true";
+                    var isDenied  = currentVal == $"{perm.Id}:false";
+
+                    <tr>
+                      <td>@perm.PermissionName</td>
+                      <td class="text-center">
+                        <input type="radio" class="form-check-input perm-radio"
+                               name="perm_radio_@perm.Id" value="grant"
+                               data-perm-id="@perm.Id"
+                               @(isGranted ? "checked" : "") />
+                      </td>
+                      <td class="text-center">
+                        <input type="radio" class="form-check-input perm-radio"
+                               name="perm_radio_@perm.Id" value="deny"
+                               data-perm-id="@perm.Id"
+                               @(isDenied ? "checked" : "") />
+                      </td>
+                      <td class="text-center">
+                        <input type="radio" class="form-check-input perm-radio"
+                               name="perm_radio_@perm.Id" value="none"
+                               data-perm-id="@perm.Id"
+                               @(!isGranted && !isDenied ? "checked" : "") />
+                      </td>
+                    </tr>
+                    <input type="hidden" class="perm-hidden" id="permHidden_@perm.Id"
+                           name="SelectedPerms" value="@(isGranted ? $"{perm.Id}:true" : isDenied ? $"{perm.Id}:false" : "")" />
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="mt-2 d-flex gap-2 mb-4">
+    <button type="submit" class="btn btn-primary">@await T.GetAsync("SaveChanges")</button>
+    <a asp-area="Admin" asp-page="/Roles/Index" class="btn btn-outline-secondary">@await T.GetAsync("Cancel")</a>
+    <a href="#" id="btnDelete" class="btn btn-outline-danger ms-auto" data-id="@Model.Id">
+      <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+    </a>
+  </div>
+
+</form>
+
+<hr class="my-4" />
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label text-muted small">@await T.GetAsync("CreatedBy")</label>
+    <p class="mb-0">@Model.CreatedBy</p>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label text-muted small">@await T.GetAsync("CreatedAt")</label>
+    <p class="mb-0">@Model.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label text-muted small">@await T.GetAsync("UpdatedBy")</label>
+    <p class="mb-0">@Model.UpdatedBy</p>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label text-muted small">@await T.GetAsync("UpdatedAt")</label>
+    <p class="mb-0">@Model.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)'
+  };
+
+  document.getElementById('btnDelete').addEventListener('click', function (e) {
+    e.preventDefault();
+    var id = this.getAttribute('data-id');
+    Swal.fire({
+      title: pageMsg.deleteConfirmTitle,
+      text: pageMsg.deleteConfirmText,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.deleteConfirmBtn,
+      cancelButtonText: pageMsg.cancelBtn
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=SoftDelete&id=' + encodeURIComponent(id), {
+          __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+        }, function (data) {
+          if (data.success) {
+            Swal.fire({ icon: 'success', title: pageMsg.deleteSuccess, timer: 1500, showConfirmButton: false })
+              .then(function () { window.location.href = '@Url.Page(Routes.AdminRole)'; });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+        });
+      }
+    });
+  });
+
+  @* Super Admin toggle *@
+  var chkSuperAdmin = document.getElementById('chkIsSuperAdmin');
+  var cardMenuAccess  = document.getElementById('cardMenuAccess');
+  var cardPermissions = document.getElementById('cardPermissions');
+
+  function applySuperAdminToggle() {
+    var hidden = chkSuperAdmin.checked;
+    cardMenuAccess.style.display  = hidden ? 'none' : '';
+    cardPermissions.style.display = hidden ? 'none' : '';
+  }
+  chkSuperAdmin.addEventListener('change', applySuperAdminToggle);
+  applySuperAdminToggle();
+
+  @* Menu cascade *@
+  document.querySelectorAll('.menu-l2, .menu-l3').forEach(function (chk) {
+    chk.addEventListener('change', function () {
+      if (this.checked) {
+        var parentId = this.getAttribute('data-parent');
+        var parent = document.getElementById(parentId);
+        if (parent) parent.checked = true;
+
+        if (this.classList.contains('menu-l3')) {
+          var l2ParentId = parent ? parent.getAttribute('data-parent') : null;
+          if (l2ParentId) {
+            var l1 = document.getElementById(l2ParentId);
+            if (l1) l1.checked = true;
+          }
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll('.menu-l1').forEach(function (chk) {
+    chk.addEventListener('change', function () {
+      if (!this.checked) {
+        var id = this.id;
+        document.querySelectorAll('[data-parent="' + id + '"]').forEach(function (c) {
+          c.checked = false;
+          var cId = c.id;
+          document.querySelectorAll('[data-parent="' + cId + '"]').forEach(function (gc) {
+            gc.checked = false;
+          });
+        });
+      }
+    });
+  });
+
+  document.querySelectorAll('.menu-l2').forEach(function (chk) {
+    chk.addEventListener('change', function () {
+      if (!this.checked) {
+        var id = this.id;
+        document.querySelectorAll('[data-parent="' + id + '"]').forEach(function (gc) {
+          gc.checked = false;
+        });
+      }
+    });
+  });
+
+  function grantAllMenus() {
+    document.querySelectorAll('input[name="SelectedMenus"]').forEach(function (c) { c.checked = true; });
+  }
+  function revokeAllMenus() {
+    document.querySelectorAll('input[name="SelectedMenus"]').forEach(function (c) { c.checked = false; });
+  }
+
+  @* Permission radios *@
+  document.querySelectorAll('.perm-radio').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      var permId = this.getAttribute('data-perm-id');
+      var hidden = document.getElementById('permHidden_' + permId);
+      if (!hidden) return;
+      if (this.value === 'grant') {
+        hidden.value = permId + ':true';
+      } else if (this.value === 'deny') {
+        hidden.value = permId + ':false';
+      } else {
+        hidden.value = '';
+      }
+    });
+  });
+
+  function grantAllPerms() {
+    document.querySelectorAll('.perm-radio[value="grant"]').forEach(function (r) {
+      r.checked = true;
+      r.dispatchEvent(new Event('change'));
+    });
+  }
+  function revokeAllPerms() {
+    document.querySelectorAll('.perm-radio[value="deny"]').forEach(function (r) {
+      r.checked = true;
+      r.dispatchEvent(new Event('change'));
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

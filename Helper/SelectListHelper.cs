@@ -48,6 +48,15 @@ public static class SelectListHelper
         .ToList();
   }
 
+  public static async Task<List<SelectListItem>> GetDataScopeOptions(TranslationService translationService)
+      => new()
+      {
+        new() { Value = "all",        Text = await translationService.GetAsync("DataScope.all") },
+        new() { Value = "own",        Text = await translationService.GetAsync("DataScope.own") },
+        new() { Value = "department", Text = await translationService.GetAsync("DataScope.department") },
+        new() { Value = "location",   Text = await translationService.GetAsync("DataScope.location") },
+      };
+
   public static async Task<List<SelectListItem>> GetPaymentMethodOptions(
       PaymentMethodDbHelper pmDb,
       string languageCode)

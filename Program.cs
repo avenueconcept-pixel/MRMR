@@ -52,6 +52,9 @@ builder.Services.AddScoped<AuditLogDbHelper>();
 builder.Services.AddScoped<StateDbHelper>();
 builder.Services.AddScoped<RegionDbHelper>();
 builder.Services.AddScoped<LocationDbHelper>();
+builder.Services.AddScoped<MenuDbHelper>();
+builder.Services.AddScoped<PermissionDbHelper>();
+builder.Services.AddScoped<RoleDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
