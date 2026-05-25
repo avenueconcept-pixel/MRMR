@@ -49,6 +49,9 @@ builder.Services.AddScoped<DepartmentDbHelper>();
 builder.Services.AddScoped<PaymentMethodDbHelper>();
 builder.Services.AddScoped<ProductCategoryDbHelper>();
 builder.Services.AddScoped<AuditLogDbHelper>();
+builder.Services.AddScoped<StateDbHelper>();
+builder.Services.AddScoped<RegionDbHelper>();
+builder.Services.AddScoped<LocationDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));

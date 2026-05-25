@@ -21,6 +21,11 @@ public class AppDbContext : DbContext
   public DbSet<PaymentMethodTranslation> PaymentMethodTranslations => Set<PaymentMethodTranslation>();
   public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
   public DbSet<ProductCategoryTranslation> ProductCategoryTranslations => Set<ProductCategoryTranslation>();
+  public DbSet<State>            States            => Set<State>();
+  public DbSet<StateTranslation> StateTranslations => Set<StateTranslation>();
+  public DbSet<Region>           Regions           => Set<Region>();
+  public DbSet<RegionCountry>    RegionCountries   => Set<RegionCountry>();
+  public DbSet<Location>         Locations         => Set<Location>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -200,6 +205,96 @@ public class AppDbContext : DbContext
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.CategoryName).HasColumnName("category_name").HasMaxLength(150).IsRequired();
       entity.HasOne(e => e.ProductCategory).WithMany(p => p.Translations).HasForeignKey(e => e.CategoryCode);
+    });
+
+    // State
+    modelBuilder.Entity<State>(entity =>
+    {
+      entity.ToTable("states");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.StateCode).HasColumnName("state_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+
+      entity.HasOne(e => e.Country)
+            .WithMany()
+            .HasForeignKey(e => e.CountryCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.Translations)
+            .WithOne(t => t.State)
+            .HasForeignKey(t => t.StateId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // StateTranslation
+    modelBuilder.Entity<StateTranslation>(entity =>
+    {
+      entity.ToTable("state_translations");
+      entity.HasKey(e => new { e.StateId, e.LanguageCode });
+      entity.Property(e => e.StateId).HasColumnName("state_id");
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.StateName).HasColumnName("state_name").HasMaxLength(200).IsRequired();
+    });
+
+    // Region
+    modelBuilder.Entity<Region>(entity =>
+    {
+      entity.ToTable("regions");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.RegionCode).HasColumnName("region_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.RegionName).HasColumnName("region_name").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.HasIndex(e => e.RegionCode).IsUnique();
+      entity.HasMany(e => e.RegionCountries)
+            .WithOne(rc => rc.Region)
+            .HasForeignKey(rc => rc.RegionId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // RegionCountry
+    modelBuilder.Entity<RegionCountry>(entity =>
+    {
+      entity.ToTable("region_countries");
+      entity.HasKey(e => new { e.RegionId, e.CountryCode });
+      entity.Property(e => e.RegionId).HasColumnName("region_id");
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode);
+    });
+
+    // Location
+    modelBuilder.Entity<Location>(entity =>
+    {
+      entity.ToTable("locations");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.LocationCode).HasColumnName("location_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.LocationName).HasColumnName("location_name").HasMaxLength(150).IsRequired();
+      entity.Property(e => e.LocationType).HasColumnName("location_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.StateId).HasColumnName("state_id");
+      entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100);
+      entity.Property(e => e.Postcode).HasColumnName("postcode").HasMaxLength(20);
+      entity.Property(e => e.Address).HasColumnName("address").HasMaxLength(500);
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.HasIndex(e => e.LocationCode).IsUnique();
+      entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode);
+      entity.HasOne(e => e.State).WithMany().HasForeignKey(e => e.StateId).OnDelete(DeleteBehavior.SetNull);
     });
 
     // Customer

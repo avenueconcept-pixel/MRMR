@@ -1,0 +1,139 @@
+@page
+@model MyApp.Areas.Admin.Pages.Locations.CreateModel
+@{
+  ViewData["title"] = await T.GetAsync("Location.AddTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Location.AddTitle")</h4>
+  <a asp-area="Admin" asp-page="/Locations/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i> @await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" asp-page-handler="Create">
+
+      <div class="row g-4">
+        @* Row 1: Location Code + Location Name *@
+        <div class="col-md-6">
+          <label class="form-label" for="txtLocationCode">
+            @await T.GetAsync("LocationCode") <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="txtLocationCode" name="txtLocationCode"
+                 class="form-control text-uppercase"
+                 maxlength="50" value="@Model.txtLocationCode"
+                 placeholder="@await T.GetAsync("LocationCode")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtLocationName">
+            @await T.GetAsync("LocationName") <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="txtLocationName" name="txtLocationName"
+                 class="form-control" maxlength="150" value="@Model.txtLocationName" />
+        </div>
+
+        @* Row 2: Location Type + Country *@
+        <div class="col-md-6">
+          <label class="form-label" for="ddlLocationType">
+            @await T.GetAsync("LocationType") <span class="text-danger">*</span>
+          </label>
+          <select asp-for="ddlLocationType" id="ddlLocationType" class="form-select"
+                  asp-items="@Model.LocationTypeOptions">
+            <option value="">@await T.GetAsync("Location.SelectLocationType")</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlCountryCode">
+            @await T.GetAsync("Country") <span class="text-danger">*</span>
+          </label>
+          <select asp-for="ddlCountryCode" id="ddlCountryCode" class="form-select"
+                  asp-items="@Model.CountryOptions">
+            <option value="">@await T.GetAsync("Location.SelectCountry")</option>
+          </select>
+        </div>
+
+        @* Row 3: State + City *@
+        <div class="col-md-6">
+          <label class="form-label" for="ddlStateId">@await T.GetAsync("Location.State")</label>
+          <select asp-for="ddlStateId" id="ddlStateId" class="form-select"
+                  asp-items="@Model.StateOptions">
+            <option value="">@await T.GetAsync("Location.SelectState")</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtCity">@await T.GetAsync("Location.City")</label>
+          <input type="text" id="txtCity" name="txtCity"
+                 class="form-control" maxlength="100" value="@Model.txtCity" />
+        </div>
+
+        @* Row 4: Postcode + Status *@
+        <div class="col-md-6">
+          <label class="form-label" for="txtPostcode">@await T.GetAsync("Location.Postcode")</label>
+          <input type="text" id="txtPostcode" name="txtPostcode"
+                 class="form-control" maxlength="20" value="@Model.txtPostcode" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
+          <select asp-for="ddlStatus" id="ddlStatus" class="form-select"
+                  asp-items="@Model.StatusOptions"></select>
+        </div>
+
+        @* Row 5: Address (full width) *@
+        <div class="col-12">
+          <label class="form-label" for="txtAddress">@await T.GetAsync("Address")</label>
+          <textarea id="txtAddress" name="txtAddress" class="form-control"
+                    rows="3" maxlength="500">@Model.txtAddress</textarea>
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">@await T.GetAsync("Save")</button>
+        <a asp-area="Admin" asp-page="/Locations/Index" class="btn btn-outline-secondary">@await T.GetAsync("Cancel")</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  document.getElementById('txtLocationCode').addEventListener('input', function () {
+    this.value = this.value.toUpperCase();
+  });
+
+  $('#ddlCountryCode').on('change', function () {
+    var countryCode = $(this).val();
+    var $state      = $('#ddlStateId');
+    $state.empty().append('<option value="">@Html.Raw(await T.GetAsync("Location.SelectState"))</option>');
+
+    if (!countryCode) return;
+
+    $.get('?handler=StatesByCountry', { countryCode: countryCode }, function (data) {
+      $.each(data, function (i, s) {
+        $state.append($('<option>', { value: s.id, text: s.name }));
+      });
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

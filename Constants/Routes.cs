@@ -17,6 +17,9 @@ public class Routes
   public const string AdminProductCategory  = "/ProductCategories/Index";
   public const string AdminAuditLogs       = "/AuditLogs/Index";
   public const string AdminAuditLogsDetail = "/AuditLogs/Detail";
+  public const string AdminState           = "/States/Index";
+  public const string AdminRegion          = "/Regions/Index";
+  public const string AdminLocation        = "/Locations/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

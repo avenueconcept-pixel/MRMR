@@ -1,0 +1,174 @@
+@page
+@model MyApp.Areas.Admin.Pages.Locations.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Location.PageTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@{
+  var lblToggleTitle    = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm  = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes      = await T.GetAsync("ToggleStatusYes");
+  var lblCancel         = await T.GetAsync("Cancel");
+  var lblToggleFailed   = await T.GetAsync("ToggleFailed");
+  var lblToggleError    = await T.GetAsync("ToggleError");
+  var lblTypeHq        = await T.GetAsync("LocationType.hq");
+  var lblTypeBranch    = await T.GetAsync("LocationType.branch");
+  var lblTypeOutlet    = await T.GetAsync("LocationType.outlet");
+  var lblTypeWarehouse = await T.GetAsync("LocationType.warehouse");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Location.PageTitle")</h4>
+  <a asp-area="Admin" asp-page="/Locations/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i> @await T.GetAsync("Location.AddLocation")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Location.LocationList")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblLocations" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("LocationCode")</th>
+            <th>@await T.GetAsync("LocationName")</th>
+            <th>@await T.GetAsync("LocationType")</th>
+            <th>@await T.GetAsync("Country")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("UpdatedAt")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var location in Model.Locations)
+          {
+            <tr>
+              @{
+                var typeBadge = location.LocationType switch
+                {
+                  "hq"        => "bg-dark",
+                  "branch"    => "bg-primary",
+                  "outlet"    => "bg-info text-dark",
+                  "warehouse" => "bg-warning text-dark",
+                  _           => "bg-secondary"
+                };
+                var typeLabel = location.LocationType switch
+                {
+                  "hq"        => lblTypeHq,
+                  "branch"    => lblTypeBranch,
+                  "outlet"    => lblTypeOutlet,
+                  "warehouse" => lblTypeWarehouse,
+                  _           => location.LocationType
+                };
+                var statusBadge = location.Status == StatusConstants.Active ? "bg-success" : "bg-danger";
+                var statusLabel = location.Status == StatusConstants.Active
+                    ? await T.GetAsync("status.active")
+                    : await T.GetAsync("status.inactive");
+              }
+              <td><strong>@location.LocationCode</strong></td>
+              <td>@location.LocationName</td>
+              <td><span class="badge @typeBadge">@typeLabel</span></td>
+              <td>@location.Country?.CountryCode</td>
+              <td><span class="badge @statusBadge">@statusLabel</span></td>
+              <td>@location.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Locations/Edit" asp-route-id="@location.Id">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button" onclick="toggleStatus(@location.Id)">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var msgToggleTitle   = '@Html.Raw(lblToggleTitle)';
+  var msgToggleConfirm = '@Html.Raw(lblToggleConfirm)';
+  var msgToggleYes     = '@Html.Raw(lblToggleYes)';
+  var msgCancel        = '@Html.Raw(lblCancel)';
+  var msgToggleFailed  = '@Html.Raw(lblToggleFailed)';
+  var msgToggleError   = '@Html.Raw(lblToggleError)';
+
+  function toggleStatus(id) {
+    Swal.fire({
+      title: msgToggleTitle,
+      text: msgToggleConfirm,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: msgToggleYes,
+      cancelButtonText: msgCancel
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '?handler=ToggleStatus',
+          type: 'POST',
+          data: {
+            id: id,
+            __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+          },
+          success: function (data) {
+            if (data.success) {
+              window.location.reload();
+            } else {
+              Swal.fire({ icon: 'error', text: msgToggleFailed });
+            }
+          },
+          error: function () {
+            Swal.fire({ icon: 'error', text: msgToggleError });
+          }
+        });
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    initDataTable('#tblLocations', 6);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

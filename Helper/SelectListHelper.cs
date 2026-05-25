@@ -26,6 +26,28 @@ public static class SelectListHelper
           .OrderBy(x => x.Text)
           .ToList();
 
+  public static async Task<List<SelectListItem>> GetLocationTypeOptions(TranslationService translationService)
+      => new()
+      {
+        new() { Value = "hq",        Text = await translationService.GetAsync("LocationType.hq") },
+        new() { Value = "branch",    Text = await translationService.GetAsync("LocationType.branch") },
+        new() { Value = "outlet",    Text = await translationService.GetAsync("LocationType.outlet") },
+        new() { Value = "warehouse", Text = await translationService.GetAsync("LocationType.warehouse") }
+      };
+
+  public static async Task<List<SelectListItem>> GetCountryOptions(
+      CountryDbHelper countryDb, string languageCode)
+  {
+    var countries = await countryDb.GetAllActiveAsync(languageCode);
+    return countries
+        .SelectMany(c => c.Translations.Select(t => new SelectListItem
+        {
+          Value = c.CountryCode,
+          Text  = $"{t.CountryName} ({c.CountryCode})"
+        }))
+        .ToList();
+  }
+
   public static async Task<List<SelectListItem>> GetPaymentMethodOptions(
       PaymentMethodDbHelper pmDb,
       string languageCode)

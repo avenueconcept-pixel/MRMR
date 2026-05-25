@@ -24,6 +24,18 @@ public class CountryDbHelper : DbHelper
             .ToList();
       });
 
+  public async Task<List<Country>> GetAllActiveAsync(string languageCode)
+      => await ExecuteAsync(async () =>
+      {
+        var countries = await _db.Countries
+            .Where(c => c.Status == StatusConstants.Active)
+            .Include(c => c.Translations.Where(t => t.LanguageCode == languageCode))
+            .ToListAsync();
+        return countries
+            .OrderBy(c => c.Translations.FirstOrDefault()?.CountryName ?? c.CountryCode)
+            .ToList();
+      });
+
   public async Task<Country?> GetByCodeAsync(string countryCode)
       => await ExecuteAsync(() => _db.Countries
           .Include(c => c.Translations)
