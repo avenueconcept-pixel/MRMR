@@ -1,0 +1,179 @@
+@page
+@model MyApp.Areas.Admin.Pages.Banks.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Bank.PageTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@{
+  var lblToggleTitle   = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes     = await T.GetAsync("ToggleStatusYes");
+  var lblCancel        = await T.GetAsync("Cancel");
+  var lblToggleFailed  = await T.GetAsync("ToggleFailed");
+  var lblToggleError   = await T.GetAsync("ToggleError");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Bank.PageTitle")</h4>
+  <a asp-area="Admin" asp-page="/Banks/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i> @await T.GetAsync("Bank.AddBank")
+  </a>
+</div>
+
+@* Country filter *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="ddlCountryFilter">@await T.GetAsync("Country")</label>
+        <select id="ddlCountryFilter" class="form-select" onchange="window.location.href='?countryCode=' + this.value">
+          @foreach (var opt in Model.CountryOptions)
+          {
+            <option value="@opt.Value" selected="@(opt.Value == Model.SelectedCountry ? "selected" : null)">@opt.Text</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Bank.BankList")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblBanks" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("BankCode")</th>
+            <th>@await T.GetAsync("BankName")</th>
+            <th>@await T.GetAsync("ShortName")</th>
+            <th>@await T.GetAsync("Country")</th>
+            <th>@await T.GetAsync("SwiftCode")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("UpdatedAt")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var bank in Model.Banks)
+          {
+            var translation = bank.Translations.FirstOrDefault();
+            var countryName = bank.Country?.Translations.FirstOrDefault()?.CountryName ?? bank.CountryCode;
+            <tr>
+              <td><strong>@bank.BankCode</strong></td>
+              <td>@(translation?.BankName ?? "-")</td>
+              <td>@(translation?.ShortName ?? "-")</td>
+              <td>@countryName</td>
+              <td>@(bank.SwiftCode ?? "-")</td>
+              <td>
+                @{
+                  var badgeClass  = bank.Status == StatusConstants.Active ? "bg-success" : "bg-danger";
+                  var statusLabel = bank.Status == StatusConstants.Active
+                      ? await T.GetAsync("status.active")
+                      : await T.GetAsync("status.inactive");
+                }
+                <span class="badge @badgeClass">@statusLabel</span>
+              </td>
+              <td>@bank.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Banks/Edit"
+                         asp-route-bankCode="@bank.BankCode">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button"
+                              onclick="toggleStatus('@bank.BankCode')">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var msgToggleTitle   = '@lblToggleTitle';
+  var msgToggleConfirm = '@lblToggleConfirm';
+  var msgToggleYes     = '@lblToggleYes';
+  var msgCancel        = '@lblCancel';
+  var msgToggleFailed  = '@lblToggleFailed';
+  var msgToggleError   = '@lblToggleError';
+
+  function toggleStatus(bankCode) {
+    Swal.fire({
+      title: msgToggleTitle,
+      text: msgToggleConfirm,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: msgToggleYes,
+      cancelButtonText: msgCancel
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '?handler=ToggleStatus',
+          type: 'POST',
+          data: {
+            bankCode: bankCode,
+            __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+          },
+          success: function (data) {
+            if (data.success) {
+              location.reload();
+            } else {
+              Swal.fire({ icon: 'error', text: msgToggleFailed });
+            }
+          },
+          error: function () {
+            Swal.fire({ icon: 'error', text: msgToggleError });
+          }
+        });
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    initDataTable('#tblBanks', 7);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

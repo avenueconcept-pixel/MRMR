@@ -22,6 +22,7 @@ public class Routes
   public const string AdminLocation        = "/Locations/Index";
   public const string AdminRole            = "/Roles/Index";
   public const string AdminMenu            = "/Menus/Index";
+  public const string AdminBank            = "/Banks/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

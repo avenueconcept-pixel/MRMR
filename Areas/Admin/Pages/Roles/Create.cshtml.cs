@@ -80,15 +80,15 @@ public class CreateModel : AdminPageModel
         return Page();
 
       case RoleAddResult.Restored:
-        TempData["AlertType"]    = MessageType.Warning;
-        TempData["AlertTitle"]   = MessageTitle.Warning;
-        TempData["AlertContent"] = await _translation.GetAsync("MsgRoleRestored");
+        AlertMessageType    = MessageType.Warning;
+        AlertMessageTitle   = MessageTitle.Warning;
+        AlertMessageContent = await _translation.GetAsync("MsgRoleRestored");
         break;
 
       default:
-        TempData["AlertType"]    = MessageType.Success;
-        TempData["AlertTitle"]   = MessageTitle.Success;
-        TempData["AlertContent"] = await _translation.GetAsync(MessageConstants.SaveSuccess);
+        AlertMessageType    = MessageType.Success;
+        AlertMessageTitle   = MessageTitle.Success;
+        AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveSuccess);
         break;
     }
 

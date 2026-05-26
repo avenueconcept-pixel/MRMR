@@ -115,9 +115,9 @@ public class EditModel : AdminPageModel
 
     await _menuDbHelper.UpdateAsync(menu, CurrentUsername);
 
-    TempData["AlertType"]    = MessageType.Success;
-    TempData["AlertTitle"]   = MessageTitle.Success;
-    TempData["AlertContent"] = await _translation.GetAsync(MessageConstants.UpdateSuccess);
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = await _translation.GetAsync(MessageConstants.UpdateSuccess);
     return RedirectToPage(Routes.AdminMenu);
   }
 

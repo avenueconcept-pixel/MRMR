@@ -1,0 +1,130 @@
+@page
+@model MyApp.Areas.Admin.Pages.Banks.CreateModel
+@{
+  ViewData["title"] = await T.GetAsync("Bank.AddTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Bank.AddTitle")</h4>
+  <a asp-area="Admin" asp-page="/Banks/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i> @await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" asp-page-handler="Create">
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label" for="txtBankCode">
+            @await T.GetAsync("BankCode") <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="txtBankCode" name="txtBankCode" class="form-control"
+                 maxlength="20" value="@Model.txtBankCode"
+                 placeholder="@await T.GetAsync("Bank.BankCodePlaceholder")" />
+          <div class="form-text">@await T.GetAsync("Bank.BankCodeHint")</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlCountryCode">
+            @await T.GetAsync("Country") <span class="text-danger">*</span>
+          </label>
+          <select asp-for="ddlCountryCode" class="form-select" asp-items="@Model.CountryOptions">
+            <option value="">— @await T.GetAsync("SelectCountry") —</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtSwiftCode">@await T.GetAsync("SwiftCode")</label>
+          <input type="text" id="txtSwiftCode" name="txtSwiftCode" class="form-control"
+                 maxlength="20" value="@Model.txtSwiftCode"
+                 placeholder="@await T.GetAsync("Bank.SwiftCodePlaceholder")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtLocalCode">@await T.GetAsync("LocalCode")</label>
+          <input type="text" id="txtLocalCode" name="txtLocalCode" class="form-control"
+                 maxlength="20" value="@Model.txtLocalCode"
+                 placeholder="@await T.GetAsync("Bank.LocalCodePlaceholder")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtWebsite">@await T.GetAsync("Website")</label>
+          <input type="text" id="txtWebsite" name="txtWebsite" class="form-control"
+                 maxlength="200" value="@Model.txtWebsite"
+                 placeholder="@await T.GetAsync("Bank.WebsitePlaceholder")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtLogo">@await T.GetAsync("Logo")</label>
+          <input type="text" id="txtLogo" name="txtLogo" class="form-control"
+                 maxlength="200" value="@Model.txtLogo"
+                 placeholder="@await T.GetAsync("Bank.LogoPlaceholder")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
+          <select asp-for="ddlStatus" class="form-select" asp-items="@Model.StatusOptions"></select>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+      <h6 class="mb-3">@await T.GetAsync("Bank.NameTranslations")</h6>
+
+      <div class="row g-4">
+        @for (int i = 0; i < Model.TranslationInputs.Count; i++)
+        {
+          var nameInput  = Model.TranslationInputs[i];
+          var shortInput = Model.ShortNameInputs.Count > i ? Model.ShortNameInputs[i] : null;
+          <div class="col-md-12">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="txtName_@nameInput.LanguageCode">
+                  @await T.GetAsync("BankName") (@nameInput.Label)
+                </label>
+                <input type="text" id="txtName_@nameInput.LanguageCode" name="txtName_@nameInput.LanguageCode"
+                       class="form-control" value="@nameInput.Value" placeholder="@nameInput.Placeholder" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="txtShortName_@nameInput.LanguageCode">
+                  @await T.GetAsync("ShortName") (@nameInput.Label)
+                </label>
+                <input type="text" id="txtShortName_@nameInput.LanguageCode" name="txtShortName_@nameInput.LanguageCode"
+                       class="form-control" value="@shortInput?.Value"
+                       placeholder="@(shortInput?.Placeholder ?? string.Empty)" />
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">@await T.GetAsync("Save")</button>
+        <a asp-area="Admin" asp-page="/Banks/Index" class="btn btn-outline-secondary">@await T.GetAsync("Cancel")</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  document.getElementById('txtBankCode').addEventListener('input', function () {
+    this.value = this.value.toUpperCase();
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

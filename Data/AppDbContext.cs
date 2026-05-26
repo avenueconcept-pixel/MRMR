@@ -31,6 +31,8 @@ public class AppDbContext : DbContext
   public DbSet<RolePermission>   RolePermissions   => Set<RolePermission>();
   public DbSet<Menu>             Menus             => Set<Menu>();
   public DbSet<Permission>       Permissions       => Set<Permission>();
+  public DbSet<Bank>             Banks             => Set<Bank>();
+  public DbSet<BankTranslation>  BankTranslations  => Set<BankTranslation>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -51,16 +53,25 @@ public class AppDbContext : DbContext
       entity.ToTable("admin_users");
       entity.HasKey(e => e.Id);
       entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.PasswordHash).HasColumnName("password_hash").IsRequired();
-      entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(500).IsRequired();
+      entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.RoleId).HasColumnName("role_id");
+      entity.Property(e => e.DeptId).HasColumnName("dept_id");
       entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2);
+      entity.Property(e => e.RegionId).HasColumnName("region_id");
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-      entity.Property(e => e.LastLogin).HasColumnName("last_login");
-      entity.Property(e => e.LastLoginLangCode).HasColumnName("last_login_lang_code").HasMaxLength(10);
-      entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode);
+      entity.Property(e => e.LastLoginAt).HasColumnName("last_login_at");
+      entity.Property(e => e.LastLoginLang).HasColumnName("last_login_lang").HasMaxLength(10);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.HasOne(e => e.Role).WithMany().HasForeignKey(e => e.RoleId).OnDelete(DeleteBehavior.Restrict);
+      entity.HasOne(e => e.Department).WithMany().HasForeignKey(e => e.DeptId).OnDelete(DeleteBehavior.NoAction);
+      entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode).OnDelete(DeleteBehavior.NoAction);
+      entity.HasOne(e => e.Region).WithMany().HasForeignKey(e => e.RegionId).OnDelete(DeleteBehavior.NoAction);
     });
 
     // EmailTemplate
@@ -383,6 +394,45 @@ public class AppDbContext : DbContext
       entity.Property(e => e.PermissionName).HasColumnName("permission_name").HasMaxLength(100).IsRequired();
       entity.Property(e => e.SortOrder).HasColumnName("sort_order");
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+    });
+
+    // Bank
+    modelBuilder.Entity<Bank>(entity =>
+    {
+      entity.ToTable("banks");
+      entity.HasKey(e => e.BankCode);
+      entity.Property(e => e.BankCode).HasColumnName("bank_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.SwiftCode).HasColumnName("swift_code").HasMaxLength(20);
+      entity.Property(e => e.LocalCode).HasColumnName("local_code").HasMaxLength(20);
+      entity.Property(e => e.Website).HasColumnName("website").HasMaxLength(200);
+      entity.Property(e => e.Logo).HasColumnName("logo").HasMaxLength(200);
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+
+      entity.HasOne(e => e.Country)
+            .WithMany()
+            .HasForeignKey(e => e.CountryCode)
+            .OnDelete(DeleteBehavior.Restrict);
+
+      entity.HasMany(e => e.Translations)
+            .WithOne(t => t.Bank)
+            .HasForeignKey(t => t.BankCode)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // BankTranslation
+    modelBuilder.Entity<BankTranslation>(entity =>
+    {
+      entity.ToTable("bank_translations");
+      entity.HasKey(e => new { e.BankCode, e.LanguageCode });
+      entity.Property(e => e.BankCode).HasColumnName("bank_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.BankName).HasColumnName("bank_name").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.ShortName).HasColumnName("short_name").HasMaxLength(100).IsRequired();
     });
 
     // Customer

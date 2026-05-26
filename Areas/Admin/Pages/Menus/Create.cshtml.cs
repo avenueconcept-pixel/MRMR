@@ -36,6 +36,7 @@ public class CreateModel : AdminPageModel
 
   public async Task OnGetAsync()
   {
+    AlertMessageType = "";
     await BuildOptionsAsync();
   }
 
@@ -91,9 +92,9 @@ public class CreateModel : AdminPageModel
       return Page();
     }
 
-    TempData["AlertType"]    = MessageType.Success;
-    TempData["AlertTitle"]   = MessageTitle.Success;
-    TempData["AlertContent"] = result == MenuAddResult.Restored
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = result == MenuAddResult.Restored
         ? await _translation.GetAsync("MsgMenuRestored")
         : await _translation.GetAsync(MessageConstants.SaveSuccess);
 

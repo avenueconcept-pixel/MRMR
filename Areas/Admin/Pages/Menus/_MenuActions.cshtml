@@ -1,8 +1,8 @@
 @* _MenuActions — pass "menu" (Menu) and "model" (IndexModel) in ViewData *@
 @using MyApp.Constants
 @{
-  var menu  = (MyApp.Models.Menu)ViewData["menu"]!;
-  var model = (MyApp.Areas.Admin.Pages.Menus.IndexModel)ViewData["model"]!;
+  var menu      = (MyApp.Models.Menu)ViewData["menu"]!;
+  var pageModel = (MyApp.Areas.Admin.Pages.Menus.IndexModel)ViewData["model"]!;
 }
 
 <div class="dropdown">
@@ -21,8 +21,8 @@
       </li>
       <li>
         <button class="dropdown-item text-danger" type="button"
-                onclick="confirmDelete(@menu.Id, '@Html.Raw(model.MsgDeleteConfirmTitle)', '@Html.Raw(model.MsgDeleteConfirmText)', '@Html.Raw(model.MsgDeleteConfirmBtn)', '@Html.Raw(model.MsgCancelBtn)')">
-          <i class="ri ri-delete-bin-line me-1"></i>@model.LblDelete
+                onclick="confirmDelete(@menu.Id, '@Html.Raw(pageModel.MsgDeleteConfirmTitle)', '@Html.Raw(pageModel.MsgDeleteConfirmText)', '@Html.Raw(pageModel.MsgDeleteConfirmBtn)', '@Html.Raw(pageModel.MsgCancelBtn)')">
+          <i class="ri ri-delete-bin-line me-1"></i>@await T.GetAsync("Btn.Delete")
         </button>
       </li>
     }

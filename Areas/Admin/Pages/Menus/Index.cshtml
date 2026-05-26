@@ -117,6 +117,17 @@
     lblDelete:          '@Html.Raw(Model.LblDelete)',
     lblCancel:          '@Html.Raw(Model.MsgCancelBtn)'
   };
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
 </script>
 <script src="~/js/admin-menus.js"></script>
 }

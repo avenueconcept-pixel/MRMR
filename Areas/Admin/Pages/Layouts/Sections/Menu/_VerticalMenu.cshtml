@@ -1,13 +1,26 @@
+@inject MyApp.Helper.DB.MenuDbHelper _menuDbHelper
+@using MyApp.Models
 @{
   TempData.Keep();
-  string? currentPage = Convert.ToString(ViewContext.RouteData.Values["Page"])!;
+  var allMenus    = await _menuDbHelper.GetAllActiveAsync();
+  string? current = Convert.ToString(ViewContext.RouteData.Values["Page"]);
+
+  string GetPrefix(string? url)
+  {
+    if (string.IsNullOrEmpty(url)) return "\x00";
+    return "/" + url.TrimStart('/').Split('/')[0];
+  }
+
+  bool IsActive(string? url) =>
+      !string.IsNullOrEmpty(url) && current?.StartsWith(GetPrefix(url)) == true;
+
+  bool HasActiveChild(Menu m) =>
+      m.Children.Any(c => IsActive(c.MenuUrl) || c.Children.Any(gc => IsActive(gc.MenuUrl)));
 }
 
-<!-- Menu -->
-@* ! Do this simple *@
+@* Menu *@
 <aside id="layout-menu" class="layout-menu menu-vertical menu">
 
-  @* ! Hide app brand if navbar-full *@
   <div class='app-brand demo @((@ViewData["navbarFull"] != null && Convert.ToBoolean(@ViewData["navbarFull"])) ? "d-xl-none" : "")'>
     <a asp-page="/Index" class="app-brand-link">
       <span class="app-brand-logo demo">
@@ -26,57 +39,101 @@
 
   <div class="menu-inner-shadow"></div>
 
-  @* ! Starter Kit menu-items *@
   <ul class="menu-inner py-1">
-    <li class='menu-item@(currentPage == "/Dashboard/Index" ? " active" : "")'>
-      <a asp-page="/Dashboard/Index" class="menu-link">
-        <i class="menu-icon icon-base ri ri-home-smile-line"></i>
-        <div>Dashboard</div>
-      </a>
-    </li>
-    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/Countries") ? " active" : "")'>
-      <a asp-page="/Countries/Index" class="menu-link">
-        <i class="menu-icon icon-base ri ri-map-2-line"></i>
-        <div>Countries</div>
-      </a>
-    </li>
-    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/Languages") ? " active" : "")'>
-      <a asp-page="/Languages/Index" class="menu-link">
-        <i class="menu-icon icon-base ri ri-translate-2"></i>
-        <div>Languages</div>
-      </a>
-    </li>
-    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/Departments") ? " active" : "")'>
-      <a asp-page="/Departments/Index" class="menu-link">
-        <i class="menu-icon icon-base ri ri-building-4-line"></i>
-        <div>@await T.GetAsync("Menu.Department")</div>
-      </a>
-    </li>
-    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/PaymentMethods") ? " active" : "")'>
-      <a asp-page="/PaymentMethods/Index" class="menu-link">
-        <i class="menu-icon icon-base ri ri-bank-card-line"></i>
-        <div>@await T.GetAsync("Menu.PaymentMethod")</div>
-      </a>
-    </li>
-    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/ProductCategories") ? " active" : "")'>
-      <a asp-page="/ProductCategories/Index" class="menu-link">
-        <i class="menu-icon icon-base ri ri-price-tag-3-line"></i>
-        <div>@await T.GetAsync("Menu.ProductCategory")</div>
-      </a>
-    </li>
-    <li class='menu-item@(currentPage == "/Logs/Index" ? " active" : "")'>
-      <a asp-page="/Logs/Index" class="menu-link">
-        <i class="menu-icon icon-base ri ri-file-list-3-line"></i>
-        <div>Logs</div>
-      </a>
-    </li>
-    <li class='menu-item@(currentPage != null && currentPage.StartsWith("/AuditLogs") ? " active" : "")'>
-      <a asp-page="/AuditLogs/Index" class="menu-link">
-        <i class="menu-icon icon-base ri ri-shield-check-line"></i>
-        <div>@await T.GetAsync("AuditLog.PageTitle")</div>
-      </a>
-    </li>
+    @foreach (var item in allMenus)
+    {
+      if (item.Level == 0)
+      {
+        @* Group header *@
+        <li class="menu-header small text-uppercase">
+          <span class="menu-header-text">@item.MenuName</span>
+        </li>
+
+        @* Level 1 items under this group *@
+        @foreach (var parent in item.Children.OrderBy(c => c.SortOrder))
+        {
+          var hasChildren  = parent.Children.Any();
+          var parentActive = IsActive(parent.MenuUrl) || HasActiveChild(parent);
+
+          if (hasChildren)
+          {
+            <li class='menu-item@(parentActive ? " active open" : "")'>
+              <a href="javascript:void(0);" class="menu-link menu-toggle">
+                @if (!string.IsNullOrEmpty(parent.MenuIcon))
+                {
+                  <i class="menu-icon icon-base ri @parent.MenuIcon"></i>
+                }
+                <div>@parent.MenuName</div>
+              </a>
+              <ul class="menu-sub">
+                @foreach (var child in parent.Children.OrderBy(c => c.SortOrder))
+                {
+                  <li class='menu-item@(IsActive(child.MenuUrl) ? " active" : "")'>
+                    <a href="@Url.Page(child.MenuUrl)" class="menu-link">
+                      <div>@child.MenuName</div>
+                    </a>
+                  </li>
+                }
+              </ul>
+            </li>
+          }
+          else
+          {
+            <li class='menu-item@(parentActive ? " active" : "")'>
+              <a href="@Url.Page(parent.MenuUrl)" class="menu-link">
+                @if (!string.IsNullOrEmpty(parent.MenuIcon))
+                {
+                  <i class="menu-icon icon-base ri @parent.MenuIcon"></i>
+                }
+                <div>@parent.MenuName</div>
+              </a>
+            </li>
+          }
+        }
+      }
+      else if (item.Level == 1)
+      {
+        @* Orphan Level 1 — no group assigned *@
+        var hasChildren  = item.Children.Any();
+        var itemActive   = IsActive(item.MenuUrl) || HasActiveChild(item);
+
+        if (hasChildren)
+        {
+          <li class='menu-item@(itemActive ? " active open" : "")'>
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+              @if (!string.IsNullOrEmpty(item.MenuIcon))
+              {
+                <i class="menu-icon icon-base ri @item.MenuIcon"></i>
+              }
+              <div>@item.MenuName</div>
+            </a>
+            <ul class="menu-sub">
+              @foreach (var child in item.Children.OrderBy(c => c.SortOrder))
+              {
+                <li class='menu-item@(IsActive(child.MenuUrl) ? " active" : "")'>
+                  <a href="@Url.Page(child.MenuUrl)" class="menu-link">
+                    <div>@child.MenuName</div>
+                  </a>
+                </li>
+              }
+            </ul>
+          </li>
+        }
+        else
+        {
+          <li class='menu-item@(itemActive ? " active" : "")'>
+            <a href="@Url.Page(item.MenuUrl)" class="menu-link">
+              @if (!string.IsNullOrEmpty(item.MenuIcon))
+              {
+                <i class="menu-icon icon-base ri @item.MenuIcon"></i>
+              }
+              <div>@item.MenuName</div>
+            </a>
+          </li>
+        }
+      }
+    }
   </ul>
 
 </aside>
-<!-- / Menu -->
+@* / Menu *@
