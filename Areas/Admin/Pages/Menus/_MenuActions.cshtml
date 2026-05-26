@@ -1,0 +1,38 @@
+@* _MenuActions — pass "menu" (Menu) and "model" (IndexModel) in ViewData *@
+@using MyApp.Constants
+@{
+  var menu  = (MyApp.Models.Menu)ViewData["menu"]!;
+  var model = (MyApp.Areas.Admin.Pages.Menus.IndexModel)ViewData["model"]!;
+}
+
+<div class="dropdown">
+  <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+          type="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="ri ri-more-2-fill"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    @if (menu.Status != StatusConstants.Deleted)
+    {
+      <li>
+        <a class="dropdown-item" asp-area="Admin" asp-page="/Menus/Edit"
+           asp-route-id="@menu.Id">
+          <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+        </a>
+      </li>
+      <li>
+        <button class="dropdown-item text-danger" type="button"
+                onclick="confirmDelete(@menu.Id, '@Html.Raw(model.MsgDeleteConfirmTitle)', '@Html.Raw(model.MsgDeleteConfirmText)', '@Html.Raw(model.MsgDeleteConfirmBtn)', '@Html.Raw(model.MsgCancelBtn)')">
+          <i class="ri ri-delete-bin-line me-1"></i>@model.LblDelete
+        </button>
+      </li>
+    }
+    else
+    {
+      <li>
+        <span class="dropdown-item text-muted disabled">
+          <i class="ri ri-delete-bin-line me-1"></i>@await T.GetAsync("status.deleted")
+        </span>
+      </li>
+    }
+  </ul>
+</div>

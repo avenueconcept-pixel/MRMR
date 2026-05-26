@@ -1,0 +1,145 @@
+@page
+@model MyApp.Areas.Admin.Pages.Menus.CreateModel
+@{
+  ViewData["title"] = await T.GetAsync("Menu.AddTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Menu.AddTitle")</h4>
+  <a asp-area="Admin" asp-page="/Menus/Index" class="btn btn-outline-secondary btn-sm">
+    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Menu.MenuList")
+  </a>
+</div>
+
+<form method="post" asp-page-handler="Create">
+  @Html.AntiForgeryToken()
+  <div class="row g-4">
+
+    @* ── Left column ── *@
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">@await T.GetAsync("Menu.BasicInfo")</h5>
+        </div>
+        <div class="card-body">
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("MenuCode") <span class="text-danger">*</span></label>
+            <input name="txtMenuCode" value="@Model.txtMenuCode"
+                   class="form-control text-uppercase" style="text-transform:uppercase"
+                   maxlength="50" placeholder="e.g. MENU_COUNTRIES" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("MenuName") <span class="text-danger">*</span></label>
+            <input name="txtMenuName" value="@Model.txtMenuName"
+                   class="form-control" maxlength="100" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("Menu.Level") <span class="text-danger">*</span></label>
+            <select name="ddlLevel" id="selLevel" class="form-select"
+                    asp-items="Model.LevelOptions" onchange="onLevelChange(this.value)">
+            </select>
+          </div>
+
+          @* Group picker — shown for level=1 (parent) *@
+          <div class="mb-3" id="rowGroup" style="display:none;">
+            <label class="form-label">@await T.GetAsync("Menu.Group")</label>
+            <select name="ddlGroupId" class="form-select" asp-items="Model.GroupOptions">
+            </select>
+          </div>
+
+          @* Parent picker — shown for level=2 (child) *@
+          <div class="mb-3" id="rowParent" style="display:none;">
+            <label class="form-label">@await T.GetAsync("Menu.Parent") <span class="text-danger">*</span></label>
+            <select name="ddlParentId" class="form-select" asp-items="Model.ParentOptions">
+            </select>
+          </div>
+
+          @* URL — hidden for group (level=0) *@
+          <div class="mb-3" id="rowUrl">
+            <label class="form-label">@await T.GetAsync("Menu.Url")</label>
+            <input name="txtMenuUrl" value="@Model.txtMenuUrl"
+                   class="form-control font-monospace" maxlength="500"
+                   placeholder="/Admin/Countries" />
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    @* ── Right column ── *@
+    <div class="col-lg-4">
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <label class="form-label">@await T.GetAsync("Status")</label>
+          <select name="ddlStatus" class="form-select" asp-items="Model.StatusOptions"></select>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <label class="form-label">@await T.GetAsync("Menu.Icon")</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="ri ri-question-line" id="iconPreviewEl"></i>
+            </span>
+            <input name="txtMenuIcon" id="iconInput" value="@Model.txtMenuIcon"
+                   class="form-control font-monospace" maxlength="100"
+                   placeholder="home-line" oninput="previewIcon(this.value)" />
+            <button type="button" class="btn btn-outline-secondary"
+                    data-bs-toggle="modal" data-bs-target="#iconModal">
+              @await T.GetAsync("Menu.PickIcon")
+            </button>
+          </div>
+          <small class="text-muted">@await T.GetAsync("Menu.IconHint")</small>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+        </button>
+        <a asp-area="Admin" asp-page="/Menus/Index" class="btn btn-outline-secondary">
+          @await T.GetAsync("Btn.Cancel")
+        </a>
+      </div>
+
+    </div>
+  </div>
+</form>
+
+@* Remix Icon picker modal *@
+<div class="modal fade" id="iconModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">@await T.GetAsync("Menu.PickIcon")</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control mb-3" id="iconSearch"
+               placeholder="@await T.GetAsync("Menu.SearchIcon")"
+               oninput="filterIcons(this.value)" />
+        <div id="iconGrid" class="row row-cols-auto g-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script src="~/js/admin-menus.js"></script>
+<script>
+  onLevelChange(document.getElementById('selLevel').value);
+</script>
+}

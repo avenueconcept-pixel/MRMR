@@ -102,9 +102,9 @@
                      id="menu_@l1.Id" value="@l1.Id" name="SelectedMenus"
                      @(Model.SelectedMenus.Contains(l1.Id) ? "checked" : "") />
               <label class="form-check-label" for="menu_@l1.Id">
-                @if (!string.IsNullOrEmpty(l1.Icon))
+                @if (!string.IsNullOrEmpty(l1.MenuIcon))
                 {
-                  <i class="ri @l1.Icon me-1"></i>
+                  <i class="ri @l1.MenuIcon me-1"></i>
                 }
                 @l1.MenuName
               </label>

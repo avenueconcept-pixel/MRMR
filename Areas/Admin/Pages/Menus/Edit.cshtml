@@ -1,0 +1,216 @@
+@page "{id:int}"
+@model MyApp.Areas.Admin.Pages.Menus.EditModel
+@{
+  ViewData["title"] = await T.GetAsync("Menu.EditTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Menu.EditTitle")</h4>
+  <a asp-area="Admin" asp-page="/Menus/Index" class="btn btn-outline-secondary btn-sm">
+    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Menu.MenuList")
+  </a>
+</div>
+
+<form method="post" asp-page-handler="Update" asp-route-id="@Model.Id">
+  @Html.AntiForgeryToken()
+  <div class="row g-4">
+
+    @* ── Left column ── *@
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">@await T.GetAsync("Menu.BasicInfo")</h5>
+        </div>
+        <div class="card-body">
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("MenuCode")</label>
+            <input value="@Model.MenuCode" class="form-control bg-light" readonly />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("MenuName") <span class="text-danger">*</span></label>
+            <input name="txtMenuName" value="@Model.txtMenuName"
+                   class="form-control" maxlength="100" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("Menu.Level")</label>
+            <select name="ddlLevel" id="selLevel" class="form-select"
+                    asp-items="Model.LevelOptions" onchange="onLevelChange(this.value)">
+            </select>
+          </div>
+
+          @* Group picker *@
+          <div class="mb-3" id="rowGroup" style="display:none;">
+            <label class="form-label">@await T.GetAsync("Menu.Group")</label>
+            <select name="ddlGroupId" class="form-select" asp-items="Model.GroupOptions">
+            </select>
+          </div>
+
+          @* Parent picker *@
+          <div class="mb-3" id="rowParent" style="display:none;">
+            <label class="form-label">@await T.GetAsync("Menu.Parent") <span class="text-danger">*</span></label>
+            <select name="ddlParentId" class="form-select" asp-items="Model.ParentOptions">
+            </select>
+          </div>
+
+          @* URL *@
+          <div class="mb-3" id="rowUrl">
+            <label class="form-label">@await T.GetAsync("Menu.Url")</label>
+            <input name="txtMenuUrl" value="@Model.txtMenuUrl"
+                   class="form-control font-monospace" maxlength="500"
+                   placeholder="/Admin/Countries" />
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+            </button>
+            <a asp-area="Admin" asp-page="/Menus/Index" class="btn btn-outline-secondary">
+              @await T.GetAsync("Btn.Cancel")
+            </a>
+            <a href="#" id="btnDelete" class="btn btn-outline-danger ms-auto"
+               data-id="@Model.Id">
+              <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+            </a>
+          </div>
+
+        </div>
+      </div>
+
+      @* ── Audit section ── *@
+      <div class="card mt-3">
+        <div class="card-body">
+          <hr class="mt-0 mb-4" />
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label text-muted small">@await T.GetAsync("CreatedBy")</label>
+              <p class="mb-0">@Model.CreatedBy</p>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small">@await T.GetAsync("CreatedAt")</label>
+              <p class="mb-0">@Model.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small">@await T.GetAsync("UpdatedBy")</label>
+              <p class="mb-0">@Model.UpdatedBy</p>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small">@await T.GetAsync("UpdatedAt")</label>
+              <p class="mb-0">@Model.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @* ── Right column ── *@
+    <div class="col-lg-4">
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <label class="form-label">@await T.GetAsync("Status")</label>
+          <select name="ddlStatus" class="form-select" asp-items="Model.StatusOptions"></select>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <label class="form-label">@await T.GetAsync("Menu.Icon")</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="ri @(string.IsNullOrEmpty(Model.txtMenuIcon) ? "ri-question-line" : Model.txtMenuIcon)"
+                 id="iconPreviewEl"></i>
+            </span>
+            <input name="txtMenuIcon" id="iconInput" value="@Model.txtMenuIcon"
+                   class="form-control font-monospace" maxlength="100"
+                   placeholder="home-line" oninput="previewIcon(this.value)" />
+            <button type="button" class="btn btn-outline-secondary"
+                    data-bs-toggle="modal" data-bs-target="#iconModal">
+              @await T.GetAsync("Menu.PickIcon")
+            </button>
+          </div>
+          <small class="text-muted">@await T.GetAsync("Menu.IconHint")</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</form>
+
+@* Remix Icon picker modal *@
+<div class="modal fade" id="iconModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">@await T.GetAsync("Menu.PickIcon")</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control mb-3" id="iconSearch"
+               placeholder="@await T.GetAsync("Menu.SearchIcon")"
+               oninput="filterIcons(this.value)" />
+        <div id="iconGrid" class="row row-cols-auto g-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)'
+  };
+
+  document.getElementById('btnDelete').addEventListener('click', function (e) {
+    e.preventDefault();
+    var id = this.getAttribute('data-id');
+    Swal.fire({
+      title: pageMsg.deleteConfirmTitle,
+      text:  pageMsg.deleteConfirmText,
+      icon:  'warning',
+      showCancelButton:  true,
+      confirmButtonText: pageMsg.deleteConfirmBtn,
+      cancelButtonText:  pageMsg.cancelBtn
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=SoftDelete&id=' + id, {
+          __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+        }, function (data) {
+          if (data.success) {
+            Swal.fire({ icon: 'success', title: pageMsg.deleteSuccess, timer: 1500, showConfirmButton: false })
+              .then(function () { window.location.href = '@Url.Page(Routes.AdminMenu)'; });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+        });
+      }
+    });
+  });
+</script>
+<script src="~/js/admin-menus.js"></script>
+<script>
+  onLevelChange(document.getElementById('selLevel').value);
+</script>
+}

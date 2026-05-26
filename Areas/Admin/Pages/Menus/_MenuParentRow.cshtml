@@ -1,0 +1,64 @@
+@* _MenuParentRow — renders one level-1 parent and its level-2 children *@
+@using MyApp.Constants
+@{
+  var parent   = (MyApp.Models.Menu)ViewData["parent"]!;
+  var children = (List<MyApp.Models.Menu>)ViewData["children"]!;
+  var model    = (MyApp.Areas.Admin.Pages.Menus.IndexModel)ViewData["model"]!;
+  var myChildren = children.Where(c => c.ParentId == parent.Id).ToList();
+}
+
+<li class="menu-row menu-parent @(parent.Status == StatusConstants.Deleted ? "opacity-50" : "")"
+    data-id="@parent.Id" data-level="1"
+    data-parent-id="@(parent.ParentId?.ToString() ?? "")">
+
+  <div class="d-flex align-items-center px-3 py-2 border-bottom">
+    <span class="drag-handle me-2 text-muted" style="cursor:grab;">
+      <i class="ri ri-drag-move-line"></i>
+    </span>
+    @if (!string.IsNullOrEmpty(parent.MenuIcon))
+    {
+      <i class="ri @parent.MenuIcon me-2 text-primary"></i>
+    }
+    <span class="flex-grow-1">@parent.MenuName</span>
+    @if (!string.IsNullOrEmpty(parent.MenuUrl))
+    {
+      <span class="text-muted small me-2 font-monospace">@parent.MenuUrl</span>
+    }
+    @await Html.PartialAsync("_MenuStatusBadge", parent.Status)
+    @await Html.PartialAsync("_MenuActions", new ViewDataDictionary(ViewData)
+    {
+      { "menu",  parent },
+      { "model", model  }
+    })
+  </div>
+
+  <ul class="sortable-list list-unstyled mb-0 ps-5"
+      data-level="2" data-parent-id="@parent.Id">
+    @foreach (var child in myChildren)
+    {
+      <li class="menu-row menu-child @(child.Status == StatusConstants.Deleted ? "opacity-50" : "")"
+          data-id="@child.Id" data-level="2" data-parent-id="@parent.Id">
+        <div class="d-flex align-items-center px-3 py-2 border-bottom">
+          <span class="drag-handle me-2 text-muted" style="cursor:grab;">
+            <i class="ri ri-drag-move-line"></i>
+          </span>
+          @if (!string.IsNullOrEmpty(child.MenuIcon))
+          {
+            <i class="ri @child.MenuIcon me-2 text-info"></i>
+          }
+          <span class="flex-grow-1 small">@child.MenuName</span>
+          @if (!string.IsNullOrEmpty(child.MenuUrl))
+          {
+            <span class="text-muted small me-2 font-monospace">@child.MenuUrl</span>
+          }
+          @await Html.PartialAsync("_MenuStatusBadge", child.Status)
+          @await Html.PartialAsync("_MenuActions", new ViewDataDictionary(ViewData)
+          {
+            { "menu",  child },
+            { "model", model }
+          })
+        </div>
+      </li>
+    }
+  </ul>
+</li>

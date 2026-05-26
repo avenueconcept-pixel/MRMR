@@ -1,0 +1,122 @@
+@page
+@model MyApp.Areas.Admin.Pages.Menus.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Menu.PageTitle");
+
+  var groups  = Model.AllMenus.Where(m => m.Level == 0).OrderBy(m => m.SortOrder).ToList();
+  var parents = Model.AllMenus.Where(m => m.Level == 1).OrderBy(m => m.SortOrder).ToList();
+  var children = Model.AllMenus.Where(m => m.Level == 2).OrderBy(m => m.SortOrder).ToList();
+  var orphanParents = parents.Where(p => p.ParentId == null).ToList();
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Menu.PageTitle")</h4>
+  <div class="d-flex gap-2">
+    <button id="btnSaveOrder" class="btn btn-success d-none" onclick="saveSortOrder()">
+      <i class="ri ri-save-line me-1"></i>@Model.LblSaveOrder
+    </button>
+    <a asp-area="Admin" asp-page="/Menus/Create" class="btn btn-primary">
+      <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Menu.AddMenu")
+    </a>
+  </div>
+</div>
+
+<div class="alert alert-info alert-dismissible fade show py-2 mb-3" role="alert">
+  <i class="ri ri-drag-move-line me-1"></i>@await T.GetAsync("Menu.DragHint")
+  <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div id="menuTree">
+
+      @* Orphan parents (not assigned to any group) *@
+      @if (orphanParents.Any())
+      {
+        <ul class="sortable-list list-unstyled mb-0" data-level="1" data-parent-id="">
+          @foreach (var parent in orphanParents)
+          {
+            @await Html.PartialAsync("_MenuParentRow", new ViewDataDictionary(ViewData)
+            {
+              { "parent",   parent   },
+              { "children", children },
+              { "model",    Model    }
+            })
+          }
+        </ul>
+      }
+
+      @* Groups with nested parents and children *@
+      <ul class="sortable-list list-unstyled mb-0" data-level="0" data-parent-id="">
+        @foreach (var group in groups)
+        {
+          var groupParents = parents.Where(p => p.ParentId == group.Id).ToList();
+          <li class="menu-row menu-group @(group.Status == StatusConstants.Deleted ? "opacity-50" : "")"
+              data-id="@group.Id" data-level="0" data-parent-id="">
+            <div class="d-flex align-items-center px-3 py-2 border-bottom bg-light">
+              <span class="drag-handle me-2 text-muted" style="cursor:grab;">
+                <i class="ri ri-drag-move-line"></i>
+              </span>
+              @if (!string.IsNullOrEmpty(group.MenuIcon))
+              {
+                <i class="ri @group.MenuIcon me-2 text-secondary"></i>
+              }
+              <span class="fw-semibold text-uppercase text-secondary small flex-grow-1">@group.MenuName</span>
+              @await Html.PartialAsync("_MenuStatusBadge", group.Status)
+              @await Html.PartialAsync("_MenuActions", new ViewDataDictionary(ViewData)
+              {
+                { "menu",  group },
+                { "model", Model }
+              })
+            </div>
+            <ul class="sortable-list list-unstyled mb-0 ps-4"
+                data-level="1" data-parent-id="@group.Id">
+              @foreach (var parent in groupParents)
+              {
+                @await Html.PartialAsync("_MenuParentRow", new ViewDataDictionary(ViewData)
+                {
+                  { "parent",   parent   },
+                  { "children", children },
+                  { "model",    Model    }
+                })
+              }
+            </ul>
+          </li>
+        }
+      </ul>
+
+    </div>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+  <script src="~/vendor/libs/sortablejs/Sortable.min.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)',
+    sortSuccess:        '@Html.Raw(Model.MsgSortSuccess)',
+    sortError:          '@Html.Raw(Model.MsgSortError)',
+    lblDelete:          '@Html.Raw(Model.LblDelete)',
+    lblCancel:          '@Html.Raw(Model.MsgCancelBtn)'
+  };
+</script>
+<script src="~/js/admin-menus.js"></script>
+}

@@ -1,0 +1,15 @@
+@* _MenuStatusBadge — pass status string as model *@
+@model string
+@using MyApp.Constants
+@{
+  var (cls, icon) = Model switch
+  {
+    StatusConstants.Active   => ("bg-success-subtle text-success",   "ri-checkbox-circle-line"),
+    StatusConstants.Inactive => ("bg-warning-subtle text-warning",   "ri-pause-circle-line"),
+    StatusConstants.Deleted  => ("bg-danger-subtle text-danger",     "ri-delete-bin-line"),
+    _                        => ("bg-secondary-subtle text-secondary","ri-question-line")
+  };
+}
+<span class="badge @cls me-2">
+  <i class="ri @icon me-1"></i>@Model
+</span>

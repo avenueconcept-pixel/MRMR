@@ -359,10 +359,15 @@ public class AppDbContext : DbContext
       entity.Property(e => e.MenuCode).HasColumnName("menu_code").HasMaxLength(50).IsRequired();
       entity.Property(e => e.ParentId).HasColumnName("parent_id");
       entity.Property(e => e.MenuName).HasColumnName("menu_name").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.Icon).HasColumnName("icon").HasMaxLength(50);
+      entity.Property(e => e.MenuIcon).HasColumnName("menu_icon").HasMaxLength(100);
+      entity.Property(e => e.MenuUrl).HasColumnName("menu_url").HasMaxLength(500);
       entity.Property(e => e.SortOrder).HasColumnName("sort_order");
       entity.Property(e => e.Level).HasColumnName("level");
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
       entity.HasOne(e => e.Parent).WithMany(m => m.Children).HasForeignKey(e => e.ParentId).OnDelete(DeleteBehavior.Restrict);
       entity.HasMany(e => e.Permissions).WithOne(p => p.Menu).HasForeignKey(p => p.MenuId).OnDelete(DeleteBehavior.Cascade);
     });

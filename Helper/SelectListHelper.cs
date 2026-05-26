@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using MyApp.Constants;
 using MyApp.Helper.DB;
+using MyApp.Models;
 using MyApp.Services;
 using TimeZoneConverter;
 
@@ -56,6 +57,28 @@ public static class SelectListHelper
         new() { Value = "department", Text = await translationService.GetAsync("DataScope.department") },
         new() { Value = "location",   Text = await translationService.GetAsync("DataScope.location") },
       };
+
+  public static async Task<List<SelectListItem>> GetMenuLevelOptions(TranslationService translationService)
+      => new()
+      {
+        new() { Value = "0", Text = await translationService.GetAsync("Menu.Level.Group") },
+        new() { Value = "1", Text = await translationService.GetAsync("Menu.Level.Parent") },
+        new() { Value = "2", Text = await translationService.GetAsync("Menu.Level.Child") },
+      };
+
+  public static List<SelectListItem> GetParentMenuOptions(List<Menu> parents, string placeholder)
+  {
+    var items = new List<SelectListItem> { new() { Value = string.Empty, Text = placeholder } };
+    items.AddRange(parents.Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.MenuName }));
+    return items;
+  }
+
+  public static List<SelectListItem> GetGroupMenuOptions(List<Menu> groups, string placeholder)
+  {
+    var items = new List<SelectListItem> { new() { Value = string.Empty, Text = placeholder } };
+    items.AddRange(groups.Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.MenuName }));
+    return items;
+  }
 
   public static async Task<List<SelectListItem>> GetPaymentMethodOptions(
       PaymentMethodDbHelper pmDb,
