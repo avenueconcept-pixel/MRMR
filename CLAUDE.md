@@ -262,6 +262,57 @@ using var cmd = new NpgsqlCommand("DELETE FROM ...", conn);
 await cmd.ExecuteNonQueryAsync(stoppingToken);
 ```
 
+### File upload — profile images and attachments
+
+Upload paths are declared in `appsettings.json` under `UploadPaths` and read via `IConfiguration["UploadPaths:Key"]`:
+```json
+"UploadPaths": {
+  "AdminProfile": "uploads/admin-profiles"
+}
+```
+
+Physical files are saved under `wwwroot/` using `ProfileImageHelper.SaveProfileImageAsync(file, username, fullPath)` in `Helper/ProfileImageHelper.cs`.
+
+**Filename format:** `{guid}_{sanitizedUsername}{ext}`
+**Allowed types:** `.jpg`, `.jpeg`, `.png` — validated server-side in `ProfileImageHelper` and client-side in JS
+**Max size:** 2MB — validated server-side and client-side
+
+**Form setup** — forms with file inputs must declare `enctype`:
+```html
+<form method="post" asp-page-handler="Create" enctype="multipart/form-data">
+```
+
+**PageModel binding:**
+```csharp
+[BindProperty] public IFormFile? fileProfileImage { get; set; }
+```
+
+**Inject into PageModel constructor** when file upload is needed:
+```csharp
+private readonly IWebHostEnvironment _env;
+private readonly IConfiguration      _config;
+
+// In handler:
+var relPath  = _config["UploadPaths:AdminProfile"] ?? "uploads/admin-profiles";
+var fullPath = Path.Combine(_env.WebRootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
+var filename = await ProfileImageHelper.SaveProfileImageAsync(file, username, fullPath);
+```
+
+**Display** — use the relative URL path, with fallback avatar when null:
+```cshtml
+@{
+  var avatarSrc = string.IsNullOrEmpty(Model.ProfileImage)
+      ? "/images/default-avatar.png"
+      : $"/uploads/admin-profiles/{Model.ProfileImage}";
+}
+<img src="@avatarSrc" style="width:36px;height:36px;object-fit:cover;border-radius:50%;" />
+```
+
+**On update:** delete old physical file before saving new one.
+**On soft delete:** do NOT delete the physical file.
+
+---
+
 ### Password fields — always include show/hide toggle
 Every `<input type="password">` must have a show/hide toggle button. Use a plain Bootstrap 5 `input-group` button with a Remix icon — never use `input-group-merge` (it makes the icon invisible):
 

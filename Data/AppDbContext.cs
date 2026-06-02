@@ -59,8 +59,12 @@ public class AppDbContext : DbContext
       entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(200).IsRequired();
       entity.Property(e => e.RoleId).HasColumnName("role_id");
       entity.Property(e => e.DeptId).HasColumnName("dept_id");
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2);
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).HasDefaultValue("MY");
       entity.Property(e => e.RegionId).HasColumnName("region_id");
+      entity.Property(e => e.MobileCountryCode).HasColumnName("mobile_country_code").HasMaxLength(10);
+      entity.Property(e => e.MobileNo).HasColumnName("mobile_no").HasMaxLength(20);
+      entity.Property(e => e.IsForceChangePassword).HasColumnName("is_force_change_password").HasDefaultValue(false);
+      entity.Property(e => e.ProfileImage).HasColumnName("profile_image").HasMaxLength(500);
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
       entity.Property(e => e.LastLoginAt).HasColumnName("last_login_at");
       entity.Property(e => e.LastLoginLang).HasColumnName("last_login_lang").HasMaxLength(10);

@@ -1,0 +1,226 @@
+@page
+@model MyApp.Areas.Admin.Pages.AdminUsers.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("AdminUser.PageTitle");
+  var lblToggleTitle    = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm  = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes      = await T.GetAsync("ToggleStatusYes");
+  var lblResetTitle     = await T.GetAsync("AdminUser.ResetConfirmTitle");
+  var lblResetText      = await T.GetAsync("AdminUser.ResetConfirmText");
+  var lblResetBtn       = await T.GetAsync("AdminUser.ResetConfirmBtn");
+  var lblResetLabel     = await T.GetAsync("AdminUser.DefaultPasswordLabel");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("AdminUser.PageTitle")</h4>
+  <a asp-area="Admin" asp-page="/AdminUsers/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i> @await T.GetAsync("AdminUser.AddUser")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("AdminUser.UserList")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblAdminUsers" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("ProfileImage")</th>
+            <th>@await T.GetAsync("FullName")</th>
+            <th>@await T.GetAsync("Username")</th>
+            <th>@await T.GetAsync("Email")</th>
+            <th>@await T.GetAsync("Role")</th>
+            <th>@await T.GetAsync("Department")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var user in Model.Items)
+          {
+            var avatarSrc  = string.IsNullOrEmpty(user.ProfileImage)
+                ? "/images/default-avatar.png"
+                : $"/uploads/admin-profiles/{user.ProfileImage}";
+            var badgeClass = user.Status == StatusConstants.Active ? "bg-success" : "bg-secondary";
+            var statusLabel = user.Status == StatusConstants.Active
+                ? await T.GetAsync("status.active")
+                : await T.GetAsync("status.inactive");
+            <tr>
+              <td>
+                <img src="@avatarSrc" alt="@user.FullName"
+                     style="width:36px;height:36px;object-fit:cover;border-radius:50%;" />
+              </td>
+              <td>@user.FullName</td>
+              <td>@user.Username</td>
+              <td>@user.Email</td>
+              <td>@(user.Role?.RoleName ?? "-")</td>
+              <td>@(user.Department?.DeptName ?? "-")</td>
+              <td><span class="badge @badgeClass">@statusLabel</span></td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/AdminUsers/Edit"
+                         asp-route-id="@user.Id">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button" onclick="toggleStatus(@user.Id)">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                      </button>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button" onclick="resetPassword(@user.Id)">
+                        <i class="ri ri-key-line me-1"></i>@await T.GetAsync("Btn.ResetPassword")
+                      </button>
+                    </li>
+                    <li>
+                      <button class="dropdown-item text-danger" type="button" onclick="confirmDelete(@user.Id)">
+                        <i class="ri ri-delete-bin-line me-1"></i>@await T.GetAsync("Btn.Delete")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    toggleTitle:   '@Html.Raw(lblToggleTitle)',
+    toggleConfirm: '@Html.Raw(lblToggleConfirm)',
+    toggleYes:     '@Html.Raw(lblToggleYes)',
+    resetTitle:    '@Html.Raw(lblResetTitle)',
+    resetText:     '@Html.Raw(lblResetText)',
+    resetBtn:      '@Html.Raw(lblResetBtn)',
+    resetLabel:    '@Html.Raw(lblResetLabel)',
+    deleteTitle:   '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteText:    '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteBtn:     '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    deleteSuccess: '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:   '@Html.Raw(Model.MsgDeleteError)',
+    cancelBtn:     '@Html.Raw(Model.MsgCancelBtn)',
+    toggleError:   '@Html.Raw(Model.MsgToggleError)',
+    resetError:    '@Html.Raw(Model.MsgResetError)'
+  };
+
+  var token = $('#formAjax input[name="__RequestVerificationToken"]').val();
+
+  function toggleStatus(id) {
+    Swal.fire({
+      title: pageMsg.toggleTitle,
+      text:  pageMsg.toggleConfirm,
+      icon:  'warning',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.toggleYes,
+      cancelButtonText:  pageMsg.cancelBtn
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=ToggleStatus&id=' + id, { __RequestVerificationToken: token }, function (data) {
+          if (data.success) {
+            location.reload();
+          } else {
+            Swal.fire({ icon: 'error', text: pageMsg.toggleError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.toggleError });
+        });
+      }
+    });
+  }
+
+  function resetPassword(id) {
+    Swal.fire({
+      title: pageMsg.resetTitle,
+      text:  pageMsg.resetText,
+      icon:  'warning',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.resetBtn,
+      cancelButtonText:  pageMsg.cancelBtn
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=ResetPassword&id=' + id, { __RequestVerificationToken: token }, function (data) {
+          if (data.success) {
+            Swal.fire({
+              icon:  'success',
+              title: data.message,
+              html:  pageMsg.resetLabel + ' <strong><code>' + data.defaultPassword + '</code></strong>',
+              showConfirmButton: true
+            });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.resetError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.resetError });
+        });
+      }
+    });
+  }
+
+  function confirmDelete(id) {
+    Swal.fire({
+      icon:  'warning',
+      title: pageMsg.deleteTitle,
+      text:  pageMsg.deleteText,
+      showCancelButton: true,
+      confirmButtonText: pageMsg.deleteBtn,
+      cancelButtonText:  pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=SoftDelete&id=' + id, { __RequestVerificationToken: token }, function (data) {
+          if (data.success) {
+            Swal.fire({ icon: 'success', title: data.message, timer: 1500, showConfirmButton: false })
+              .then(function () { location.reload(); });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+        });
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    initDataTable('#tblAdminUsers', 7);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon:  messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text:  @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}
