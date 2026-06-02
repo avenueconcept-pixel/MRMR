@@ -27,8 +27,8 @@
     @await Html.PartialAsync("_MenuStatusBadge", parent.Status)
     @await Html.PartialAsync("_MenuActions", new ViewDataDictionary(ViewData)
     {
-      { "menu",  parent },
-      { "model", model  }
+      ["menu"]  = parent,
+      ["model"] = model
     })
   </div>
 
@@ -54,8 +54,8 @@
           @await Html.PartialAsync("_MenuStatusBadge", child.Status)
           @await Html.PartialAsync("_MenuActions", new ViewDataDictionary(ViewData)
           {
-            { "menu",  child },
-            { "model", model }
+            ["menu"]  = child,
+            ["model"] = model
           })
         </div>
       </li>

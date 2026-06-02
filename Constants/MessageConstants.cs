@@ -34,6 +34,7 @@ public static class MessageTitle
 {
   public const string Error = "Oops...";
   public const string Success = "";
+  public const string Warning = "...";
 }
 
 public static class MessageType

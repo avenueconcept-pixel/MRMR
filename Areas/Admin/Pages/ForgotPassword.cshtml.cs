@@ -72,9 +72,9 @@ namespace MyApp.Areas.Admin.Pages
 
       DefaultUsername = txtUsername;
 
-      var langCode = string.IsNullOrEmpty(adminUser.LastLoginLangCode)
+      var langCode = string.IsNullOrEmpty(adminUser.LastLoginLang)
           ? AppConstants.DefaultLanguage
-          : adminUser.LastLoginLangCode;
+          : adminUser.LastLoginLang;
 
       var resetToken = await _tokenDbHelper.CreateAsync(UserTypeConstants.Admin, adminUser.Id);
 
