@@ -2,17 +2,14 @@
 @using MyApp.Models
 @{
   TempData.Keep();
-  var allMenus    = await _menuDbHelper.GetAllActiveAsync();
-  string? current = Convert.ToString(ViewContext.RouteData.Values["Page"]);
-
-  string GetPrefix(string? url)
-  {
-    if (string.IsNullOrEmpty(url)) return "\x00";
-    return "/" + url.TrimStart('/').Split('/')[0];
-  }
+  var roleId       = int.TryParse(User.FindFirst(CookieConstants.SessionKeys.RoleId)?.Value, out var rid) ? rid : 0;
+  var isSuperAdmin = User.FindFirst(CookieConstants.SessionKeys.IsSuperAdmin)?.Value == "true";
+  var allMenus     = await _menuDbHelper.GetNavMenuAsync(roleId, isSuperAdmin);
+  string? current  = Context.Request.Path.Value;
 
   bool IsActive(string? url) =>
-      !string.IsNullOrEmpty(url) && current?.StartsWith(GetPrefix(url)) == true;
+      !string.IsNullOrEmpty(url) &&
+      (current == url || current?.StartsWith(url + "/") == true);
 
   bool HasActiveChild(Menu m) =>
       m.Children.Any(c => IsActive(c.MenuUrl) || c.Children.Any(gc => IsActive(gc.MenuUrl)));
@@ -68,11 +65,34 @@
               <ul class="menu-sub">
                 @foreach (var child in parent.Children.OrderBy(c => c.SortOrder))
                 {
-                  <li class='menu-item@(IsActive(child.MenuUrl) ? " active" : "")'>
-                    <a href="@Url.Page(child.MenuUrl)" class="menu-link">
-                      <div>@child.MenuName</div>
-                    </a>
-                  </li>
+                  var childHasChildren = child.Children.Any();
+                  var childActive      = IsActive(child.MenuUrl) || child.Children.Any(gc => IsActive(gc.MenuUrl));
+                  if (childHasChildren)
+                  {
+                    <li class='menu-item@(childActive ? " active open" : "")'>
+                      <a href="javascript:void(0);" class="menu-link menu-toggle">
+                        <div>@child.MenuName</div>
+                      </a>
+                      <ul class="menu-sub">
+                        @foreach (var grandchild in child.Children.OrderBy(c => c.SortOrder))
+                        {
+                          <li class='menu-item@(IsActive(grandchild.MenuUrl) ? " active" : "")'>
+                            <a href="@grandchild.MenuUrl" class="menu-link">
+                              <div>@grandchild.MenuName</div>
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                    </li>
+                  }
+                  else
+                  {
+                    <li class='menu-item@(childActive ? " active" : "")'>
+                      <a href="@child.MenuUrl" class="menu-link">
+                        <div>@child.MenuName</div>
+                      </a>
+                    </li>
+                  }
                 }
               </ul>
             </li>
@@ -80,7 +100,7 @@
           else
           {
             <li class='menu-item@(parentActive ? " active" : "")'>
-              <a href="@Url.Page(parent.MenuUrl)" class="menu-link">
+              <a href="@parent.MenuUrl" class="menu-link">
                 @if (!string.IsNullOrEmpty(parent.MenuIcon))
                 {
                   <i class="menu-icon icon-base ri @parent.MenuIcon"></i>
@@ -110,11 +130,34 @@
             <ul class="menu-sub">
               @foreach (var child in item.Children.OrderBy(c => c.SortOrder))
               {
-                <li class='menu-item@(IsActive(child.MenuUrl) ? " active" : "")'>
-                  <a href="@Url.Page(child.MenuUrl)" class="menu-link">
-                    <div>@child.MenuName</div>
-                  </a>
-                </li>
+                var childHasChildren = child.Children.Any();
+                var childActive      = IsActive(child.MenuUrl) || child.Children.Any(gc => IsActive(gc.MenuUrl));
+                if (childHasChildren)
+                {
+                  <li class='menu-item@(childActive ? " active open" : "")'>
+                    <a href="javascript:void(0);" class="menu-link menu-toggle">
+                      <div>@child.MenuName</div>
+                    </a>
+                    <ul class="menu-sub">
+                      @foreach (var grandchild in child.Children.OrderBy(c => c.SortOrder))
+                      {
+                        <li class='menu-item@(IsActive(grandchild.MenuUrl) ? " active" : "")'>
+                          <a href="@grandchild.MenuUrl" class="menu-link">
+                            <div>@grandchild.MenuName</div>
+                          </a>
+                        </li>
+                      }
+                    </ul>
+                  </li>
+                }
+                else
+                {
+                  <li class='menu-item@(childActive ? " active" : "")'>
+                    <a href="@child.MenuUrl" class="menu-link">
+                      <div>@child.MenuName</div>
+                    </a>
+                  </li>
+                }
               }
             </ul>
           </li>
@@ -122,7 +165,7 @@
         else
         {
           <li class='menu-item@(itemActive ? " active" : "")'>
-            <a href="@Url.Page(item.MenuUrl)" class="menu-link">
+            <a href="@item.MenuUrl" class="menu-link">
               @if (!string.IsNullOrEmpty(item.MenuIcon))
               {
                 <i class="menu-icon icon-base ri @item.MenuIcon"></i>

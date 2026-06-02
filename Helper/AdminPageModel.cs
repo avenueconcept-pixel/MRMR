@@ -21,4 +21,10 @@ public class AdminPageModel : BasePageModel
 
   public string UserTimezone
       => TimezoneHelper.GetTimezone(User);
+
+  public int CurrentRoleId
+      => int.TryParse(User.FindFirstValue(CookieConstants.SessionKeys.RoleId), out var id) ? id : 0;
+
+  public bool CurrentIsSuperAdmin
+      => User.FindFirstValue(CookieConstants.SessionKeys.IsSuperAdmin) == "true";
 }

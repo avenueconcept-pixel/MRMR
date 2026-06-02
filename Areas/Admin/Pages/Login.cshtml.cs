@@ -123,11 +123,13 @@ namespace MyApp.Areas.Admin.Pages
 
       var claims = new List<Claim>
       {
-        new Claim(CookieConstants.SessionKeys.UserId, adminUser.Id.ToString()),
-        new Claim(CookieConstants.SessionKeys.Username, adminUser.Username),
-        new Claim(CookieConstants.SessionKeys.FullName, adminUser.FullName),
+        new Claim(CookieConstants.SessionKeys.UserId,       adminUser.Id.ToString()),
+        new Claim(CookieConstants.SessionKeys.Username,     adminUser.Username),
+        new Claim(CookieConstants.SessionKeys.FullName,     adminUser.FullName),
         new Claim(CookieConstants.SessionKeys.LoginLanguage, selectedLang),
-        new Claim(CookieConstants.SessionKeys.Timezone, adminUser.Country?.Timezone ?? "UTC")
+        new Claim(CookieConstants.SessionKeys.Timezone,     adminUser.Country?.Timezone ?? "UTC"),
+        new Claim(CookieConstants.SessionKeys.RoleId,       adminUser.RoleId.ToString()),
+        new Claim(CookieConstants.SessionKeys.IsSuperAdmin, (adminUser.Role?.IsSuperAdmin ?? false) ? "true" : "false")
       };
 
       var identity = new ClaimsIdentity(claims, AuthSchemeConstants.Admin);

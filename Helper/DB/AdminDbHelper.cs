@@ -14,6 +14,7 @@ public class AdminDbHelper : DbHelper
   public async Task<AdminUser?> GetByUsernameAsync(string username)
       => await ExecuteAsync(() => _db.AdminUsers
           .Include(a => a.Country)
+          .Include(a => a.Role)
           .FirstOrDefaultAsync(a => a.Username == username && a.Status == StatusConstants.Active));
 
   public async Task<AdminUser?> GetByIdAsync(int id)
@@ -28,7 +29,7 @@ public class AdminDbHelper : DbHelper
         var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
         if (admin != null)
         {
-          admin.LastLogin = DateTime.UtcNow;
+          admin.LastLoginAt = DateTime.UtcNow;
           await _db.SaveChangesAsync();
         }
       });
@@ -39,8 +40,8 @@ public class AdminDbHelper : DbHelper
         var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
         if (admin != null)
         {
-          admin.LastLogin = DateTime.UtcNow;
-          admin.LastLoginLangCode = langCode;
+          admin.LastLoginAt   = DateTime.UtcNow;
+          admin.LastLoginLang = langCode;
           await _db.SaveChangesAsync();
         }
       });
@@ -51,7 +52,7 @@ public class AdminDbHelper : DbHelper
         var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
         if (admin != null)
         {
-          admin.LastLoginLangCode = langCode;
+          admin.LastLoginLang = langCode;
           await _db.SaveChangesAsync();
         }
       });
@@ -60,7 +61,7 @@ public class AdminDbHelper : DbHelper
       => await ExecuteAsync(async () =>
       {
         var admin = await _db.AdminUsers.FirstOrDefaultAsync(a => a.Username == username);
-        return admin?.LastLoginLangCode ?? string.Empty;
+        return admin?.LastLoginLang ?? string.Empty;
       });
 
   public async Task UpdateAsync(AdminUser adminUser)

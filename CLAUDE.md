@@ -361,6 +361,85 @@ Every Admin listing page must use a Bootstrap dropdown for row actions — never
 </td>
 ```
 
+### AJAX JSON body handlers — non-CRUD endpoints
+
+For operations that receive a JSON payload (e.g. batch sort/reorder), use `[FromBody]` on the parameter and set `Content-Type: application/json` in the fetch call. The antiforgery token goes in the `RequestVerificationToken` request header (not the body):
+
+```csharp
+// PageModel handler
+public async Task<IActionResult> OnPostSaveSortAsync([FromBody] List<ThingSortItem> items)
+{
+  try
+  {
+    await _thingDbHelper.SaveSortOrderAsync(items, CurrentUsername);
+    return new JsonResult(new { success = true });
+  }
+  catch
+  {
+    var msg = await _translation.GetAsync(MessageConstants.SaveError);
+    return new JsonResult(new { success = false, message = msg });
+  }
+}
+```
+
+```javascript
+// JS fetch
+const token = document.querySelector('#formAjax input[name="__RequestVerificationToken"]').value;
+const res = await fetch('?handler=SaveSort', {
+  method:  'POST',
+  headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+  body:    JSON.stringify(items)
+});
+const data = await res.json();
+```
+
+The DTO for sort items lives in `Dtos/*Dtos.cs`:
+```csharp
+public class ThingSortItem
+{
+  public int  Id        { get; set; }
+  public int  SortOrder { get; set; }
+  public int? ParentId  { get; set; }
+  public int  Level     { get; set; }
+}
+```
+
+### Row action partials — passing translated strings to JS
+
+When a row action dropdown is shared across multiple rendering contexts (e.g. a partial that is called for both parent and child rows), extract it to a `_EntityActions.cshtml` partial. Because partials don't have access to the page's inline `pageMsg` JS object, pass all translated strings directly as function arguments from the partial's C# context:
+
+```cshtml
+@* _ThingActions.cshtml — receives "thing" (Thing) and "model" (IndexModel) via ViewData *@
+@{
+  var thing = (MyApp.Models.Thing)ViewData["thing"]!;
+  var model = (MyApp.Areas.Admin.Pages.Things.IndexModel)ViewData["model"]!;
+}
+
+<button class="dropdown-item text-danger" type="button"
+        onclick="confirmDelete(@thing.Id,
+                               '@Html.Raw(model.MsgDeleteConfirmTitle)',
+                               '@Html.Raw(model.MsgDeleteConfirmText)',
+                               '@Html.Raw(model.MsgDeleteConfirmBtn)',
+                               '@Html.Raw(model.MsgCancelBtn)')">
+  <i class="ri ri-delete-bin-line me-1"></i>@model.LabelDelete
+</button>
+```
+
+The `confirmDelete` JS function signature:
+```javascript
+async function confirmDelete(id, title, text, confirmBtn, cancelBtn) {
+  const result = await Swal.fire({
+    icon: 'warning', title, text,
+    showCancelButton: true, confirmButtonText: confirmBtn, cancelButtonText: cancelBtn,
+    confirmButtonColor: '#dc3545'
+  });
+  if (!result.isConfirmed) return;
+  // ... fetch to ?handler=SoftDelete&id=
+}
+```
+
+The IndexModel must expose all message properties (`MsgDeleteConfirmTitle`, `MsgDeleteConfirmText`, `MsgDeleteConfirmBtn`, `MsgCancelBtn`, `LabelDelete`) loaded in `OnGetAsync` via `TranslationService`, so they are available when the partial is rendered.
+
 ### Edit pages — audit fields and soft delete
 
 Every Admin Edit page must display audit metadata below the form, and include a soft delete button.
@@ -510,6 +589,56 @@ public async Task<IActionResult> OnPostSoftDeleteAsync(string entityCode)
   });
 </script>
 }
+```
+
+### Sidebar navigation menu
+
+The sidebar is rendered by `Areas/Admin/Pages/Layouts/Sections/Menu/_VerticalMenu.cshtml`, included from `_ContentNavbarLayout.cshtml`. It calls `MenuDbHelper.GetNavMenuAsync(roleId, isSuperAdmin)`.
+
+**Menu level convention:**
+
+| `level` | Role | Has URL? | Example |
+|---|---|---|---|
+| 0 | Group header (non-clickable label) | No | "Administration" |
+| 1 | Module (collapsible, top-level) | No | "Master Data" |
+| 2 | Sub module OR function | Only if leaf | "General Setup", "Countries" |
+
+The sidebar renders up to 3 collapsible levels. A Level 2 item with children renders as a collapsible sub-module; without children it renders as a leaf link.
+
+**Menu URL format — always store as the actual URL path:**
+```
+/Admin/Countries     ← correct (plural, matches Razor Pages folder)
+/Admin/Country       ← wrong (singular)
+/Admin/Countries/Index  ← wrong (don't include /Index)
+```
+Never use `Url.Page()` for sidebar links — store and render the URL directly as `href`.
+
+**`IsActive` detection uses `Context.Request.Path.Value`:**
+```csharp
+string? current = Context.Request.Path.Value;  // e.g. "/Admin/Countries"
+
+bool IsActive(string? url) =>
+    !string.IsNullOrEmpty(url) &&
+    (current == url || current?.StartsWith(url + "/") == true);
+```
+Do not use `ViewContext.RouteData.Values["Page"]` — that returns Razor Pages path format (`/Countries/Index`) which does not match stored URL paths.
+
+**Role-based filtering — `GetNavMenuAsync(int roleId, bool isSuperAdmin)`:**
+- SuperAdmin (`IsSuperAdmin = true`): returns all active menus
+- Other roles: returns only menus assigned in `role_menus` for the role, with empty parent branches pruned
+- Uses flat DB load + in-memory tree build (NOT EF Core filtered Include/ThenInclude, which silently returns empty `Children` on self-referencing entities)
+
+**Login claims — `RoleId` and `IsSuperAdmin` are stored in the auth cookie:**
+```csharp
+new Claim(CookieConstants.SessionKeys.RoleId,       adminUser.RoleId.ToString()),
+new Claim(CookieConstants.SessionKeys.IsSuperAdmin, (adminUser.Role?.IsSuperAdmin ?? false) ? "true" : "false")
+```
+`AdminDbHelper.GetByUsernameAsync` must `.Include(a => a.Role)` so `IsSuperAdmin` is available at login time.
+
+**`AdminPageModel` helpers:**
+```csharp
+public int  CurrentRoleId      => int.TryParse(User.FindFirstValue(CookieConstants.SessionKeys.RoleId), out var id) ? id : 0;
+public bool CurrentIsSuperAdmin => User.FindFirstValue(CookieConstants.SessionKeys.IsSuperAdmin) == "true";
 ```
 
 ### Translation-enabled entities (entity + `*Translation` table)

@@ -31,6 +31,58 @@ public class MenuDbHelper : DbHelper
         return items;
       });
 
+  // Active only, hierarchy filtered by role — used by sidebar nav
+  // Uses flat load + in-memory tree to avoid EF Core filtered-include issues on self-referencing entities
+  public async Task<List<Menu>> GetNavMenuAsync(int roleId, bool isSuperAdmin)
+      => await ExecuteAsync(async () =>
+      {
+        var all = await _db.Menus
+            .AsNoTracking()
+            .Where(m => m.Status == StatusConstants.Active)
+            .OrderBy(m => m.SortOrder)
+            .ToListAsync();
+
+        HashSet<int> permittedIds;
+        if (isSuperAdmin)
+        {
+          permittedIds = all.Select(m => m.Id).ToHashSet();
+        }
+        else
+        {
+          var ids = await _db.RoleMenus
+              .Where(rm => rm.RoleId == roleId)
+              .Select(rm => rm.MenuId)
+              .ToListAsync();
+          permittedIds = ids.ToHashSet();
+        }
+
+        var lookup = all.ToDictionary(m => m.Id);
+        var roots  = new List<Menu>();
+
+        foreach (var m in all)
+        {
+          if (m.ParentId == null)
+            roots.Add(m);
+          else if (lookup.TryGetValue(m.ParentId.Value, out var parent))
+            ((List<Menu>)parent.Children).Add(m);
+        }
+
+        if (!isSuperAdmin)
+          PruneTree(roots, permittedIds);
+
+        return roots;
+      });
+
+  // Removes branches that have no permitted menu in them
+  private static void PruneTree(List<Menu> nodes, HashSet<int> permittedIds)
+  {
+    nodes.RemoveAll(n =>
+    {
+      PruneTree((List<Menu>)n.Children, permittedIds);
+      return !permittedIds.Contains(n.Id) && !n.Children.Any();
+    });
+  }
+
   // Active only, nested — used by Roles create/edit (permission assignment)
   public async Task<List<Menu>> GetAllActiveAsync()
       => await ExecuteAsync(async () =>
