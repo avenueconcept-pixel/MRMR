@@ -29,6 +29,7 @@ public class Routes
   public const string AdminChangePassword       = "/Account/ChangePassword";
   public const string AdminPageAccessHistory    = "/PageAccessHistory/Index";
   public const string AdminUnitOfMeasure        = "/UnitsOfMeasure/Index";
+  public const string AdminPriceTier            = "/PriceTiers/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

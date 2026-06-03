@@ -35,6 +35,7 @@ public class AppDbContext : DbContext
   public DbSet<BankTranslation>  BankTranslations  => Set<BankTranslation>();
   public DbSet<UnitOfMeasure>    UnitsOfMeasure    => Set<UnitOfMeasure>();
   public DbSet<UomTranslation>   UomTranslations   => Set<UomTranslation>();
+  public DbSet<PriceTier>        PriceTiers        => Set<PriceTier>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -471,6 +472,22 @@ public class AppDbContext : DbContext
       entity.Property(e => e.UomCode).HasColumnName("uom_code").HasMaxLength(20).IsRequired();
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.UomName).HasColumnName("uom_name").HasMaxLength(100).IsRequired();
+    });
+
+    // PriceTier
+    modelBuilder.Entity<PriceTier>(entity =>
+    {
+      entity.ToTable("price_tiers");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.TierName).HasColumnName("tier_name").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
     });
 
     // Customer
