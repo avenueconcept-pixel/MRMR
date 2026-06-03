@@ -82,6 +82,13 @@ public class EditModel : AdminPageModel
     StatusOptions     = await SelectListHelper.GetStatusOptions(_translation);
     TranslationInputs = await BuildInputsAsync(null);
 
+    var uom = new UnitOfMeasure
+    {
+      UomCode = uomCode,
+      UomName = txtUomName.Trim(),
+      Status  = ddlStatus
+    };
+
     var languages    = await _languageDbHelper.GetAllActiveAsync();
     var translations = languages
         .Select(l => new UomTranslation
@@ -93,7 +100,7 @@ public class EditModel : AdminPageModel
         .Where(t => !string.IsNullOrEmpty(t.UomName))
         .ToList();
 
-    await _uomDbHelper.UpdateAsync(uomCode, txtUomName.Trim(), ddlStatus, translations, CurrentUsername);
+    await _uomDbHelper.UpdateAsync(uom, translations, CurrentUsername);
 
     AlertMessageType    = MessageType.Success;
     AlertMessageTitle   = MessageTitle.Success;

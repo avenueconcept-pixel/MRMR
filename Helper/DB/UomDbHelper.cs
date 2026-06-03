@@ -85,23 +85,23 @@ public class UomDbHelper : DbHelper
         return UomAddResult.Created;
       });
 
-  public async Task UpdateAsync(string uomCode, string uomName, string status, List<UomTranslation> translations, string updatedBy)
-    => await ExecuteAsync(async () =>
-    {
-      var existing = await _db.UnitsOfMeasure
-          .Include(u => u.Translations)
-          .FirstOrDefaultAsync(u => u.UomCode == uomCode);
-      if (existing == null) return;
+  public async Task UpdateAsync(UnitOfMeasure uom, List<UomTranslation> translations, string updatedBy)
+      => await ExecuteAsync(async () =>
+      {
+        var existing = await _db.UnitsOfMeasure
+            .Include(u => u.Translations)
+            .FirstOrDefaultAsync(u => u.UomCode == uom.UomCode);
+        if (existing == null) return;
 
-      existing.UomName = uomName;
-      existing.Status = status;
-      existing.UpdatedBy = updatedBy;
-      existing.UpdatedAt = DateTime.UtcNow;
+        existing.UomName   = uom.UomName;
+        existing.Status    = uom.Status;
+        existing.UpdatedBy = updatedBy;
+        existing.UpdatedAt = DateTime.UtcNow;
 
-      _db.UomTranslations.RemoveRange(existing.Translations);
+        _db.UomTranslations.RemoveRange(existing.Translations);
         foreach (var t in translations)
         {
-          t.UomCode = uomCode;
+          t.UomCode = uom.UomCode;
           _db.UomTranslations.Add(t);
         }
         await _db.SaveChangesAsync();
