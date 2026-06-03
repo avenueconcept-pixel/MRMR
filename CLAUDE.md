@@ -21,10 +21,12 @@ This project uses **ASP.NET Core Razor Pages** — there are no MVC controllers.
 ```
 PageModel (.cshtml.cs)
   └── DbHelper (Helper/DB/)      ← repository-style EF Core queries
-        └── AppDbContext          ← EF Core DbContext
-              └── PostgreSQL
+        └── AppDbContext          ← main EF Core DbContext (PostgreSQL)
+        └── AuditDbContext        ← audit EF Core DbContext (myapp_audit DB)
   └── Service (Services/)        ← cross-cutting logic (email, translation)
 ```
+
+**Two DbContexts:** `AppDbContext` is the main application database. `AuditDbContext` targets the separate `myapp_audit` database and holds audit/session/access-log tables (`audit_logs`, `user_sessions`, `page_access_history`, `page_access_history_archive`). Both are registered with their own connection strings in `Program.cs`.
 
 - HTTP handling lives in `PageModel` classes (OnGet / OnPost handlers)
 - Data access lives in `*DbHelper` classes, never directly in PageModels
@@ -44,7 +46,8 @@ Areas/
   Customer/Pages/       ← customer-facing Razor Pages
 Constants/              ← static constant classes only
 Data/
-  AppDbContext.cs       ← single DbContext, all Fluent API config here
+  AppDbContext.cs       ← main DbContext (app DB), all Fluent API config here
+  AuditDbContext.cs     ← audit DbContext (audit DB) — audit_logs, user_sessions, page_access_history
 Dtos/                   ← data transfer objects, one file per domain
 Helper/
   DB/                   ← DbHelper subclasses (one per entity group)
@@ -98,6 +101,14 @@ Razor Pages folders under `Areas/Admin/Pages/` must always use the **plural** fo
 
 **Why:** C# resolves an unqualified name to the enclosing namespace first. A folder named `Department/` produces namespace `MyApp.Areas.Admin.Pages.Department`, making `Department` refer to the namespace rather than `MyApp.Models.Department`. Using the plural form avoids the collision entirely — no `using` alias required.
 
+**Exception — compound names that are already plural or can't be pluralised** (e.g. `PageAccessHistory`): when the folder name is unavoidably identical to the model class name, resolve the collision with a using alias at the top of every `.cshtml.cs` in that folder:
+
+```csharp
+using PageAccessHistoryModel = MyApp.Models.PageAccessHistory;
+```
+
+Then use the alias throughout the file in place of the bare type name (`List<PageAccessHistoryModel>`, etc.).
+
 ### Database
 | Thing | Convention | Example |
 |---|---|---|
@@ -127,7 +138,10 @@ Wire up in the form with `asp-page-handler`:
 </form>
 ```
 
-### DbHelper pattern
+### DbHelper pattern — two variants
+
+**Variant A — extends `DbHelper` base (standard, for `AppDbContext` entities):**
+
 All database access through scoped `DbHelper` subclasses injected into PageModels. Every method must wrap its operation in `ExecuteAsync` — this provides automatic error logging with method name, file, and line number:
 
 ```csharp
@@ -166,10 +180,73 @@ public class ThingDbHelper : DbHelper
 | `UpdateStatusAsync` | `UpdateThingStatusAsync` |
 | `DeleteAsync` | `DeleteThingAsync` |
 
+**Variant B — standalone (for `AuditDbContext`-only helpers):**
+
+When a DbHelper works exclusively with `AuditDbContext` and never touches `AppDbContext`, do **not** extend the base `DbHelper` (which requires `AppDbContext + AuditHelper`). Instead, write it standalone with its own `ExecuteAsync` wrappers — exactly like `UserSessionDbHelper` and `PageAccessDbHelper`:
+
+```csharp
+// Helper/DB/ThingAuditDbHelper.cs
+public class ThingAuditDbHelper
+{
+  private readonly AuditDbContext              _auditDb;
+  private readonly ILogger<ThingAuditDbHelper> _logger;
+
+  public ThingAuditDbHelper(AuditDbContext auditDb, ILoggerFactory loggerFactory)
+  {
+    _auditDb = auditDb;
+    _logger  = loggerFactory.CreateLogger<ThingAuditDbHelper>();
+  }
+
+  private async Task<T> ExecuteAsync<T>(Func<Task<T>> op,
+      [CallerMemberName] string caller = "", [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
+  {
+    try { return await op(); }
+    catch (Exception ex) { _logger.LogError(ex, "DB error in {M} ({F}:{L})", caller, Path.GetFileName(file), line); throw; }
+  }
+
+  private async Task ExecuteAsync(Func<Task> op,
+      [CallerMemberName] string caller = "", [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
+  {
+    try { await op(); }
+    catch (Exception ex) { _logger.LogError(ex, "DB error in {M} ({F}:{L})", caller, Path.GetFileName(file), line); throw; }
+  }
+}
+```
+
 Register in `Program.cs`:
 ```csharp
 builder.Services.AddScoped<ThingDbHelper>();
 ```
+
+**`UpdateAsync` signature — always accept a model object, never individual field parameters:**
+
+```csharp
+// Correct — pass the entity object
+public async Task UpdateAsync(Thing thing, string updatedBy) { ... }
+public async Task UpdateAsync(Thing thing, List<ThingTranslation> translations, string updatedBy) { ... }
+
+// Wrong — individual parameters break the pattern and hide missing fields
+public async Task UpdateAsync(int id, string name, string status, string updatedBy) { ... }
+```
+
+The corresponding `OnPostUpdateAsync` in the PageModel constructs a new model object and passes it:
+
+```csharp
+public async Task<IActionResult> OnPostUpdateAsync(string thingCode)
+{
+  var thing = new Thing
+  {
+    ThingCode = thingCode,
+    Name      = txtName.Trim(),
+    Status    = ddlStatus
+  };
+  // ... build translations ...
+  await _thingDbHelper.UpdateAsync(thing, translations, CurrentUsername);
+  ...
+}
+```
+
+Inside `UpdateAsync`, always fetch the tracked entity first, then assign from the passed object — never call `_db.Update()` on the detached input directly.
 
 **When adding, renaming, or removing a field on any Model or PageModel, always check the corresponding DbHelper and update every affected method:**
 - `Add*Async` — ensure the new field is assigned before insert
@@ -252,15 +329,44 @@ public class DashboardModel : CustomerPageModel { ... }
 
 Public pages (Login, ForgotPassword, ResetPassword) inherit from `BasePageModel` or `PageModel` directly — no `[Authorize]`.
 
-### BackgroundService — use raw Npgsql, not EF Core
-`BackgroundService` is a singleton. `AppDbContext` is scoped and cannot be injected directly into a singleton. Use raw `NpgsqlConnection` for any DB work in a hosted service:
+### BackgroundService — scoped services via CreateScope
+
+`BackgroundService` is a singleton. Scoped services (`DbHelper`, `AppDbContext`, `AuditDbContext`) cannot be injected into the constructor — use `IServiceProvider.CreateScope()` to resolve them per operation:
+
+```csharp
+using var scope  = _serviceProvider.CreateScope();
+var myHelper     = scope.ServiceProvider.GetRequiredService<MyDbHelper>();
+await myHelper.DoWorkAsync();
+```
+
+Use this pattern for EF Core–based helpers (`UserSessionDbHelper`, `PageAccessDbHelper`, etc.).
+
+Use raw `NpgsqlConnection` only when you need to target a database that has no registered DbContext, or when bulk-deleting without loading entities first:
 
 ```csharp
 using var conn = new NpgsqlConnection(_connectionString);
 await conn.OpenAsync(stoppingToken);
-using var cmd = new NpgsqlCommand("DELETE FROM ...", conn);
+using var cmd = new NpgsqlCommand("DELETE FROM app_logs WHERE created_at < @cutoff", conn);
+cmd.Parameters.AddWithValue("@cutoff", cutoff);
 await cmd.ExecuteNonQueryAsync(stoppingToken);
 ```
+
+**Guard per-interval jobs with a timestamp field** — never poll blindly every tick:
+
+```csharp
+private DateTime _lastRun = DateTime.MinValue;
+
+// Inside ExecuteAsync loop:
+if (DateTime.UtcNow.Date > _lastRun.Date)   // once daily
+{
+    // ... do work ...
+    _lastRun = DateTime.UtcNow;
+}
+
+await Task.Delay(TimeSpan.FromMinutes(15), stoppingToken); // single sleep at the bottom
+```
+
+All background jobs live in `Services/LogCleanupService.cs` — do not create additional `BackgroundService` classes.
 
 ### File upload — profile images and attachments
 
@@ -383,6 +489,51 @@ Rules:
 - Actions column is always last and its index is always passed to disable sorting
 - `initDataTable` defaults: `pageLength: 25`, `order: [[0, 'asc']]`
 - For tables that need non-standard options (different order direction, extra `columnDefs`), call `.DataTable({...})` directly — do not override `initDataTable`
+
+### High-volume log/audit pages — server-side pagination, no DataTables
+
+For tables that grow continuously (access logs, audit trails, background-job output), use **server-side pagination** instead of DataTables. DataTables loads all rows into the browser — unsuitable for millions of rows.
+
+**Filter form** — use `method="get"` so all filter params land in the query string and the browser's Back button works:
+
+```cshtml
+<form method="get" asp-page="/PageAccessHistory/Index">
+  <input type="text" asp-for="FilterUsername" class="form-control" />
+  <select asp-for="FilterSystemType" asp-items="Model.ddlSystemType" class="form-select"></select>
+  <input type="date" asp-for="FilterStartDate" class="form-control" />
+  <button type="submit" class="btn btn-primary">@await T.GetAsync("Btn.Search")</button>
+  <a asp-page="..." class="btn btn-outline-secondary">@await T.GetAsync("Btn.Clear")</a>
+</form>
+```
+
+**PageModel pattern:**
+
+```csharp
+[BindProperty(SupportsGet = true)] public string? FilterUsername  { get; set; }
+[BindProperty(SupportsGet = true)] public int     CurrentPage     { get; set; } = 1;
+
+public List<MyModel> Items      { get; set; } = new();
+public int           TotalCount { get; set; }
+public int           PageSize   => 50;
+public int           TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+```
+
+**Pagination links** — every link must carry all current filter params to preserve the active filter across page changes:
+
+```cshtml
+<a asp-page="/Thing/Index"
+   asp-route-currentPage="@p"
+   asp-route-filterUsername="@Model.FilterUsername"
+   asp-route-filterStartDate="@Model.FilterStartDate">
+  @p
+</a>
+```
+
+**Date filters** — parse with `AppConstants.DateInputFormat` (`yyyy-MM-dd`), convert to UTC via `.ToUtcFromUserTimezone(UserTimezone)`. For end date add `AddDays(1).AddSeconds(-1)` to include the full day.
+
+**DbHelper** — return a `(List<T> Items, int TotalCount)` tuple. Apply all filters at DB level with `.Where(...)` before `.Skip().Take()`.
+
+Do **not** call `initDataTable` on these pages.
 
 ### Index pages — Actions column dropdown
 
@@ -898,7 +1049,7 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 - Use `async/await` for all database and I/O operations
 - Use `DateTime.UtcNow` for all timestamp fields (`created_at`, `updated_at`, etc.)
 - In `CreateAsync`, always explicitly assign **all** entity fields plus set `CreatedAt = DateTime.UtcNow`, `CreatedBy = createdBy`, `UpdatedAt = DateTime.UtcNow`, `UpdatedBy = createdBy` — use an object initializer so nothing is silently omitted
-- In `UpdateAsync`, fetch the existing record first, then explicitly assign each mutable field plus set `UpdatedAt = DateTime.UtcNow`, `UpdatedBy = updatedBy` — never call `_db.Update(entity)` directly on a detached object
+- In `UpdateAsync`, accept a model object (not individual field parameters) as the first argument, fetch the tracked record inside the helper, then assign from the passed object field by field — never call `_db.Update(entity)` directly on the detached input
 - Always set `HasDefaultValueSql("now() AT TIME ZONE 'utc'")` on every `created_at` / `updated_at` column in `AppDbContext` — and use `TIMESTAMPTZ NOT NULL DEFAULT (now() AT TIME ZONE 'utc')` in the raw SQL CREATE TABLE script
 - Map DB columns explicitly with `.HasColumnName("snake_case")` in `AppDbContext`
 - Keep Models as plain POCOs — no methods, no business logic
@@ -910,6 +1061,16 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 - Create a new `*DbHelper` class per entity group (one for Admin, one for Customer, etc.)
 - After model changes, provide a raw SQL script for pgAdmin — do not suggest `dotnet ef migrations`. Save all generated `.sql` files to `D:\CRMCore\Script\` (not the project root)
 - Use soft delete — set `Status = StatusConstants.Deleted` instead of physically deleting records, unless explicitly told otherwise
+- Use `long` (C#) / `BIGSERIAL` (SQL) for PKs on high-volume tables (access logs, audit trails, job output) — `int`/`SERIAL` overflows at ~2 billion rows
+- When a middleware's `InvokeAsync` needs a scoped service (e.g. `PageAccessDbHelper`), inject it as a method parameter — not via the constructor. Constructor injection in middleware produces a singleton-scoped instance which breaks scoped EF Core contexts:
+
+```csharp
+// Correct — method injection
+public async Task InvokeAsync(HttpContext context, PageAccessDbHelper pageAccessDbHelper) { ... }
+
+// Wrong — constructor injection creates a singleton instance
+public MyMiddleware(RequestDelegate next, PageAccessDbHelper db) { ... }
+```
 - All `<select>` element names and `[BindProperty]` properties for dropdowns use `ddl` prefix — e.g. `ddlLanguage`, `ddlStatus`
 - All UI-facing strings go through `TranslationService.GetAsync(key)` — no hardcoded strings in `.cshtml` or PageModels
 - Use SweetAlert2 for all alert/notification messages — vendor file at `~/vendor/libs/sweetalert2/sweetalert2.dist.js`, never use `alert()` or inline Bootstrap alerts
@@ -932,6 +1093,6 @@ Always use Razor comment syntax in `.cshtml` files — never HTML comments for c
 - Never skip `UseAuthentication` / `UseAuthorization` in the pipeline
 - Never physically delete records — always soft delete via `Status = StatusConstants.Deleted`
 - Never reorder the middleware pipeline without understanding the dependencies
-- Never inject `AppDbContext` into a `BackgroundService` — use raw `NpgsqlConnection` instead (EF Core's DbContext is scoped, BackgroundService is singleton)
+- Never inject `AppDbContext` or any scoped `DbHelper` into a `BackgroundService` constructor — use `IServiceProvider.CreateScope()` inside the job body instead
 - Never use `[Authorize]` directly on a page model — use `AdminPageModel` or `CustomerPageModel` as the base class
 - Never commit real SMTP passwords or connection strings — move secrets to `appsettings.Development.json` or User Secrets
