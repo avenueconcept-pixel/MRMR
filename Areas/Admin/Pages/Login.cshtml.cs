@@ -128,8 +128,9 @@ namespace MyApp.Areas.Admin.Pages
         new Claim(CookieConstants.SessionKeys.FullName,     adminUser.FullName),
         new Claim(CookieConstants.SessionKeys.LoginLanguage, selectedLang),
         new Claim(CookieConstants.SessionKeys.Timezone,     adminUser.Country?.Timezone ?? "UTC"),
-        new Claim(CookieConstants.SessionKeys.RoleId,       adminUser.RoleId.ToString()),
-        new Claim(CookieConstants.SessionKeys.IsSuperAdmin, (adminUser.Role?.IsSuperAdmin ?? false) ? "true" : "false")
+        new Claim(CookieConstants.SessionKeys.RoleId,                adminUser.RoleId.ToString()),
+        new Claim(CookieConstants.SessionKeys.IsSuperAdmin,          (adminUser.Role?.IsSuperAdmin ?? false) ? "true" : "false"),
+        new Claim(CookieConstants.SessionKeys.IsForceChangePassword,  adminUser.IsForceChangePassword ? "true" : "false")
       };
 
       var identity = new ClaimsIdentity(claims, AuthSchemeConstants.Admin);
@@ -144,6 +145,9 @@ namespace MyApp.Areas.Admin.Pages
 
       await _audit.LogLoginAsync(adminUser.Username, AuditConstants.Actions.Login);
       await _adminDbHelper.UpdateLoginInfoAsync(adminUser.Username, selectedLang);
+
+      if (adminUser.IsForceChangePassword)
+        return RedirectToPage(Routes.AdminForceChangePassword);
 
       return RedirectToPage(Routes.AdminDashboard);
     }

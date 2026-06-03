@@ -94,6 +94,36 @@ public class AdminUserDbHelper : DbHelper
         }
       });
 
+  public async Task ForceChangePasswordAsync(int userId, string newHashedPassword, string updatedBy)
+      => await ExecuteAsync(async () =>
+      {
+        var user = await _db.AdminUsers.FindAsync(userId);
+        if (user == null) return;
+        user.PasswordHash          = newHashedPassword;
+        user.IsForceChangePassword = false;
+        user.UpdatedAt             = DateTime.UtcNow;
+        user.UpdatedBy             = updatedBy;
+        await _db.SaveChangesAsync();
+      });
+
+  public async Task ChangePasswordAsync(int userId, string newHashedPassword, string updatedBy)
+      => await ExecuteAsync(async () =>
+      {
+        var user = await _db.AdminUsers.FindAsync(userId);
+        if (user == null) return;
+        user.PasswordHash = newHashedPassword;
+        user.UpdatedAt    = DateTime.UtcNow;
+        user.UpdatedBy    = updatedBy;
+        await _db.SaveChangesAsync();
+      });
+
+  public async Task<string?> GetPasswordHashAsync(int userId)
+      => await ExecuteAsync(async () =>
+      {
+        var user = await _db.AdminUsers.FindAsync(userId);
+        return user?.PasswordHash;
+      });
+
   public async Task SoftDeleteAsync(int id, string updatedBy)
       => await ExecuteAsync(async () =>
       {

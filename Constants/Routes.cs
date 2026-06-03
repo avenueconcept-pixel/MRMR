@@ -25,6 +25,8 @@ public class Routes
   public const string AdminBank            = "/Banks/Index";
   public const string AdminAdminUsers          = "/AdminUsers/Index";
   public const string AdminTranslationManager  = "/TranslationManager/Index";
+  public const string AdminForceChangePassword = "/Account/ForceChangePassword";
+  public const string AdminChangePassword      = "/Account/ChangePassword";
 
   // Customer
   public const string CustomerLogin = "/Login";
