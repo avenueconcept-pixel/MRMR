@@ -33,6 +33,8 @@ public class AppDbContext : DbContext
   public DbSet<Permission>       Permissions       => Set<Permission>();
   public DbSet<Bank>             Banks             => Set<Bank>();
   public DbSet<BankTranslation>  BankTranslations  => Set<BankTranslation>();
+  public DbSet<UnitOfMeasure>    UnitsOfMeasure    => Set<UnitOfMeasure>();
+  public DbSet<UomTranslation>   UomTranslations   => Set<UomTranslation>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -438,6 +440,37 @@ public class AppDbContext : DbContext
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.BankName).HasColumnName("bank_name").HasMaxLength(200).IsRequired();
       entity.Property(e => e.ShortName).HasColumnName("short_name").HasMaxLength(100).IsRequired();
+    });
+
+    // UnitOfMeasure
+    modelBuilder.Entity<UnitOfMeasure>(entity =>
+    {
+      entity.ToTable("units_of_measure");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.UomCode).HasColumnName("uom_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.UomName).HasColumnName("uom_name").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasMany(e => e.Translations)
+            .WithOne(t => t.UnitOfMeasure)
+            .HasForeignKey(t => t.UomCode)
+            .HasPrincipalKey(e => e.UomCode)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // UomTranslation
+    modelBuilder.Entity<UomTranslation>(entity =>
+    {
+      entity.ToTable("uom_translations");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.UomCode).HasColumnName("uom_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.UomName).HasColumnName("uom_name").HasMaxLength(100).IsRequired();
     });
 
     // Customer

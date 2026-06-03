@@ -61,6 +61,8 @@ builder.Services.AddScoped<AdminUserDbHelper>();
 builder.Services.AddScoped<TranslationDbHelper>();
 builder.Services.AddScoped<UserSessionDbHelper>();
 builder.Services.AddScoped<DashboardDbHelper>();
+builder.Services.AddScoped<PageAccessDbHelper>();
+builder.Services.AddScoped<UomDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
