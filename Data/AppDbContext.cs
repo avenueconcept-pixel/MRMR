@@ -45,6 +45,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.Key).HasColumnName("key").HasMaxLength(100).IsRequired();
       entity.Property(e => e.Value).HasColumnName("value").IsRequired();
+      entity.HasIndex(e => new { e.Key, e.LanguageCode }).IsUnique();
     });
 
     // AdminUser

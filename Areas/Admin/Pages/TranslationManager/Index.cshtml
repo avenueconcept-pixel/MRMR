@@ -1,0 +1,409 @@
+@page
+@model MyApp.Areas.Admin.Pages.TranslationManager.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Translation.PageTitle");
+
+  var lblAllLanguages    = await T.GetAsync("Translation.AllLanguages");
+  var lblKeyPlaceholder  = await T.GetAsync("Translation.KeyFilterPlaceholder");
+  var lblValuePlaceholder = await T.GetAsync("Translation.ValueFilterPlaceholder");
+  var lblSave            = await T.GetAsync("Btn.Save");
+  var lblDelete          = await T.GetAsync("Btn.Delete");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Translation.PageTitle")</h4>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAddKey">
+      <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Btn.AddKey")
+    </button>
+    <button type="button" class="btn btn-outline-secondary" id="btnExport">
+      <i class="ri ri-download-line me-1"></i>@await T.GetAsync("Btn.Export")
+    </button>
+    <button type="button" class="btn btn-outline-secondary" id="btnImport">
+      <i class="ri ri-upload-line me-1"></i>@await T.GetAsync("Btn.Import")
+    </button>
+    <input type="file" id="fileImport" accept=".xlsx" style="display:none" />
+  </div>
+</div>
+
+@* Filter bar *@
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label" for="ddlLanguageFilter">@await T.GetAsync("Language")</label>
+        <select id="ddlLanguageFilter" class="form-select">
+          <option value="">@lblAllLanguages</option>
+          @foreach (var lang in Model.LanguageCodes)
+          {
+            <option value="@lang">@lang.ToUpper()</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="txtKeyFilter">@await T.GetAsync("Translation.Key")</label>
+        <input type="text" id="txtKeyFilter" class="form-control" placeholder="@lblKeyPlaceholder" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="txtValueFilter">@await T.GetAsync("Translation.Value")</label>
+        <input type="text" id="txtValueFilter" class="form-control" placeholder="@lblValuePlaceholder" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Translation.KeyList")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblTranslations" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("Translation.Key")</th>
+            @foreach (var lang in Model.LanguageCodes)
+            {
+              <th>@lang.ToUpper()</th>
+            }
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var row in Model.GridRows)
+          {
+            <tr>
+              <td>@row.Key</td>
+              @foreach (var lang in Model.LanguageCodes)
+              {
+                var val = row.Values.TryGetValue(lang, out var v) ? v : string.Empty;
+                <td>
+                  <input type="text" class="form-control form-control-sm"
+                         data-key="@row.Key" data-lang="@lang"
+                         value="@val" />
+                </td>
+              }
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <button class="dropdown-item" type="button"
+                              data-key="@row.Key"
+                              onclick="saveRow(this.getAttribute('data-key'))">
+                        <i class="ri ri-save-line me-1"></i>@lblSave
+                      </button>
+                    </li>
+                    <li>
+                      <button class="dropdown-item text-danger" type="button"
+                              data-key="@row.Key"
+                              onclick="confirmDelete(this.getAttribute('data-key'))">
+                        <i class="ri ri-delete-bin-line me-1"></i>@lblDelete
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@* Add Key Modal *@
+<div class="modal fade" id="modalAddKey" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">@await T.GetAsync("Translation.AddKeyTitle")</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" for="txtNewKey">@await T.GetAsync("Translation.Key")</label>
+          <input type="text" id="txtNewKey" class="form-control"
+                 placeholder="@await T.GetAsync("Translation.KeyPlaceholder")" />
+        </div>
+        @foreach (var lang in Model.LanguageCodes)
+        {
+          var safeId = $"txtNewValue_{lang.Replace("-", "_")}";
+          <div class="mb-3">
+            <label class="form-label" for="@safeId">@lang.ToUpper()</label>
+            <input type="text" id="@safeId" class="form-control"
+                   data-addlang="@lang"
+                   placeholder="@await T.GetAsync("Translation.ValuePlaceholder")" />
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          @await T.GetAsync("Btn.Cancel")
+        </button>
+        <button type="button" id="btnSaveAddKey" class="btn btn-primary">
+          @await T.GetAsync("Btn.Save")
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Hidden antiforgery form for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)',
+    saveSuccess:        '@Html.Raw(Model.MsgSaveSuccess)',
+    saveError:          '@Html.Raw(Model.MsgSaveError)',
+    importSuccess:      '@Html.Raw(Model.MsgImportSuccess)',
+    importError:        '@Html.Raw(Model.MsgImportError)',
+    keyExists:          '@Html.Raw(Model.MsgKeyExists)',
+    importInserted:     '@Html.Raw(Model.MsgImportInserted)',
+    importUpdated:      '@Html.Raw(Model.MsgImportUpdated)',
+    importSkipped:      '@Html.Raw(Model.MsgImportSkipped)'
+  };
+
+  var langCodes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LanguageCodes));
+  var langCount = langCodes.length;
+
+  var table = $('#tblTranslations').DataTable({
+    pageLength: 25,
+    order: [[0, 'asc']],
+    columnDefs: [
+      { orderable: false, targets: Array.from({ length: langCount + 1 }, function(_, i) { return i + 1; }) }
+    ]
+  });
+
+  // Hide default search box; use custom filters instead
+  $('.dataTables_filter').hide();
+
+  // Key column filter
+  document.getElementById('txtKeyFilter').addEventListener('keyup', function () {
+    table.column(0).search(this.value).draw();
+  });
+
+  // Value global filter
+  document.getElementById('txtValueFilter').addEventListener('keyup', function () {
+    table.search(this.value).draw();
+  });
+
+  // Language column visibility filter
+  document.getElementById('ddlLanguageFilter').addEventListener('change', function () {
+    var selected = this.value;
+    for (var i = 0; i < langCodes.length; i++) {
+      table.column(i + 1).visible(selected === '' || langCodes[i] === selected);
+    }
+  });
+
+  // Save row
+  function saveRow(key) {
+    var rows = [];
+    $('input[data-key="' + CSS.escape(key) + '"]').each(function () {
+      rows.push({ key: key, languageCode: $(this).data('lang'), value: $(this).val() });
+    });
+
+    var token = $('#formAjax input[name="__RequestVerificationToken"]').val();
+    fetch('?handler=SaveRow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+      body: JSON.stringify(rows)
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        Swal.fire({ icon: 'success', title: pageMsg.saveSuccess, timer: 1500, showConfirmButton: false });
+      } else {
+        Swal.fire({ icon: 'error', text: data.message || pageMsg.saveError });
+      }
+    })
+    .catch(function () {
+      Swal.fire({ icon: 'error', text: pageMsg.saveError });
+    });
+  }
+
+  // Confirm and delete key
+  function confirmDelete(key) {
+    Swal.fire({
+      icon: 'warning',
+      title: pageMsg.deleteConfirmTitle,
+      text: pageMsg.deleteConfirmText,
+      showCancelButton: true,
+      confirmButtonText: pageMsg.deleteConfirmBtn,
+      cancelButtonText: pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    }).then(function (result) {
+      if (!result.isConfirmed) return;
+
+      $.post('?handler=DeleteKey&key=' + encodeURIComponent(key), {
+        __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+      }, function (data) {
+        if (data.success) {
+          table.rows().every(function () {
+            var $row = $(this.node());
+            if ($row.find('input[data-key]').first().data('key') === key) {
+              table.row(this.node()).remove();
+            }
+          });
+          table.draw(false);
+          Swal.fire({ icon: 'success', title: pageMsg.deleteSuccess, timer: 1500, showConfirmButton: false });
+        } else {
+          Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+        }
+      }).fail(function () {
+        Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+      });
+    });
+  }
+
+  // Export
+  document.getElementById('btnExport').addEventListener('click', function () {
+    window.location.href = '?handler=Export';
+  });
+
+  // Import — trigger file picker
+  document.getElementById('btnImport').addEventListener('click', function () {
+    document.getElementById('fileImport').click();
+  });
+
+  // Import — file selected, auto-submit
+  document.getElementById('fileImport').addEventListener('change', function () {
+    if (!this.files || this.files.length === 0) return;
+
+    var importBtn = document.getElementById('btnImport');
+    importBtn.disabled = true;
+    importBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>@await T.GetAsync("Translation.Importing")';
+
+    var formData = new FormData();
+    formData.append('fileImport', this.files[0]);
+    formData.append('__RequestVerificationToken', $('#formAjax input[name="__RequestVerificationToken"]').val());
+
+    fetch('?handler=Import', { method: 'POST', body: formData })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      importBtn.disabled = false;
+      importBtn.innerHTML = '<i class="ri ri-upload-line me-1"></i>@await T.GetAsync("Btn.Import")';
+
+      if (data.success) {
+        var r = data.result;
+        var detail = r.inserted + ' ' + pageMsg.importInserted + ', ' +
+                     r.updated  + ' ' + pageMsg.importUpdated  + ', ' +
+                     r.skipped  + ' ' + pageMsg.importSkipped;
+        Swal.fire({ icon: 'success', title: pageMsg.importSuccess, text: detail })
+          .then(function () { location.reload(); });
+      } else {
+        Swal.fire({ icon: 'error', text: data.message || pageMsg.importError });
+      }
+    })
+    .catch(function () {
+      importBtn.disabled = false;
+      importBtn.innerHTML = '<i class="ri ri-upload-line me-1"></i>@await T.GetAsync("Btn.Import")';
+      Swal.fire({ icon: 'error', text: pageMsg.importError });
+    });
+
+    this.value = '';
+  });
+
+  // Add Key modal save
+  document.getElementById('btnSaveAddKey').addEventListener('click', function () {
+    var key = document.getElementById('txtNewKey').value.trim();
+    if (!key) {
+      document.getElementById('txtNewKey').focus();
+      return;
+    }
+
+    var rows = [{ key: key, languageCode: '', value: '' }];
+    document.querySelectorAll('#modalAddKey input[data-addlang]').forEach(function (inp) {
+      rows.push({ key: key, languageCode: inp.getAttribute('data-addlang'), value: inp.value });
+    });
+    // Remove the placeholder first element
+    rows.shift();
+
+    var token = $('#formAjax input[name="__RequestVerificationToken"]').val();
+    fetch('?handler=AddKey', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+      body: JSON.stringify(rows)
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        // Build new row and add to DataTable
+        var rowData = [key];
+        var inputsHtml = '';
+        langCodes.forEach(function (lang) {
+          var matchedRow = rows.find(function (r) { return r.languageCode === lang; });
+          var val = matchedRow ? escHtml(matchedRow.value) : '';
+          var escapedKey = escHtml(key);
+          inputsHtml += '<td><input type="text" class="form-control form-control-sm" data-key="' + escapedKey + '" data-lang="' + lang + '" value="' + val + '"></td>';
+        });
+
+        var escapedKey = escHtml(key);
+        var actionsHtml =
+          '<td><div class="dropdown">' +
+          '<button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="ri ri-more-2-fill"></i></button>' +
+          '<ul class="dropdown-menu dropdown-menu-end">' +
+          '<li><button class="dropdown-item" type="button" data-key="' + escapedKey + '" onclick="saveRow(this.getAttribute(\'data-key\'))"><i class="ri ri-save-line me-1"></i>@lblSave</button></li>' +
+          '<li><button class="dropdown-item text-danger" type="button" data-key="' + escapedKey + '" onclick="confirmDelete(this.getAttribute(\'data-key\'))"><i class="ri ri-delete-bin-line me-1"></i>@lblDelete</button></li>' +
+          '</ul></div></td>';
+
+        var $tr = $('<tr><td>' + escHtml(key) + '</td>' + inputsHtml + actionsHtml + '</tr>');
+        table.row.add($tr[0]).draw(false);
+
+        // Close modal and reset
+        bootstrap.Modal.getInstance(document.getElementById('modalAddKey')).hide();
+        document.getElementById('txtNewKey').value = '';
+        document.querySelectorAll('#modalAddKey input[data-addlang]').forEach(function (inp) { inp.value = ''; });
+
+        Swal.fire({ icon: 'success', title: pageMsg.saveSuccess, timer: 1500, showConfirmButton: false });
+      } else {
+        Swal.fire({ icon: 'error', text: data.message || pageMsg.saveError });
+      }
+    })
+    .catch(function () {
+      Swal.fire({ icon: 'error', text: pageMsg.saveError });
+    });
+  });
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Show TempData alert if present
+  document.addEventListener('DOMContentLoaded', function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

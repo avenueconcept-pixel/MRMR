@@ -28,6 +28,11 @@ public static class MessageConstants
   public const string InvalidRouteId = "MsgInvalidRouteId";
   public const string InvalidDataAction = "MsgInvalidDataAction";
 
+  // ─── Translation Manager ──────────────────────────
+  public const string ImportSuccess = "MsgImportSuccess";
+  public const string ImportError   = "MsgImportError";
+  public const string KeyExists     = "MsgKeyExists";
+
 }
 
 public static class MessageTitle

@@ -57,6 +57,7 @@ builder.Services.AddScoped<PermissionDbHelper>();
 builder.Services.AddScoped<RoleDbHelper>();
 builder.Services.AddScoped<BankDbHelper>();
 builder.Services.AddScoped<AdminUserDbHelper>();
+builder.Services.AddScoped<TranslationDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
