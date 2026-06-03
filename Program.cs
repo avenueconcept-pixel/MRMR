@@ -7,6 +7,7 @@ using MyApp.Data;
 using MyApp.Helper;
 using MyApp.Constants;
 using MyApp.Helper.DB;
+using MyApp.Middleware;
 using MyApp.Services;
 using MyApp.Services.Logging;
 // using MyApp.Data;
@@ -58,6 +59,8 @@ builder.Services.AddScoped<RoleDbHelper>();
 builder.Services.AddScoped<BankDbHelper>();
 builder.Services.AddScoped<AdminUserDbHelper>();
 builder.Services.AddScoped<TranslationDbHelper>();
+builder.Services.AddScoped<UserSessionDbHelper>();
+builder.Services.AddScoped<DashboardDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
@@ -133,6 +136,7 @@ app.UseRequestLocalization(); // ✅ Must come before routing
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<SessionTrackingMiddleware>();
 
 // 👇 This sets the default page
 //app.MapFallbackToPage("/Jobsheets/AddJobSheet"); // or "/Index", "/Dashboard", etc.

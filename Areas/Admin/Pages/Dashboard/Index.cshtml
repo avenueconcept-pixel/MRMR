@@ -2,7 +2,18 @@
 @model MyApp.Areas.Admin.Pages.Dashboard.IndexModel
 @using System.Text.Json
 @{
-  ViewData["title"] = await T.GetAsync("Dashboard.PageTitle");
+  ViewData["title"]       = await T.GetAsync("Dashboard.Title");
+  var lblOrders           = await T.GetAsync("Orders");
+  var lblNewCustomers     = await T.GetAsync("Dashboard.NewCustomers");
+  var lblThisYear         = await T.GetAsync("Dashboard.ThisYear");
+  var lblLastYear         = await T.GetAsync("Dashboard.LastYear");
+  var lblSalesRM          = await T.GetAsync("Dashboard.SalesRM");
+  var lblAxisRevenue      = await T.GetAsync("RevenueRM");
+  var lblSuffixOrders     = await T.GetAsync("Dashboard.SuffixOrders");
+  var lblSuffixCustomers  = await T.GetAsync("Dashboard.SuffixCustomers");
+  var lblOnline           = await T.GetAsync("Dashboard.Online");
+  var lblOffline          = await T.GetAsync("Dashboard.Offline");
+}
 
   var lblOrders          = await T.GetAsync("Orders");
   var lblNewCustomers    = await T.GetAsync("Dashboard.NewCustomers");
@@ -310,6 +321,227 @@
 
 </div>
 
+@* ── Summary Cards (real DB data) ───────────────────────── *@
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="avatar avatar-lg flex-shrink-0">
+          <span class="avatar-initial rounded bg-label-primary"><i class="ri ri-user-settings-line ri-24px"></i></span>
+        </div>
+        <div>
+          <h4 class="mb-0">@Model.AdminUserCount</h4>
+          <small class="text-muted">@await T.GetAsync("Dashboard.AdminUsers")</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="avatar avatar-lg flex-shrink-0">
+          <span class="avatar-initial rounded bg-label-success"><i class="ri ri-shield-user-line ri-24px"></i></span>
+        </div>
+        <div>
+          <h4 class="mb-0">@Model.RoleCount</h4>
+          <small class="text-muted">@await T.GetAsync("Dashboard.Roles")</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="avatar avatar-lg flex-shrink-0">
+          <span class="avatar-initial rounded bg-label-warning"><i class="ri ri-flag-line ri-24px"></i></span>
+        </div>
+        <div>
+          <h4 class="mb-0">@Model.CountryCount</h4>
+          <small class="text-muted">@await T.GetAsync("Dashboard.Countries")</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="avatar avatar-lg flex-shrink-0">
+          <span class="avatar-initial rounded bg-label-info"><i class="ri ri-translate-2 ri-24px"></i></span>
+        </div>
+        <div>
+          <h4 class="mb-0">@Model.LanguageCount</h4>
+          <small class="text-muted">@await T.GetAsync("Dashboard.Languages")</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── Active Users by System ──────────────────────────────── *@
+<div class="row g-4 mb-4">
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.ActiveUsers")</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          @foreach (var kv in Model.ActiveCountBySystem)
+          {
+            <div class="col-sm-6">
+              <div class="d-flex align-items-center gap-2 p-3 border rounded">
+                <span class="badge bg-success rounded-pill fs-5">@kv.Value</span>
+                <span class="text-capitalize">@kv.Key</span>
+              </div>
+            </div>
+          }
+          @if (!Model.ActiveCountBySystem.Any())
+          {
+            <div class="col-12 text-muted">—</div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.TotalActive")</h5>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <div class="text-center">
+          <h1 id="totalActiveCount" class="display-4 fw-bold text-success mb-0">@Model.ActiveSessions.Count</h1>
+          <p class="text-muted mb-0">@await T.GetAsync("Dashboard.ActiveUsers")</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── Who Is Online ───────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.WhoIsOnline")</h5>
+        <small class="text-muted">@await T.GetAsync("Dashboard.AutoRefresh60s")</small>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="tblOnline" class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>@await T.GetAsync("Dashboard.System")</th>
+                <th>@await T.GetAsync("Username")</th>
+                <th>@await T.GetAsync("FullName")</th>
+                <th>@await T.GetAsync("Dashboard.CurrentPage")</th>
+                <th>@await T.GetAsync("Dashboard.Browser")</th>
+                <th>@await T.GetAsync("Dashboard.Os")</th>
+                <th>@await T.GetAsync("Dashboard.Device")</th>
+                <th>@await T.GetAsync("Dashboard.IpAddress")</th>
+                <th>@await T.GetAsync("Dashboard.LastActive")</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyOnline">
+              @{ int onlineRank = 1; }
+              @foreach (var s in Model.ActiveSessions.Take(50))
+              {
+                <tr>
+                  <td>@onlineRank++</td>
+                  <td><span class="badge bg-label-primary text-capitalize">@s.SystemType</span></td>
+                  <td>@s.Username</td>
+                  <td>@(s.FullName ?? "-")</td>
+                  <td><code>@(s.CurrentPage ?? "-")</code></td>
+                  <td>@(s.Browser ?? "-")</td>
+                  <td>@(s.Os ?? "-")</td>
+                  <td>
+                    @{
+                      var deviceIcon = s.DeviceType == AppConstants.DeviceTypeMobile ? "ri-smartphone-line"
+                                     : s.DeviceType == AppConstants.DeviceTypeTablet  ? "ri-tablet-line"
+                                     : "ri-computer-line";
+                    }
+                    <i class="ri @deviceIcon" title="@s.DeviceType"></i>
+                  </td>
+                  <td>@(s.IpAddress ?? "-")</td>
+                  <td>@s.LastActiveAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── Recent Logins ───────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">@await T.GetAsync("Dashboard.RecentLogins")</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="tblRecentLogins" class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>@await T.GetAsync("Dashboard.System")</th>
+                <th>@await T.GetAsync("Username")</th>
+                <th>@await T.GetAsync("FullName")</th>
+                <th>@await T.GetAsync("Dashboard.IpAddress")</th>
+                <th>@await T.GetAsync("Dashboard.Browser")</th>
+                <th>@await T.GetAsync("Dashboard.Os")</th>
+                <th>@await T.GetAsync("Dashboard.Device")</th>
+                <th>@await T.GetAsync("Dashboard.LoginAt")</th>
+                <th>@await T.GetAsync("Dashboard.LogoutAt")</th>
+                <th>@await T.GetAsync("Status")</th>
+              </tr>
+            </thead>
+            <tbody>
+              @{ int loginRank = 1; }
+              @foreach (var s in Model.RecentLogins)
+              {
+                <tr>
+                  <td>@loginRank++</td>
+                  <td><span class="badge bg-label-primary text-capitalize">@s.SystemType</span></td>
+                  <td>@s.Username</td>
+                  <td>@(s.FullName ?? "-")</td>
+                  <td>@(s.IpAddress ?? "-")</td>
+                  <td>@(s.Browser ?? "-")</td>
+                  <td>@(s.Os ?? "-")</td>
+                  <td>
+                    @{
+                      var devIcon = s.DeviceType == AppConstants.DeviceTypeMobile ? "ri-smartphone-line"
+                                  : s.DeviceType == AppConstants.DeviceTypeTablet  ? "ri-tablet-line"
+                                  : "ri-computer-line";
+                    }
+                    <i class="ri @devIcon" title="@s.DeviceType"></i>
+                  </td>
+                  <td>@s.LoginAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+                  <td>@(s.LogoutAt.HasValue ? s.LogoutAt.Value.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat) : "-")</td>
+                  <td>
+                    @if (s.IsActive)
+                    {
+                      <span class="badge bg-success">@lblOnline</span>
+                    }
+                    else
+                    {
+                      <span class="badge bg-secondary">@lblOffline</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 @section VendorScripts {
   <script src="~/vendor/libs/apex-charts/apexcharts.dist.js"></script>
   <script src="~/vendor/libs/datatables-bs5/datatables-bootstrap5.dist.js"></script>
@@ -371,6 +603,7 @@
   // DataTables
   $('#tblProducts').DataTable({ pageLength: 5, lengthChange: false, searching: false, info: false });
   $('#tblReferrals').DataTable({ pageLength: 5, lengthChange: false, searching: false, info: false });
+  initDataTable('#tblRecentLogins', 10);
 
   // Sales by Country — horizontal bar chart
   const countryBarLabels = @Html.Raw(Model.ChartCountryLabels);
@@ -386,6 +619,35 @@
     tooltip: { y: { formatter: v => 'RM ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 }) } },
     grid: { borderColor: '#f1f1f1' }
   }).render();
+
+  // Auto-refresh Who Is Online every 60 seconds
+  setInterval(function () {
+    $.get('?handler=GetActiveSessions', function (data) {
+      if (!data.success) return;
+      document.getElementById('totalActiveCount').textContent = data.totalActive;
+      var tbody = document.getElementById('tbodyOnline');
+      tbody.innerHTML = '';
+      var rank = 1;
+      data.sessions.forEach(function (s) {
+        var devIcon = s.deviceType === '@AppConstants.DeviceTypeMobile' ? 'ri-smartphone-line'
+                    : s.deviceType === '@AppConstants.DeviceTypeTablet'  ? 'ri-tablet-line'
+                    : 'ri-computer-line';
+        tbody.insertAdjacentHTML('beforeend',
+          '<tr>' +
+          '<td>' + rank++ + '</td>' +
+          '<td><span class="badge bg-label-primary text-capitalize">' + s.systemType + '</span></td>' +
+          '<td>' + s.username + '</td>' +
+          '<td>' + (s.fullName || '-') + '</td>' +
+          '<td><code>' + (s.currentPage || '-') + '</code></td>' +
+          '<td>' + (s.browser || '-') + '</td>' +
+          '<td>' + (s.os || '-') + '</td>' +
+          '<td><i class="ri ' + devIcon + '" title="' + (s.deviceType || '') + '"></i></td>' +
+          '<td>' + (s.ipAddress || '-') + '</td>' +
+          '<td>' + s.lastActiveAt + '</td>' +
+          '</tr>');
+      });
+    });
+  }, 60000);
 
   // Customer Distribution by Country — donut chart
   const countryLabels = @Html.Raw(Model.ChartCustomerLabels);

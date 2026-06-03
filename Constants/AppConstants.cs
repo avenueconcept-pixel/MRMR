@@ -9,6 +9,15 @@ public static class AppConstants
 
   // ─── Default Values ───────────────────────────────
   public const string DefaultLanguage = "en";
+
+  // ─── System Types ─────────────────────────────────
+  public const string SystemTypeAdmin    = "admin";
+  public const string SystemTypeCustomer = "customer";
+
+  // ─── Device Types ─────────────────────────────────
+  public const string DeviceTypeDesktop = "desktop";
+  public const string DeviceTypeMobile  = "mobile";
+  public const string DeviceTypeTablet  = "tablet";
   public const int DefaultPageSize = 10;
   public const int MaxPageSize = 100;
 

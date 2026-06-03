@@ -12,10 +12,11 @@ namespace MyApp.Areas.Admin.Pages
 {
   public class LoginModel : BasePageModel
   {
-    private readonly TranslationService _translation;
-    private readonly AdminDbHelper      _adminDbHelper;
-    private readonly LanguageDbHelper   _languageDbHelper;
-    private readonly AuditHelper        _audit;
+    private readonly TranslationService  _translation;
+    private readonly AdminDbHelper       _adminDbHelper;
+    private readonly LanguageDbHelper    _languageDbHelper;
+    private readonly AuditHelper         _audit;
+    private readonly UserSessionDbHelper _sessionDbHelper;
 
     public List<Language> Languages { get; set; } = new();
     public string CurrentLang { get; set; } = AppConstants.DefaultLanguage;
@@ -39,12 +40,18 @@ namespace MyApp.Areas.Admin.Pages
 
 
 
-    public LoginModel(TranslationService translation, AdminDbHelper adminDbHelper, LanguageDbHelper languageDbHelper, AuditHelper audit)
+    public LoginModel(
+        TranslationService  translation,
+        AdminDbHelper       adminDbHelper,
+        LanguageDbHelper    languageDbHelper,
+        AuditHelper         audit,
+        UserSessionDbHelper sessionDbHelper)
     {
       _translation      = translation;
       _adminDbHelper    = adminDbHelper;
       _languageDbHelper = languageDbHelper;
       _audit            = audit;
+      _sessionDbHelper  = sessionDbHelper;
     }
 
     public async Task OnGetAsync(string? username = null)
@@ -121,16 +128,40 @@ namespace MyApp.Areas.Admin.Pages
 
       var selectedLang = ddlLanguage ?? AppConstants.DefaultLanguage;
 
+      var sessionToken = Guid.NewGuid().ToString("N");
+      var userAgent    = Request.Headers["User-Agent"].ToString();
+      var ipAddress    = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+
+      await _sessionDbHelper.CreateSessionAsync(new UserSession
+      {
+        SystemType   = AppConstants.SystemTypeAdmin,
+        UserId       = adminUser.Id,
+        Username     = adminUser.Username,
+        FullName     = adminUser.FullName,
+        CountryCode  = adminUser.CountryCode,
+        RegionId     = adminUser.RegionId,
+        SessionToken = sessionToken,
+        IpAddress    = ipAddress,
+        Browser      = ParseBrowser(userAgent),
+        Os           = ParseOs(userAgent),
+        DeviceType   = ParseDeviceType(userAgent),
+        CurrentPage  = "/Admin/Dashboard",
+        LastActiveAt = DateTime.UtcNow,
+        LoginAt      = DateTime.UtcNow,
+        IsActive     = true
+      });
+
       var claims = new List<Claim>
       {
-        new Claim(CookieConstants.SessionKeys.UserId,       adminUser.Id.ToString()),
-        new Claim(CookieConstants.SessionKeys.Username,     adminUser.Username),
-        new Claim(CookieConstants.SessionKeys.FullName,     adminUser.FullName),
-        new Claim(CookieConstants.SessionKeys.LoginLanguage, selectedLang),
-        new Claim(CookieConstants.SessionKeys.Timezone,     adminUser.Country?.Timezone ?? "UTC"),
-        new Claim(CookieConstants.SessionKeys.RoleId,                adminUser.RoleId.ToString()),
-        new Claim(CookieConstants.SessionKeys.IsSuperAdmin,          (adminUser.Role?.IsSuperAdmin ?? false) ? "true" : "false"),
-        new Claim(CookieConstants.SessionKeys.IsForceChangePassword,  adminUser.IsForceChangePassword ? "true" : "false")
+        new Claim(CookieConstants.SessionKeys.UserId,                 adminUser.Id.ToString()),
+        new Claim(CookieConstants.SessionKeys.Username,               adminUser.Username),
+        new Claim(CookieConstants.SessionKeys.FullName,               adminUser.FullName),
+        new Claim(CookieConstants.SessionKeys.LoginLanguage,          selectedLang),
+        new Claim(CookieConstants.SessionKeys.Timezone,               adminUser.Country?.Timezone ?? "UTC"),
+        new Claim(CookieConstants.SessionKeys.RoleId,                 adminUser.RoleId.ToString()),
+        new Claim(CookieConstants.SessionKeys.IsSuperAdmin,           (adminUser.Role?.IsSuperAdmin ?? false) ? "true" : "false"),
+        new Claim(CookieConstants.SessionKeys.IsForceChangePassword,  adminUser.IsForceChangePassword ? "true" : "false"),
+        new Claim(CookieConstants.SessionKeys.SessionToken,           sessionToken)
       };
 
       var identity = new ClaimsIdentity(claims, AuthSchemeConstants.Admin);
@@ -152,7 +183,31 @@ namespace MyApp.Areas.Admin.Pages
       return RedirectToPage(Routes.AdminDashboard);
     }
 
+    private static string ParseBrowser(string userAgent)
+    {
+      if (userAgent.Contains("Edg/"))    return "Edge";
+      if (userAgent.Contains("Chrome"))  return "Chrome";
+      if (userAgent.Contains("Firefox")) return "Firefox";
+      if (userAgent.Contains("Safari"))  return "Safari";
+      if (userAgent.Contains("MSIE") || userAgent.Contains("Trident")) return "Internet Explorer";
+      return "Unknown";
+    }
+
+    private static string ParseOs(string userAgent)
+    {
+      if (userAgent.Contains("Windows NT")) return "Windows";
+      if (userAgent.Contains("Mac OS X"))   return "macOS";
+      if (userAgent.Contains("Linux"))      return "Linux";
+      if (userAgent.Contains("Android"))    return "Android";
+      if (userAgent.Contains("iPhone") || userAgent.Contains("iPad")) return "iOS";
+      return "Unknown";
+    }
+
+    private static string ParseDeviceType(string userAgent)
+    {
+      if (userAgent.Contains("Mobi")) return AppConstants.DeviceTypeMobile;
+      if (userAgent.Contains("iPad")) return AppConstants.DeviceTypeTablet;
+      return AppConstants.DeviceTypeDesktop;
+    }
   }
-
-
 }
