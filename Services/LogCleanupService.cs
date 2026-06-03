@@ -12,6 +12,7 @@ public class LogCleanupService : BackgroundService
 
   private DateTime _lastLogCleanup     = DateTime.MinValue;
   private DateTime _lastSessionCleanup = DateTime.MinValue;
+  private DateTime _lastArchiveRun     = DateTime.MinValue;
 
   public LogCleanupService(
       IConfiguration configuration,
@@ -64,6 +65,22 @@ public class LogCleanupService : BackgroundService
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
           _logger.LogError(ex, "Log cleanup failed");
+        }
+      }
+
+      // Page access archive — once daily at midnight
+      if (DateTime.UtcNow.Date > _lastArchiveRun.Date)
+      {
+        try
+        {
+          using var scope       = _serviceProvider.CreateScope();
+          var pageAccessHelper  = scope.ServiceProvider.GetRequiredService<MyApp.Helper.DB.PageAccessDbHelper>();
+          await pageAccessHelper.ArchiveOldRecordsAsync();
+          _lastArchiveRun       = DateTime.UtcNow;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+          _logger.LogError(ex, "Page access archive failed");
         }
       }
 

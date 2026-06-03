@@ -1,0 +1,210 @@
+@page
+@model MyApp.Areas.Admin.Pages.PageAccessHistory.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("PageAccessLog.Title");
+  var lblShowing = await T.GetAsync("PageAccessLog.Showing");
+  var lblOf      = await T.GetAsync("PageAccessLog.Of");
+  var lblRecords = await T.GetAsync("PageAccessLog.Records");
+}
+
+<h4 class="py-4 mb-2">@await T.GetAsync("PageAccessLog.Title")</h4>
+<p class="text-muted mb-4">@await T.GetAsync("PageAccessLog.Subtitle")</p>
+
+@* ── Filter Bar ─────────────────────────────────────────── *@
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" asp-page="/PageAccessHistory/Index">
+      <div class="row g-3 align-items-end">
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("PageAccessLog.FilterUsername")</label>
+          <input type="text" asp-for="FilterUsername" class="form-control"
+                 placeholder="@await T.GetAsync("PageAccessLog.FilterUsername")" />
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("PageAccessLog.FilterSystemType")</label>
+          <select asp-for="FilterSystemType" asp-items="Model.ddlSystemType" class="form-select"></select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("PageAccessLog.FilterPageUrl")</label>
+          <input type="text" asp-for="FilterPageUrl" class="form-control"
+                 placeholder="@await T.GetAsync("PageAccessLog.FilterPageUrl")" />
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("PageAccessLog.FilterStartDate")</label>
+          <input type="date" asp-for="FilterStartDate" class="form-control" />
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">@await T.GetAsync("PageAccessLog.FilterEndDate")</label>
+          <input type="date" asp-for="FilterEndDate" class="form-control" />
+        </div>
+
+        <div class="col-md-2 d-flex gap-2 align-items-end">
+          <button type="submit" class="btn btn-primary">
+            <i class="ri ri-search-line me-1"></i>@await T.GetAsync("Search")
+          </button>
+          <a asp-area="Admin" asp-page="/PageAccessHistory/Index" class="btn btn-outline-secondary">
+            @await T.GetAsync("Clear")
+          </a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+@* ── Results Table ──────────────────────────────────────── *@
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">@await T.GetAsync("PageAccessLog.Title")</h5>
+    @if (Model.TotalCount > 0)
+    {
+      var from = (Model.CurrentPage - 1) * Model.PageSize + 1;
+      var to   = Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount);
+      <small class="text-muted">
+        @lblShowing @from–@to @lblOf @Model.TotalCount @lblRecords
+      </small>
+    }
+  </div>
+  <div class="card-body px-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">#</th>
+            <th>@await T.GetAsync("PageAccessLog.ColSystem")</th>
+            <th>@await T.GetAsync("PageAccessLog.FilterUsername")</th>
+            <th>@await T.GetAsync("AdminUser.FullName")</th>
+            <th>@await T.GetAsync("PageAccessLog.ColPageUrl")</th>
+            <th>@await T.GetAsync("PageAccessLog.ColMethod")</th>
+            <th>@await T.GetAsync("PageAccessLog.ColQueryString")</th>
+            <th>@await T.GetAsync("PageAccessLog.ColResponseTime")</th>
+            <th>@await T.GetAsync("PageAccessLog.ColAccessedAt")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @{
+            var rowNum = (Model.CurrentPage - 1) * Model.PageSize + 1;
+          }
+          @foreach (var item in Model.Items)
+          {
+            var systemBadge = item.SystemType == AppConstants.SystemTypeCustomer
+                ? "bg-success"
+                : "bg-primary";
+
+            var methodBadge = item.HttpMethod == "POST"
+                ? "bg-warning text-dark"
+                : "bg-success";
+
+            var rtClass = item.ResponseTime >= 2000 ? "text-danger fw-semibold"
+                        : item.ResponseTime >= 500  ? "text-warning fw-semibold"
+                        : "text-success";
+
+            <tr>
+              <td class="ps-4">@rowNum</td>
+              <td><span class="badge @systemBadge">@item.SystemType</span></td>
+              <td>@item.Username</td>
+              <td>@item.FullName</td>
+              <td>
+                <span title="@item.PageUrl" style="max-width:200px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">
+                  @item.PageUrl
+                </span>
+              </td>
+              <td><span class="badge @methodBadge">@item.HttpMethod</span></td>
+              <td>
+                @if (!string.IsNullOrEmpty(item.QueryString))
+                {
+                  <span title="@item.QueryString" style="max-width:150px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">
+                    @item.QueryString
+                  </span>
+                }
+              </td>
+              <td class="@rtClass text-nowrap">@item.ResponseTime ms</td>
+              <td class="text-nowrap">
+                @item.AccessedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)
+              </td>
+            </tr>
+            rowNum++;
+          }
+          @if (!Model.Items.Any())
+          {
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                <i class="ri ri-inbox-line me-2"></i>@await T.GetAsync("NoRecordsFound")
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @* ── Pagination ─────────────────────────────────────── *@
+  @if (Model.TotalPages > 1)
+  {
+    <div class="card-footer d-flex justify-content-center">
+      <nav>
+        <ul class="pagination mb-0">
+
+          @* Previous *@
+          <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+            <a class="page-link"
+               asp-area="Admin"
+               asp-page="/PageAccessHistory/Index"
+               asp-route-currentPage="@(Model.CurrentPage - 1)"
+               asp-route-filterUsername="@Model.FilterUsername"
+               asp-route-filterSystemType="@Model.FilterSystemType"
+               asp-route-filterPageUrl="@Model.FilterPageUrl"
+               asp-route-filterStartDate="@Model.FilterStartDate"
+               asp-route-filterEndDate="@Model.FilterEndDate">
+              &laquo;
+            </a>
+          </li>
+
+          @* Page numbers — show a window of max 7 pages *@
+          @{
+            int windowStart = Math.Max(1, Model.CurrentPage - 3);
+            int windowEnd   = Math.Min(Model.TotalPages, windowStart + 6);
+            windowStart     = Math.Max(1, windowEnd - 6);
+          }
+          @for (int p = windowStart; p <= windowEnd; p++)
+          {
+            <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+              <a class="page-link"
+                 asp-area="Admin"
+                 asp-page="/PageAccessHistory/Index"
+                 asp-route-currentPage="@p"
+                 asp-route-filterUsername="@Model.FilterUsername"
+                 asp-route-filterSystemType="@Model.FilterSystemType"
+                 asp-route-filterPageUrl="@Model.FilterPageUrl"
+                 asp-route-filterStartDate="@Model.FilterStartDate"
+                 asp-route-filterEndDate="@Model.FilterEndDate">
+                @p
+              </a>
+            </li>
+          }
+
+          @* Next *@
+          <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+            <a class="page-link"
+               asp-area="Admin"
+               asp-page="/PageAccessHistory/Index"
+               asp-route-currentPage="@(Model.CurrentPage + 1)"
+               asp-route-filterUsername="@Model.FilterUsername"
+               asp-route-filterSystemType="@Model.FilterSystemType"
+               asp-route-filterPageUrl="@Model.FilterPageUrl"
+               asp-route-filterStartDate="@Model.FilterStartDate"
+               asp-route-filterEndDate="@Model.FilterEndDate">
+              &raquo;
+            </a>
+          </li>
+
+        </ul>
+      </nav>
+    </div>
+  }
+</div>

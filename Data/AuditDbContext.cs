@@ -7,8 +7,10 @@ public class AuditDbContext : DbContext
 {
   public AuditDbContext(DbContextOptions<AuditDbContext> options) : base(options) { }
 
-  public DbSet<AuditLog>    AuditLogs    => Set<AuditLog>();
-  public DbSet<UserSession> UserSessions => Set<UserSession>();
+  public DbSet<AuditLog>                 AuditLogs                  => Set<AuditLog>();
+  public DbSet<UserSession>              UserSessions               => Set<UserSession>();
+  public DbSet<PageAccessHistory>        PageAccessHistories        => Set<PageAccessHistory>();
+  public DbSet<PageAccessHistoryArchive> PageAccessHistoryArchives  => Set<PageAccessHistoryArchive>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -52,6 +54,43 @@ public class AuditDbContext : DbContext
             .HasDefaultValueSql("now() AT TIME ZONE 'UTC'");
       entity.Property(e => e.LogoutAt).HasColumnName("logout_at");
       entity.Property(e => e.IsActive).HasColumnName("is_active");
+    });
+
+    modelBuilder.Entity<PageAccessHistory>(entity =>
+    {
+      entity.ToTable("page_access_history");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.SystemType).HasColumnName("system_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
+      entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(200);
+      entity.Property(e => e.SessionToken).HasColumnName("session_token").HasMaxLength(200);
+      entity.Property(e => e.PageUrl).HasColumnName("page_url").HasMaxLength(500).IsRequired();
+      entity.Property(e => e.HttpMethod).HasColumnName("http_method").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.QueryString).HasColumnName("query_string").HasMaxLength(1000);
+      entity.Property(e => e.ResponseTime).HasColumnName("response_time");
+      entity.Property(e => e.AccessedAt).HasColumnName("accessed_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'UTC'");
+    });
+
+    modelBuilder.Entity<PageAccessHistoryArchive>(entity =>
+    {
+      entity.ToTable("page_access_history_archive");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id");
+      entity.Property(e => e.SystemType).HasColumnName("system_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
+      entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(200);
+      entity.Property(e => e.SessionToken).HasColumnName("session_token").HasMaxLength(200);
+      entity.Property(e => e.PageUrl).HasColumnName("page_url").HasMaxLength(500).IsRequired();
+      entity.Property(e => e.HttpMethod).HasColumnName("http_method").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.QueryString).HasColumnName("query_string").HasMaxLength(1000);
+      entity.Property(e => e.ResponseTime).HasColumnName("response_time");
+      entity.Property(e => e.AccessedAt).HasColumnName("accessed_at");
+      entity.Property(e => e.ArchivedAt).HasColumnName("archived_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'UTC'");
     });
   }
 }

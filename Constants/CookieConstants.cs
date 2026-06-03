@@ -17,5 +17,6 @@ public static class CookieConstants
     public const string IsSuperAdmin           = "IsSuperAdmin";
     public const string IsForceChangePassword  = "IsForceChangePassword";
     public const string SessionToken           = "SessionToken";
+    public const string SystemType             = "system_type";
   }
 }
