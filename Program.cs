@@ -150,6 +150,7 @@ app.UseMiddleware<SessionTrackingMiddleware>();
 //app.MapFallbackToPage("/Jobsheets/AddJobSheet"); // or "/Index", "/Dashboard", etc.
 
 
+app.MapGet("/", () => Results.Redirect("/Admin/Login"));
 app.MapRazorPages();
 
 PasswordCryptoHelper.Configure(app.Configuration);
