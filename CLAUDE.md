@@ -286,6 +286,18 @@ modelBuilder.Entity<Thing>(entity =>
 });
 ```
 
+**Non-PK FK relationships** — when a FK references a unique non-PK column (e.g. `system_code → systems.system_code`, `module → menus.menu_code`), add `HasPrincipalKey` so EF Core uses the right column instead of inferring `{NavProperty}Id`:
+
+```csharp
+entity.HasOne(e => e.System)
+      .WithMany()
+      .HasForeignKey(e => e.SystemCode)
+      .HasPrincipalKey(e => e.SystemCode)   // ← required when FK targets a non-PK unique column
+      .OnDelete(DeleteBehavior.Cascade);
+```
+
+Omitting `HasPrincipalKey` causes a runtime `column does not exist` error because EF generates `e.SystemId` by convention instead.
+
 The corresponding raw SQL when creating the table in pgAdmin:
 ```sql
 created_at  TIMESTAMPTZ NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
@@ -452,6 +464,71 @@ document.getElementById('btnTogglePwd').addEventListener('click', function () {
 > **Icon note:** Remix icons require both the base `ri` class AND the specific icon class (e.g. `ri ri-eye-off-line`). The base class applies the CSS mask; the specific class sets the SVG variable. Omitting `ri` renders an empty box.
 
 If a page has multiple password fields (e.g. Password + Confirm Password), give each toggle button and icon a unique `id` (e.g. `btnTogglePwd`, `btnToggleConfirmPwd`).
+
+### Quill rich text editor
+
+Use the vendor-bundled Quill for any rich text / HTML body field. Vendor files: `~/vendor/libs/quill/quill.dist.js` + `~/vendor/libs/quill/editor.dist.css`.
+
+**Pattern:** one hidden `<input>` stores the HTML (submitted with the form), one `<div>` is the visible editor. Sync Quill → hidden input on `submit`.
+
+```html
+@* Hidden input — submitted with the form *@
+<input type="hidden" name="txtBody_@lang.LanguageCode"
+       id="hdnBody_@lang.LanguageCode" value="@existingHtml" />
+@* Editor container *@
+<div id="editor_@lang.LanguageCode" style="height:200px;"></div>
+```
+
+```html
+@section VendorStyles  { <link rel="stylesheet" href="~/vendor/libs/quill/editor.dist.css" /> }
+@section VendorScripts { <script src="~/vendor/libs/quill/quill.dist.js"></script> }
+```
+
+```javascript
+// Init
+var editor = new Quill('#editor_en', { theme: 'snow' });
+
+// Pre-fill (Edit page)
+var existing = document.getElementById('hdnBody_en').value;
+if (existing) editor.clipboard.dangerouslyPasteHTML(existing);
+
+// Sync on submit
+document.querySelector('form').addEventListener('submit', function () {
+  document.getElementById('hdnBody_en').value = editor.root.innerHTML;
+});
+```
+
+When multiple languages are shown as Bootstrap tabs, initialise one Quill instance per language and sync all of them in the submit handler. Use a JS object (`var editors = {}`) keyed by language code.
+
+---
+
+### Date/time range inputs
+
+For `datetime-local` inputs (e.g. Start At / End At on maintenance schedules):
+
+**HTML** — use `type="datetime-local"`:
+```html
+<input type="datetime-local" name="txtStartAt" class="form-control" value="@Model.txtStartAt" />
+```
+
+**Populating on GET (Edit page)** — convert stored UTC to user local time using the display input format:
+```csharp
+txtStartAt = entity.StartAt.ToUserLocalTime(UserTimezone, AppConstants.DateTimeInputFormat);
+```
+
+**Parsing on POST** — parse then convert back to UTC:
+```csharp
+if (!DateTime.TryParseExact(txtStartAt, AppConstants.DateTimeInputFormat,
+        null, System.Globalization.DateTimeStyles.None, out var startLocal))
+{
+  // validation error
+}
+var startUtc = startLocal.ToUtcFromUserTimezone(UserTimezone);
+```
+
+`AppConstants.DateTimeInputFormat` is `"yyyy-MM-dd HH:mm"` — the format browsers submit for `datetime-local` inputs.
+
+---
 
 ### Index pages — always reset AlertMessageType in OnGetAsync
 
@@ -986,6 +1063,8 @@ UseRequestLocalization
 UseRouting
 UseAuthentication
 UseAuthorization
+UseMiddleware<MaintenanceMiddleware>      ← kicks out non-SuperAdmin when maintenance is active
+UseMiddleware<SessionTrackingMiddleware>  ← logs page access and updates session
 MapRazorPages
 ```
 
@@ -1097,3 +1176,4 @@ public MyMiddleware(RequestDelegate next, PageAccessDbHelper db) { ... }
 - Never inject `AppDbContext` or any scoped `DbHelper` into a `BackgroundService` constructor — use `IServiceProvider.CreateScope()` inside the job body instead
 - Never use `[Authorize]` directly on a page model — use `AdminPageModel` or `CustomerPageModel` as the base class
 - Never commit real SMTP passwords or connection strings — move secrets to `appsettings.Development.json` or User Secrets
+- Never assume `permissions.menu_id` — the actual column is `module` (varchar), which stores `menus.menu_code`. The EF relationship is `HasForeignKey(p => p.Module).HasPrincipalKey(m => m.MenuCode)`. Adding a `MenuId` (int) property to `Permission` will produce a "column does not exist" runtime error.
