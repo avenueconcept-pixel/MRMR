@@ -1,0 +1,155 @@
+@page
+@model MyApp.Areas.Admin.Pages.Systems.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("SystemManagement.Title");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@{
+  var lblToggleTitle   = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes     = await T.GetAsync("ToggleStatusYes");
+  var lblCancel        = await T.GetAsync("Cancel");
+  var lblToggleFailed  = await T.GetAsync("ToggleFailed");
+  var lblToggleError   = await T.GetAsync("ToggleError");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <div>
+    <h4 class="mb-0">@await T.GetAsync("SystemManagement.Title")</h4>
+    <small class="text-muted">@await T.GetAsync("SystemManagement.Subtitle")</small>
+  </div>
+  <a asp-area="Admin" asp-page="/Systems/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Add")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblSystems" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>@await T.GetAsync("SystemName")</th>
+            <th>@await T.GetAsync("SystemCode")</th>
+            <th>@await T.GetAsync("SortOrder")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @{ var rowNum = 1; }
+          @foreach (var sys in Model.Items)
+          {
+            <tr>
+              <td>@rowNum</td>
+              <td><strong>@sys.SystemName</strong></td>
+              <td><code>@sys.SystemCode</code></td>
+              <td>@sys.SortOrder</td>
+              <td>
+                @{
+                  var badgeClass = sys.Status switch
+                  {
+                    "active"   => "bg-success",
+                    "inactive" => "bg-secondary",
+                    _          => "bg-warning"
+                  };
+                  var statusLabel = sys.Status switch
+                  {
+                    "active"   => await T.GetAsync("status.active"),
+                    "inactive" => await T.GetAsync("status.inactive"),
+                    _          => sys.Status
+                  };
+                }
+                <span class="badge @badgeClass">@statusLabel</span>
+              </td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Systems/Edit"
+                         asp-route-systemCode="@sys.SystemCode">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button"
+                              onclick="toggleStatus('@sys.SystemCode')">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            rowNum++;
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var msgToggleTitle   = '@Html.Raw(Model.MsgToggleConfirmTitle)';
+  var msgToggleConfirm = '@Html.Raw(Model.MsgToggleConfirmText)';
+  var msgToggleYes     = '@Html.Raw(Model.MsgToggleConfirmBtn)';
+  var msgCancel        = '@Html.Raw(Model.MsgCancelBtn)';
+  var msgToggleFailed  = '@lblToggleFailed';
+  var msgToggleError   = '@lblToggleError';
+
+  function toggleStatus(systemCode) {
+    Swal.fire({
+      title: msgToggleTitle, text: msgToggleConfirm, icon: 'warning',
+      showCancelButton: true, confirmButtonText: msgToggleYes, cancelButtonText: msgCancel
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '?handler=ToggleStatus', type: 'POST',
+          data: {
+            systemCode: systemCode,
+            __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+          },
+          success: function (data) {
+            if (data.success) { location.reload(); }
+            else { Swal.fire({ icon: 'error', text: msgToggleFailed }); }
+          },
+          error: function () { Swal.fire({ icon: 'error', text: msgToggleError }); }
+        });
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    initDataTable('#tblSystems', 5);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

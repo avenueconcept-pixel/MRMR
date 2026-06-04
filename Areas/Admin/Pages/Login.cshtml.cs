@@ -17,9 +17,12 @@ namespace MyApp.Areas.Admin.Pages
     private readonly LanguageDbHelper    _languageDbHelper;
     private readonly AuditHelper         _audit;
     private readonly UserSessionDbHelper _sessionDbHelper;
+    private readonly MaintenanceService  _maintenanceService;
 
-    public List<Language> Languages { get; set; } = new();
-    public string CurrentLang { get; set; } = AppConstants.DefaultLanguage;
+    public List<Language> Languages            { get; set; } = new();
+    public string         CurrentLang          { get; set; } = AppConstants.DefaultLanguage;
+    public bool           IsUnderMaintenance   { get; set; }
+    public string         MaintenanceMessage   { get; set; } = string.Empty;
 
     [TempData]
     public string? DefaultUsername { get; set; }
@@ -45,13 +48,15 @@ namespace MyApp.Areas.Admin.Pages
         AdminDbHelper       adminDbHelper,
         LanguageDbHelper    languageDbHelper,
         AuditHelper         audit,
-        UserSessionDbHelper sessionDbHelper)
+        UserSessionDbHelper sessionDbHelper,
+        MaintenanceService  maintenanceService)
     {
-      _translation      = translation;
-      _adminDbHelper    = adminDbHelper;
-      _languageDbHelper = languageDbHelper;
-      _audit            = audit;
-      _sessionDbHelper  = sessionDbHelper;
+      _translation        = translation;
+      _adminDbHelper      = adminDbHelper;
+      _languageDbHelper   = languageDbHelper;
+      _audit              = audit;
+      _sessionDbHelper    = sessionDbHelper;
+      _maintenanceService = maintenanceService;
     }
 
     public async Task OnGetAsync(string? username = null)
@@ -61,6 +66,10 @@ namespace MyApp.Areas.Admin.Pages
       AlertMessageTitle   = null;
       CurrentLang         = Request.Cookies["lang"] ?? AppConstants.DefaultLanguage;
       Languages           = await _languageDbHelper.GetAllActiveAsync();
+
+      var mStatus          = await _maintenanceService.GetStatusAsync(AppConstants.SystemTypeAdmin, CurrentLang);
+      IsUnderMaintenance   = mStatus.IsUnderMaintenance;
+      MaintenanceMessage   = mStatus.Message;
 
       if (!string.IsNullOrEmpty(username))
         DefaultUsername = username;
@@ -117,7 +126,25 @@ namespace MyApp.Areas.Admin.Pages
     public async Task<IActionResult> OnPostAsync()
     {
       DefaultUsername = txtUsername;
-      Languages = await _languageDbHelper.GetAllActiveAsync();
+      Languages       = await _languageDbHelper.GetAllActiveAsync();
+
+      var langCode = ddlLanguage ?? AppConstants.DefaultLanguage;
+      var mStatus  = await _maintenanceService.GetStatusAsync(AppConstants.SystemTypeAdmin, langCode);
+      if (mStatus.IsUnderMaintenance)
+      {
+        IsUnderMaintenance = true;
+        MaintenanceMessage = mStatus.Message;
+
+        var testUser    = await _adminDbHelper.GetByUsernameAsync(txtUsername ?? string.Empty);
+        bool isSuperAdmin = testUser?.Role?.IsSuperAdmin ?? false;
+        if (!isSuperAdmin)
+        {
+          AlertMessageType    = MessageType.Error;
+          AlertMessageTitle   = MessageTitle.Error;
+          AlertMessageContent = await _translation.GetAsync("Maintenance.LoginBlocked");
+          return Page();
+        }
+      }
 
       var adminUser = await ValidateLoginAsync();
 

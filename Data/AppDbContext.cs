@@ -38,6 +38,10 @@ public class AppDbContext : DbContext
   public DbSet<PriceTier>        PriceTiers        => Set<PriceTier>();
   public DbSet<ProductSectionType>            ProductSectionTypes            => Set<ProductSectionType>();
   public DbSet<ProductSectionTypeTranslation> ProductSectionTypeTranslations => Set<ProductSectionTypeTranslation>();
+  public DbSet<AppSystem>                  AppSystems                  => Set<AppSystem>();
+  public DbSet<MaintenanceSchedule>        MaintenanceSchedules        => Set<MaintenanceSchedule>();
+  public DbSet<MaintenanceScheduleSystem>  MaintenanceScheduleSystems  => Set<MaintenanceScheduleSystem>();
+  public DbSet<MaintenanceScheduleMessage> MaintenanceScheduleMessages => Set<MaintenanceScheduleMessage>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -95,7 +99,12 @@ public class AppDbContext : DbContext
       entity.Property(e => e.Subject).HasColumnName("subject").HasMaxLength(255).IsRequired();
       entity.Property(e => e.BodyHtml).HasColumnName("body_html").IsRequired();
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
     });
 
     // Language
@@ -390,7 +399,11 @@ public class AppDbContext : DbContext
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
       entity.HasOne(e => e.Parent).WithMany(m => m.Children).HasForeignKey(e => e.ParentId).OnDelete(DeleteBehavior.Restrict);
-      entity.HasMany(e => e.Permissions).WithOne(p => p.Menu).HasForeignKey(p => p.MenuId).OnDelete(DeleteBehavior.Cascade);
+      entity.HasMany(e => e.Permissions)
+            .WithOne(p => p.Menu)
+            .HasForeignKey(p => p.Module)
+            .HasPrincipalKey(e => e.MenuCode)
+            .OnDelete(DeleteBehavior.Cascade);
     });
 
     // Permission
@@ -400,7 +413,7 @@ public class AppDbContext : DbContext
       entity.HasKey(e => e.Id);
       entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
       entity.Property(e => e.PermissionCode).HasColumnName("permission_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.MenuId).HasColumnName("menu_id");
+      entity.Property(e => e.Module).HasColumnName("module").HasMaxLength(50);
       entity.Property(e => e.PermissionName).HasColumnName("permission_name").HasMaxLength(100).IsRequired();
       entity.Property(e => e.SortOrder).HasColumnName("sort_order");
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
@@ -521,6 +534,77 @@ public class AppDbContext : DbContext
       entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(50).IsRequired();
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.SectionName).HasColumnName("section_name").HasMaxLength(200).IsRequired();
+    });
+
+    // AppSystem
+    modelBuilder.Entity<AppSystem>(entity =>
+    {
+      entity.ToTable("systems");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.SystemCode).HasColumnName("system_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.SystemName).HasColumnName("system_name").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.SystemCode).IsUnique();
+    });
+
+    // MaintenanceSchedule
+    modelBuilder.Entity<MaintenanceSchedule>(entity =>
+    {
+      entity.ToTable("maintenance_schedules");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.StartAt).HasColumnName("start_at");
+      entity.Property(e => e.EndAt).HasColumnName("end_at");
+      entity.Property(e => e.IsActive).HasColumnName("is_active");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+
+      entity.HasMany(e => e.Systems)
+            .WithOne(s => s.Maintenance)
+            .HasForeignKey(s => s.MaintenanceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.Messages)
+            .WithOne(m => m.Maintenance)
+            .HasForeignKey(m => m.MaintenanceId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // MaintenanceScheduleSystem
+    modelBuilder.Entity<MaintenanceScheduleSystem>(entity =>
+    {
+      entity.ToTable("maintenance_schedule_systems");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.MaintenanceId).HasColumnName("maintenance_id");
+      entity.Property(e => e.SystemCode).HasColumnName("system_code").HasMaxLength(50);
+      entity.HasOne(e => e.System)
+            .WithMany()
+            .HasForeignKey(e => e.SystemCode)
+            .HasPrincipalKey(e => e.SystemCode)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // MaintenanceScheduleMessage
+    modelBuilder.Entity<MaintenanceScheduleMessage>(entity =>
+    {
+      entity.ToTable("maintenance_schedule_messages");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.MaintenanceId).HasColumnName("maintenance_id");
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10);
+      entity.Property(e => e.Message).HasColumnName("message");
+      entity.HasIndex(e => new { e.MaintenanceId, e.LanguageCode }).IsUnique();
     });
 
     // Customer

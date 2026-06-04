@@ -13,12 +13,12 @@ public class PermissionDbHelper : DbHelper
       => await ExecuteAsync(() => _db.Permissions
           .Where(p => p.Status != StatusConstants.Deleted)
           .Include(p => p.Menu)
-          .OrderBy(p => p.MenuId).ThenBy(p => p.SortOrder)
+          .OrderBy(p => p.Module).ThenBy(p => p.SortOrder)
           .ToListAsync());
 
-  public async Task<List<Permission>> GetActiveByMenuAsync(int menuId)
+  public async Task<List<Permission>> GetActiveByModuleAsync(string module)
       => await ExecuteAsync(() => _db.Permissions
-          .Where(p => p.MenuId == menuId && p.Status == StatusConstants.Active)
+          .Where(p => p.Module == module && p.Status == StatusConstants.Active)
           .OrderBy(p => p.SortOrder)
           .ToListAsync());
 }

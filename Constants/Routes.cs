@@ -31,6 +31,9 @@ public class Routes
   public const string AdminUnitOfMeasure        = "/UnitsOfMeasure/Index";
   public const string AdminPriceTier            = "/PriceTiers/Index";
   public const string AdminProductSectionType   = "/ProductSectionTypes/Index";
+  public const string AdminEmailTemplate        = "/EmailTemplates/Index";
+  public const string AdminSystems              = "/Systems/Index";
+  public const string AdminMaintenances         = "/Maintenances/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

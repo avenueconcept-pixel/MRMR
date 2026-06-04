@@ -1,0 +1,132 @@
+@page
+@model MyApp.Areas.Admin.Pages.Maintenances.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("MaintenanceSchedule.Title");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <div>
+    <h4 class="mb-0">@await T.GetAsync("MaintenanceSchedule.Title")</h4>
+    <small class="text-muted">@await T.GetAsync("MaintenanceSchedule.Subtitle")</small>
+  </div>
+  <a asp-area="Admin" asp-page="/Maintenances/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Add")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblMaintenances" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>@await T.GetAsync("Maintenance.ScheduleTitle")</th>
+            <th>@await T.GetAsync("Maintenance.AffectedSystems")</th>
+            <th>@await T.GetAsync("Maintenance.StartAt")</th>
+            <th>@await T.GetAsync("Maintenance.EndAt")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @{ var rowNum = 1; var now = DateTime.UtcNow; }
+          @foreach (var item in Model.Items)
+          {
+            string statusKey, statusBadge;
+            if (!item.IsActive)
+            { statusKey = "Maintenance.StatusDisabled"; statusBadge = "bg-warning"; }
+            else if (now < item.StartAt)
+            { statusKey = "Maintenance.StatusScheduled"; statusBadge = "bg-info"; }
+            else if (now >= item.StartAt && now <= item.EndAt)
+            { statusKey = "Maintenance.StatusActive"; statusBadge = "bg-success"; }
+            else
+            { statusKey = "Maintenance.StatusEnded"; statusBadge = "bg-secondary"; }
+
+            var systemNames = string.Join(", ", item.Systems.Select(s => s.SystemCode));
+            <tr>
+              <td>@rowNum</td>
+              <td><strong>@item.Title</strong></td>
+              <td>@systemNames</td>
+              <td>@item.StartAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td>@item.EndAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td><span class="badge @statusBadge">@await T.GetAsync(statusKey)</span></td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Maintenances/Edit"
+                         asp-route-id="@item.Id">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button"
+                              onclick="toggleActive(@item.Id)">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("Btn.ToggleActive")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            rowNum++;
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var msgToggleSuccess = '@Html.Raw(Model.MsgToggleSuccess)';
+  var msgToggleError   = '@Html.Raw(Model.MsgToggleError)';
+
+  function toggleActive(id) {
+    $.ajax({
+      url: '?handler=ToggleActive', type: 'POST',
+      data: {
+        id: id,
+        __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+      },
+      success: function (data) {
+        if (data.success) { location.reload(); }
+        else { Swal.fire({ icon: 'error', text: msgToggleError }); }
+      },
+      error: function () { Swal.fire({ icon: 'error', text: msgToggleError }); }
+    });
+  }
+
+  $(document).ready(function () {
+    initDataTable('#tblMaintenances', 6);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

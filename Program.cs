@@ -65,6 +65,9 @@ builder.Services.AddScoped<PageAccessDbHelper>();
 builder.Services.AddScoped<UomDbHelper>();
 builder.Services.AddScoped<PriceTierDbHelper>();
 builder.Services.AddScoped<ProductSectionTypeDbHelper>();
+builder.Services.AddScoped<SystemDbHelper>();
+builder.Services.AddScoped<MaintenanceDbHelper>();
+builder.Services.AddScoped<MaintenanceService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
@@ -140,6 +143,7 @@ app.UseRequestLocalization(); // ✅ Must come before routing
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<MaintenanceMiddleware>();
 app.UseMiddleware<SessionTrackingMiddleware>();
 
 // 👇 This sets the default page

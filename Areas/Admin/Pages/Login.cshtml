@@ -44,6 +44,15 @@
 				<!-- /Logo -->
 
 				<div class="card-body mt-1">
+					@if (Model.IsUnderMaintenance)
+					{
+						<div class="alert alert-warning mb-3" role="alert">
+							<div class="d-flex align-items-start gap-2">
+								<i class="ri ri-tools-line fs-5 mt-1"></i>
+								<div>@Html.Raw(Model.MaintenanceMessage)</div>
+							</div>
+						</div>
+					}
 					<h4 class="mb-1">@await T.GetAsync("WelcomeSystem") 👋</h4>
 					<p class="mb-5">@await T.GetAsync("SignInLoginHeader")</p>
 
