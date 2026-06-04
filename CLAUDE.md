@@ -467,7 +467,10 @@ If a page has multiple password fields (e.g. Password + Confirm Password), give 
 
 ### Quill rich text editor
 
-Use the vendor-bundled Quill for any rich text / HTML body field. Vendor files: `~/vendor/libs/quill/quill.dist.js` + `~/vendor/libs/quill/editor.dist.css`.
+Use the vendor-bundled Quill for any rich text / HTML body field. Always use the compiled (`*.dist`) files — `quill.js` and `editor.css` are the raw sources and must not be referenced directly:
+
+- JS: `~/vendor/libs/quill/quill.dist.js`
+- CSS: `~/vendor/libs/quill/editor.dist.css`
 
 **Pattern:** one hidden `<input>` stores the HTML (submitted with the form), one `<div>` is the visible editor. Sync Quill → hidden input on `submit`.
 
