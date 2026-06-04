@@ -11,5 +11,4 @@ public class Permission
   public int    SortOrder      { get; set; }
   public string Status         { get; set; } = StatusConstants.Active;
 
-  public Menu Menu { get; set; } = null!;
 }

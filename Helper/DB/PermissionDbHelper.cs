@@ -12,7 +12,6 @@ public class PermissionDbHelper : DbHelper
   public async Task<List<Permission>> GetAllAsync()
       => await ExecuteAsync(() => _db.Permissions
           .Where(p => p.Status != StatusConstants.Deleted)
-          .Include(p => p.Menu)
           .OrderBy(p => p.Module).ThenBy(p => p.SortOrder)
           .ToListAsync());
 

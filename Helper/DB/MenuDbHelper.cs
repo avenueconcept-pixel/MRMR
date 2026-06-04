@@ -25,9 +25,15 @@ public class MenuDbHelper : DbHelper
             .Where(m => m.Status != StatusConstants.Deleted && m.ParentId == null)
             .Include(m => m.Children.Where(c => c.Status != StatusConstants.Deleted))
                 .ThenInclude(c => c.Children.Where(gc => gc.Status != StatusConstants.Deleted))
-            .Include(m => m.Permissions.Where(p => p.Status != StatusConstants.Deleted))
             .OrderBy(m => m.SortOrder)
             .ToListAsync();
+
+        var perms = await _db.Permissions
+            .Where(p => p.Status != StatusConstants.Deleted)
+            .OrderBy(p => p.SortOrder)
+            .ToListAsync();
+
+        AssignPermissions(items, perms);
         return items;
       });
 
@@ -91,9 +97,15 @@ public class MenuDbHelper : DbHelper
             .Where(m => m.Status == StatusConstants.Active && m.ParentId == null)
             .Include(m => m.Children.Where(c => c.Status == StatusConstants.Active))
                 .ThenInclude(c => c.Children.Where(gc => gc.Status == StatusConstants.Active))
-            .Include(m => m.Permissions.Where(p => p.Status == StatusConstants.Active))
             .OrderBy(m => m.SortOrder)
             .ToListAsync();
+
+        var perms = await _db.Permissions
+            .Where(p => p.Status == StatusConstants.Active)
+            .OrderBy(p => p.SortOrder)
+            .ToListAsync();
+
+        AssignPermissions(items, perms);
         return items;
       });
 
@@ -189,6 +201,17 @@ public class MenuDbHelper : DbHelper
 
         await _db.SaveChangesAsync();
       });
+
+  // Assigns permissions to the matching menu node by module == menu_code (no DB FK)
+  private static void AssignPermissions(IEnumerable<Menu> nodes, List<Permission> allPerms)
+  {
+    foreach (var menu in nodes)
+    {
+      ((List<Permission>)menu.Permissions).AddRange(
+          allPerms.Where(p => p.Module == menu.MenuCode));
+      AssignPermissions(menu.Children, allPerms);
+    }
+  }
 
   public async Task SaveSortOrderAsync(List<MenuSortItem> items, string updatedBy)
       => await ExecuteAsync(async () =>

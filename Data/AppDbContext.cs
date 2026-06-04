@@ -399,11 +399,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
       entity.HasOne(e => e.Parent).WithMany(m => m.Children).HasForeignKey(e => e.ParentId).OnDelete(DeleteBehavior.Restrict);
-      entity.HasMany(e => e.Permissions)
-            .WithOne(p => p.Menu)
-            .HasForeignKey(p => p.Module)
-            .HasPrincipalKey(e => e.MenuCode)
-            .OnDelete(DeleteBehavior.Cascade);
+      entity.Ignore(e => e.Permissions);
     });
 
     // Permission
