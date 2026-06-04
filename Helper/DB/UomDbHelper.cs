@@ -8,7 +8,7 @@ namespace MyApp.Helper.DB;
 
 public class UomDbHelper : DbHelper
 {
-  public UomDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public UomDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<List<UnitOfMeasure>> GetAllAsync(string languageCode)
       => await ExecuteAsync(async () =>

@@ -8,7 +8,7 @@ namespace MyApp.Helper.DB;
 
 public class PriceTierDbHelper : DbHelper
 {
-  public PriceTierDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public PriceTierDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   public async Task<List<PriceTier>> GetAllAsync()
       => await ExecuteAsync(async () =>

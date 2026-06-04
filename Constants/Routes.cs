@@ -30,6 +30,7 @@ public class Routes
   public const string AdminPageAccessHistory    = "/PageAccessHistory/Index";
   public const string AdminUnitOfMeasure        = "/UnitsOfMeasure/Index";
   public const string AdminPriceTier            = "/PriceTiers/Index";
+  public const string AdminProductSectionType   = "/ProductSectionTypes/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

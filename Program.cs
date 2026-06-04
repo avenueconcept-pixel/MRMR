@@ -64,6 +64,7 @@ builder.Services.AddScoped<DashboardDbHelper>();
 builder.Services.AddScoped<PageAccessDbHelper>();
 builder.Services.AddScoped<UomDbHelper>();
 builder.Services.AddScoped<PriceTierDbHelper>();
+builder.Services.AddScoped<ProductSectionTypeDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));

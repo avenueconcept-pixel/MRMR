@@ -148,7 +148,7 @@ All database access through scoped `DbHelper` subclasses injected into PageModel
 // Helper/DB/ThingDbHelper.cs
 public class ThingDbHelper : DbHelper
 {
-  public ThingDbHelper(AppDbContext db, ILoggerFactory loggerFactory) : base(db, loggerFactory) { }
+  public ThingDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
   // Query (returns value)
   public async Task<Thing?> GetByIdAsync(int id)
@@ -1082,6 +1082,7 @@ public MyMiddleware(RequestDelegate next, PageAccessDbHelper db) { ... }
 
 ## Never
 
+- Never use Razor reserved keywords as variable names in `.cshtml` files — `section`, `functions`, `namespace`, `page`, `model`, `inherits`, `helper` are all reserved. Using any of these as a `@foreach` loop variable (e.g. `var section in Model.Items`) causes Razor to misparse `@section.Property` as a malformed directive, producing "The 'section' directive must appear at the start of the line" errors. Use descriptive alternatives: `stype` instead of `section`, `func` → `funcItem`, etc.
 - Never add MVC controllers — this project is Razor Pages only
 - Never query `AppDbContext` directly inside a PageModel — use a `DbHelper`
 - Never hard-code user-facing strings — use `TranslationService` + `MessageConstants`

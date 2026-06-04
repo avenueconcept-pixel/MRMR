@@ -36,6 +36,8 @@ public class AppDbContext : DbContext
   public DbSet<UnitOfMeasure>    UnitsOfMeasure    => Set<UnitOfMeasure>();
   public DbSet<UomTranslation>   UomTranslations   => Set<UomTranslation>();
   public DbSet<PriceTier>        PriceTiers        => Set<PriceTier>();
+  public DbSet<ProductSectionType>            ProductSectionTypes            => Set<ProductSectionType>();
+  public DbSet<ProductSectionTypeTranslation> ProductSectionTypeTranslations => Set<ProductSectionTypeTranslation>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -488,6 +490,37 @@ public class AppDbContext : DbContext
       entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+    });
+
+    // ProductSectionType
+    modelBuilder.Entity<ProductSectionType>(entity =>
+    {
+      entity.ToTable("product_section_types");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasMany(e => e.Translations)
+            .WithOne(t => t.ProductSectionType)
+            .HasForeignKey(t => t.SectionCode)
+            .HasPrincipalKey(e => e.SectionCode)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // ProductSectionTypeTranslation
+    modelBuilder.Entity<ProductSectionTypeTranslation>(entity =>
+    {
+      entity.ToTable("product_section_type_translations");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.SectionName).HasColumnName("section_name").HasMaxLength(200).IsRequired();
     });
 
     // Customer
