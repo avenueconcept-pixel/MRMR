@@ -24,9 +24,9 @@ public class PasswordResetTokenDbHelper : DbHelper
           UserType = userType,
           UserId = userId,
           Token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLower(),
-          ExpiresAt = DateTime.Now.AddHours(24),
+          ExpiresAt = DateTime.UtcNow.AddHours(24),
           IsUsed = false,
-          CreatedAt = DateTime.Now
+          CreatedAt = DateTime.UtcNow
         };
 
         _db.PasswordResetTokens.Add(token);
@@ -36,7 +36,7 @@ public class PasswordResetTokenDbHelper : DbHelper
 
   public async Task<PasswordResetToken?> GetValidTokenAsync(string token)
       => await ExecuteAsync(() => _db.PasswordResetTokens
-          .FirstOrDefaultAsync(t => t.Token == token && !t.IsUsed && t.ExpiresAt > DateTime.Now));
+          .FirstOrDefaultAsync(t => t.Token == token && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow));
 
   public async Task MarkUsedAsync(int id)
       => await ExecuteAsync(async () =>

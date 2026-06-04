@@ -39,7 +39,7 @@ public class DbLogger : ILogger
       cmd.Parameters.AddWithValue("@category", _category);
       cmd.Parameters.AddWithValue("@message", message);
       cmd.Parameters.AddWithValue("@exception", (object?)exceptionText ?? DBNull.Value);
-      cmd.Parameters.AddWithValue("@created_at", DateTime.Now);
+      cmd.Parameters.AddWithValue("@created_at", DateTime.UtcNow);
       cmd.ExecuteNonQuery();
     }
     catch

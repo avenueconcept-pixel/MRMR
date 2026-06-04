@@ -26,7 +26,7 @@ public class CustomerDbHelper : DbHelper
         var customer = await _db.Customers.FindAsync(customerId);
         if (customer != null)
         {
-          customer.LastLogin = DateTime.Now;
+          customer.LastLogin = DateTime.UtcNow;
           await _db.SaveChangesAsync();
         }
       });

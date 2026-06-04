@@ -148,7 +148,7 @@ public class MenuDbHelper : DbHelper
           existing.ParentId  = menu.ParentId;
           existing.Level     = menu.Level;
           existing.Status    = StatusConstants.Active;
-          existing.UpdatedAt = DateTime.Now;
+          existing.UpdatedAt = DateTime.UtcNow;
           existing.UpdatedBy = createdBy;
           await _db.SaveChangesAsync();
           return MenuAddResult.Restored;
@@ -161,9 +161,9 @@ public class MenuDbHelper : DbHelper
             .MaxAsync(m => (int?)m.SortOrder) ?? 0;
 
         menu.SortOrder = maxSort + 1;
-        menu.CreatedAt = DateTime.Now;
+        menu.CreatedAt = DateTime.UtcNow;
         menu.CreatedBy = createdBy;
-        menu.UpdatedAt = DateTime.Now;
+        menu.UpdatedAt = DateTime.UtcNow;
         menu.UpdatedBy = createdBy;
 
         _db.Menus.Add(menu);
@@ -183,7 +183,7 @@ public class MenuDbHelper : DbHelper
         existing.ParentId  = menu.ParentId;
         existing.Level     = menu.Level;
         existing.Status    = menu.Status;
-        existing.UpdatedAt = DateTime.Now;
+        existing.UpdatedAt = DateTime.UtcNow;
         existing.UpdatedBy = updatedBy;
 
         await _db.SaveChangesAsync();
@@ -196,7 +196,7 @@ public class MenuDbHelper : DbHelper
             ?? throw new InvalidOperationException($"Menu {id} not found");
 
         menu.Status    = status;
-        menu.UpdatedAt = DateTime.Now;
+        menu.UpdatedAt = DateTime.UtcNow;
         menu.UpdatedBy = updatedBy;
 
         await _db.SaveChangesAsync();
@@ -218,7 +218,7 @@ public class MenuDbHelper : DbHelper
       {
         var ids   = items.Select(i => i.Id).ToList();
         var menus = await _db.Menus.Where(m => ids.Contains(m.Id)).ToListAsync();
-        var now   = DateTime.Now;
+        var now   = DateTime.UtcNow;
 
         foreach (var item in items)
         {
