@@ -45,7 +45,7 @@
 
           <div class="mb-3">
             <label class="form-label">@await T.GetAsync("Menu.Level")</label>
-            <select name="ddlLevel" id="selLevel" class="form-select"
+            <select asp-for="ddlLevel" id="selLevel" class="form-select"
                     asp-items="Model.LevelOptions" onchange="onLevelChange(this.value)">
             </select>
           </div>
@@ -53,14 +53,14 @@
           @* Group picker *@
           <div class="mb-3" id="rowGroup" style="display:none;">
             <label class="form-label">@await T.GetAsync("Menu.Group")</label>
-            <select name="ddlGroupId" class="form-select" asp-items="Model.GroupOptions">
+            <select asp-for="ddlGroupId" class="form-select" asp-items="Model.GroupOptions">
             </select>
           </div>
 
           @* Parent picker *@
           <div class="mb-3" id="rowParent" style="display:none;">
             <label class="form-label">@await T.GetAsync("Menu.Parent") <span class="text-danger">*</span></label>
-            <select name="ddlParentId" class="form-select" asp-items="Model.ParentOptions">
+            <select asp-for="ddlParentId" class="form-select" asp-items="Model.ParentOptions">
             </select>
           </div>
 
@@ -120,7 +120,7 @@
       <div class="card mb-3">
         <div class="card-body">
           <label class="form-label">@await T.GetAsync("Status")</label>
-          <select name="ddlStatus" class="form-select" asp-items="Model.StatusOptions"></select>
+          <select asp-for="ddlStatus" class="form-select" asp-items="Model.StatusOptions"></select>
         </div>
       </div>
 
