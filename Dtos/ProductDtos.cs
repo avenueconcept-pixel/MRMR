@@ -2,6 +2,22 @@ namespace MyApp.Dtos;
 
 public enum ProductAddResult { Created, Restored, DuplicateActive }
 
+public class ProductTranslationInputDto
+{
+  public string LanguageCode    { get; set; } = string.Empty;
+  public string LanguageName    { get; set; } = string.Empty;
+  public string ProductName     { get; set; } = string.Empty;
+  public string ShortDescription{ get; set; } = string.Empty;
+}
+
+public class CountrySelectionDto
+{
+  public string CountryCode { get; set; } = string.Empty;
+  public string CountryName { get; set; } = string.Empty;
+  public bool   IsSelected  { get; set; }
+  public string StockStatus { get; set; } = StockStatusConstants.Available;
+}
+
 public static class ProductTypeConstants
 {
   public const string Standard = "standard";

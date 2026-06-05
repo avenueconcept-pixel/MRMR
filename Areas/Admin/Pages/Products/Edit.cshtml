@@ -1,0 +1,262 @@
+@page "{productCode}"
+@model MyApp.Areas.Admin.Pages.Products.EditModel
+@{
+  ViewData["title"] = await T.GetAsync("Products.Edit.Title");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <div>
+    <h4 class="mb-0">@await T.GetAsync("Products.Edit.Title") — <span class="text-muted">@Model.CurrentProductCode</span></h4>
+    <small class="text-muted">@await T.GetAsync("Products.Edit.Subtitle")</small>
+  </div>
+  <a asp-area="Admin" asp-page="/Products/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" asp-page-handler="Update">
+
+      @* ── Basic Info ─────────────────────────────────── *@
+      <div class="row g-4">
+        <div class="col-md-4">
+          <label class="form-label">@await T.GetAsync("Products.ProductCode")</label>
+          <input type="text" class="form-control" value="@Model.CurrentProductCode" readonly />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="ddlProductType">@await T.GetAsync("Products.ProductType")</label>
+          <select asp-for="ddlProductType" asp-items="@Model.ProductTypeOptions" class="form-select"></select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="ddlProductNature">@await T.GetAsync("Products.ProductNature")</label>
+          <select asp-for="ddlProductNature" asp-items="@Model.ProductNatureOptions" class="form-select"></select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="ddlUom">@await T.GetAsync("Products.Uom")</label>
+          <select asp-for="ddlUom" asp-items="@Model.UomOptions" class="form-select"></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label" for="txtPv">@await T.GetAsync("Products.Pv")</label>
+          <input type="number" id="txtPv" name="txtPv" class="form-control"
+                 step="0.01" min="0" value="@Model.txtPv" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label" for="txtSortOrder">@await T.GetAsync("Products.SortOrder")</label>
+          <input type="number" id="txtSortOrder" name="txtSortOrder" class="form-control"
+                 min="0" value="@Model.txtSortOrder" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
+          <select asp-for="ddlStatus" asp-items="@Model.StatusOptions" class="form-select"></select>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+
+      @* ── Translations ────────────────────────────────── *@
+      <h6 class="mb-3">@await T.GetAsync("Products.Translations")</h6>
+      @foreach (var lang in Model.TranslationInputs)
+      {
+        <div class="mb-4 p-3 border rounded">
+          <h6 class="text-muted mb-3">@lang.LanguageName</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small" for="txtProductName_@lang.LanguageCode">
+                @await T.GetAsync("Products.Tab.ProductName")
+              </label>
+              <input type="text" id="txtProductName_@lang.LanguageCode"
+                     name="txtProductName_@lang.LanguageCode"
+                     class="form-control" value="@lang.ProductName"
+                     placeholder="@await T.GetAsync("Products.ProductName.Placeholder")" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small" for="txtShortDesc_@lang.LanguageCode">
+                @await T.GetAsync("Products.Tab.ShortDescription")
+              </label>
+              <textarea id="txtShortDesc_@lang.LanguageCode"
+                        name="txtShortDesc_@lang.LanguageCode"
+                        class="form-control" rows="2"
+                        placeholder="@await T.GetAsync("Products.ShortDescription.Placeholder")">@lang.ShortDescription</textarea>
+            </div>
+          </div>
+        </div>
+      }
+
+      <hr class="my-4" />
+
+      @* ── Categories ──────────────────────────────────── *@
+      <div class="mb-4">
+        <label class="form-label" for="ddlCategories">@await T.GetAsync("Products.Categories")</label>
+        <select multiple id="ddlCategories" name="selectedCategories"
+                class="form-select" asp-items="@Model.CategoriesSelectList">
+        </select>
+      </div>
+
+      <hr class="my-4" />
+
+      @* ── Country Availability ────────────────────────── *@
+      <h6 class="mb-3">@await T.GetAsync("Products.CountryAvailability")</h6>
+      @if (Model.CountrySelections.Count == 0)
+      {
+        <p class="text-muted small">@await T.GetAsync("Products.NoCountriesAvailable")</p>
+      }
+      else
+      {
+        <div class="row g-2">
+          @foreach (var c in Model.CountrySelections)
+          {
+            <div class="col-md-4">
+              <div class="d-flex align-items-center gap-3 p-2 border rounded">
+                <div class="form-check mb-0 flex-shrink-0">
+                  <input type="checkbox"
+                         class="form-check-input country-check"
+                         id="countryCheck_@c.CountryCode"
+                         name="countryCheck_@c.CountryCode"
+                         data-country="@c.CountryCode"
+                         @(c.IsSelected ? "checked" : "") />
+                  <label class="form-check-label" for="countryCheck_@c.CountryCode">
+                    @c.CountryName
+                  </label>
+                </div>
+                <div id="stockDiv_@c.CountryCode" class="flex-grow-1"
+                     style="@(c.IsSelected ? "" : "display:none;")">
+                  <select name="countryStock_@c.CountryCode" class="form-select form-select-sm">
+                    @foreach (var opt in Model.StockStatusOptions)
+                    {
+                      if (c.StockStatus == opt.Value)
+                      {
+                        <option value="@opt.Value" selected>@opt.Text</option>
+                      }
+                      else
+                      {
+                        <option value="@opt.Value">@opt.Text</option>
+                      }
+                    }
+                  </select>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">@await T.GetAsync("SaveChanges")</button>
+        <a asp-area="Admin" asp-page="/Products/Index" class="btn btn-outline-secondary">@await T.GetAsync("Cancel")</a>
+        <a href="#" id="btnDelete" class="btn btn-outline-danger ms-auto"
+           data-code="@Model.CurrentProductCode">
+          <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+        </a>
+      </div>
+
+    </form>
+
+    <hr class="my-4" />
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("CreatedBy")</label>
+        <p class="mb-0">@Model.CreatedBy</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("CreatedAt")</label>
+        <p class="mb-0">@Model.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("UpdatedBy")</label>
+        <p class="mb-0">@Model.UpdatedBy</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("UpdatedAt")</label>
+        <p class="mb-0">@Model.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+  <script src="~/vendor/libs/select2/select2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)'
+  };
+
+  $(document).ready(function () {
+    $('#ddlCategories').select2({
+      placeholder: '@await T.GetAsync("Products.Categories.Placeholder")',
+      allowClear: true,
+      width: '100%'
+    });
+  });
+
+  document.querySelectorAll('.country-check').forEach(function (cb) {
+    toggleCountryStock(cb);
+    cb.addEventListener('change', function () { toggleCountryStock(this); });
+  });
+
+  function toggleCountryStock(checkbox) {
+    var code     = checkbox.getAttribute('data-country');
+    var stockDiv = document.getElementById('stockDiv_' + code);
+    if (stockDiv) stockDiv.style.display = checkbox.checked ? '' : 'none';
+  }
+
+  document.getElementById('btnDelete').addEventListener('click', function (e) {
+    e.preventDefault();
+    var code = this.getAttribute('data-code');
+    Swal.fire({
+      title: pageMsg.deleteConfirmTitle,
+      text: pageMsg.deleteConfirmText,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.deleteConfirmBtn,
+      cancelButtonText: pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=SoftDelete&productCode=' + encodeURIComponent(code), {
+          __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+        }, function (data) {
+          if (data.success) {
+            Swal.fire({ icon: 'success', title: pageMsg.deleteSuccess, timer: 1500, showConfirmButton: false })
+              .then(function () { window.location.href = '@Url.Page(Routes.AdminProducts)'; });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+        });
+      }
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

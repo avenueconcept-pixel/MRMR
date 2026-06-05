@@ -7,7 +7,9 @@ public class Routes
   public const string AdminDashboard = "/Dashboard/Index";
   public const string AdminForgotPassword = "/ForgotPassword";
   public const string AdminResetPassword = "/ResetPassword";
-  public const string AdminProducts = "/Products";
+  public const string AdminProducts       = "/Products";
+  public const string AdminProductsCreate = "/Products/Create";
+  public const string AdminProductsEdit   = "/Products/Edit";
   public const string AdminCustomers = "/Customers";
   public const string AdminLogs = "/Logs/Index";
   public const string AdminCountry  = "/Countries/Index";

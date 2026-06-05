@@ -12,11 +12,30 @@ public class ProductDbHelper : DbHelper
   public ProductDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory)
       : base(db, audit, loggerFactory) { }
 
-  public async Task<List<Product>> GetAllAsync(string languageCode)
+  public async Task<List<Product>> GetAllAsync(
+      string  languageCode,
+      string? filterStatus       = null,
+      string? filterType         = null,
+      string? filterCategoryCode = null,
+      string? filterCountryCode  = null)
       => await ExecuteAsync(async () =>
       {
-        var items = await _db.Products
-            .Where(p => p.Status != StatusConstants.Deleted)
+        var query = _db.Products.AsQueryable();
+
+        query = string.IsNullOrEmpty(filterStatus)
+            ? query.Where(p => p.Status != StatusConstants.Deleted)
+            : query.Where(p => p.Status == filterStatus);
+
+        if (!string.IsNullOrEmpty(filterType))
+            query = query.Where(p => p.ProductType == filterType);
+
+        if (!string.IsNullOrEmpty(filterCategoryCode))
+            query = query.Where(p => p.CategoryMaps.Any(m => m.CategoryCode == filterCategoryCode));
+
+        if (!string.IsNullOrEmpty(filterCountryCode))
+            query = query.Where(p => p.Countries.Any(c => c.CountryCode == filterCountryCode));
+
+        var items = await query
             .Include(p => p.Translations.Where(t => t.LanguageCode == languageCode))
             .Include(p => p.CategoryMaps)
             .Include(p => p.Countries)
@@ -49,12 +68,9 @@ public class ProductDbHelper : DbHelper
           await _db.Products
               .Where(p => p.ProductCode == productCode && p.Status != StatusConstants.Deleted)
               .Include(p => p.Translations)
-              .Include(p => p.CategoryMaps)
-              .Include(p => p.Countries)
-              .Include(p => p.PriceTiers)
-              .Include(p => p.Sections).ThenInclude(s => s.Translations)
-              .Include(p => p.Images)
-              .Include(p => p.PackageItems)
+              .Include(p => p.CategoryMaps).ThenInclude(m => m.ProductCategory).ThenInclude(c => c.Translations)
+              .Include(p => p.Countries).ThenInclude(c => c.Country)
+              .Include(p => p.UnitOfMeasure)
               .FirstOrDefaultAsync());
 
   public async Task<ProductAddResult> AddAsync(

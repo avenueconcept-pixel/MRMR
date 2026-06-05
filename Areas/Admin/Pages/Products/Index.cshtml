@@ -1,0 +1,200 @@
+@page
+@model MyApp.Areas.Admin.Pages.Products.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Products.Index.Title");
+
+  var lblToggleTitle   = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes     = await T.GetAsync("ToggleStatusYes");
+  var lblCancel        = await T.GetAsync("Cancel");
+  var lblToggleFailed  = await T.GetAsync("ToggleFailed");
+  var lblToggleError   = await T.GetAsync("ToggleError");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <div>
+    <h4 class="mb-0">@await T.GetAsync("Products.Index.Title")</h4>
+    <small class="text-muted">@await T.GetAsync("Products.Index.Subtitle")</small>
+  </div>
+  <a asp-area="Admin" asp-page="/Products/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Products.AddProduct")
+  </a>
+</div>
+
+@* Filter form *@
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" asp-page="/Products/Index">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small">@await T.GetAsync("Status")</label>
+          <select asp-for="FilterStatus" asp-items="@Model.ddlStatus" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.ProductType")</label>
+          <select asp-for="FilterType" asp-items="@Model.ddlType" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">@await T.GetAsync("Products.Categories")</label>
+          <select asp-for="FilterCategoryCode" asp-items="@Model.ddlCategory" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.CountryAvailability")</label>
+          <select asp-for="FilterCountryCode" asp-items="@Model.ddlCountry" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+            <i class="ri ri-search-line me-1"></i>@await T.GetAsync("Btn.Search")
+          </button>
+          <a asp-page="/Products/Index" class="btn btn-outline-secondary btn-sm">
+            <i class="ri ri-refresh-line"></i>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">@await T.GetAsync("Products.ProductList")</h5>
+    <small class="text-muted">@Model.Items.Count @await T.GetAsync("Products.RecordsFound")</small>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblProducts" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("Products.ProductCode")</th>
+            <th>@await T.GetAsync("Products.Tab.ProductName")</th>
+            <th>@await T.GetAsync("Products.ProductType")</th>
+            <th>@await T.GetAsync("Products.ProductNature")</th>
+            <th>@await T.GetAsync("Products.Pv")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var p in Model.Items)
+          {
+            var statusBadge = p.Status == StatusConstants.Active ? "bg-success" : "bg-secondary";
+            var statusLabel = p.Status == StatusConstants.Active
+                ? await T.GetAsync("status.active")
+                : await T.GetAsync("status.inactive");
+
+            var typeBadge = p.ProductType == ProductTypeConstants.Package ? "bg-label-warning" : "bg-label-primary";
+            var typeLabel = p.ProductType == ProductTypeConstants.Package
+                ? await T.GetAsync("Products.Type.Package")
+                : await T.GetAsync("Products.Type.Standard");
+
+            var natureLabel = p.ProductNature == ProductNatureConstants.Digital
+                ? await T.GetAsync("Products.Nature.Digital")
+                : await T.GetAsync("Products.Nature.Physical");
+
+            <tr>
+              <td><strong>@p.ProductCode</strong></td>
+              <td>@(p.Translations.FirstOrDefault()?.ProductName ?? "-")</td>
+              <td><span class="badge @typeBadge">@typeLabel</span></td>
+              <td>@natureLabel</td>
+              <td>@p.Pv.ToString("0.##")</td>
+              <td><span class="badge @statusBadge">@statusLabel</span></td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Products/Edit"
+                         asp-route-productCode="@p.ProductCode">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button"
+                              onclick="toggleStatus('@p.ProductCode')">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var msgToggleTitle   = '@Html.Raw(lblToggleTitle)';
+  var msgToggleConfirm = '@Html.Raw(lblToggleConfirm)';
+  var msgToggleYes     = '@Html.Raw(lblToggleYes)';
+  var msgCancel        = '@Html.Raw(lblCancel)';
+  var msgToggleFailed  = '@Html.Raw(lblToggleFailed)';
+  var msgToggleError   = '@Html.Raw(lblToggleError)';
+
+  function toggleStatus(productCode) {
+    Swal.fire({
+      title: msgToggleTitle,
+      text: msgToggleConfirm,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: msgToggleYes,
+      cancelButtonText: msgCancel
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '?handler=ToggleStatus',
+          type: 'POST',
+          data: {
+            productCode: productCode,
+            __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+          },
+          success: function (data) {
+            if (data.success) {
+              location.reload();
+            } else {
+              Swal.fire({ icon: 'error', text: msgToggleFailed });
+            }
+          },
+          error: function () {
+            Swal.fire({ icon: 'error', text: msgToggleError });
+          }
+        });
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    initDataTable('#tblProducts', 6);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}
