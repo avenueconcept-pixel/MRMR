@@ -116,6 +116,31 @@ async function confirmDelete(id, title, text, confirmBtn, cancelBtn) {
     }
 }
 
+function toggleStatus(id) {
+    Swal.fire({
+        title:             pageMsg.toggleTitle,
+        text:              pageMsg.toggleText,
+        icon:              'question',
+        showCancelButton:  true,
+        confirmButtonText: pageMsg.toggleBtn,
+        cancelButtonText:  pageMsg.cancelBtn
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+        $.post('?handler=ToggleStatus', {
+            id: id,
+            __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+        }, function (data) {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                Swal.fire({ icon: 'error', text: data.message || pageMsg.toggleError });
+            }
+        }).fail(function () {
+            Swal.fire({ icon: 'error', text: pageMsg.toggleError });
+        });
+    });
+}
+
 function onLevelChange(val) {
     const level     = parseInt(val);
     const rowGroup  = document.getElementById('rowGroup');

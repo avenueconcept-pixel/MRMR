@@ -23,6 +23,11 @@ public class IndexModel : AdminPageModel
   public string MsgDeleteError        { get; set; } = string.Empty;
   public string MsgSortSuccess        { get; set; } = string.Empty;
   public string MsgSortError          { get; set; } = string.Empty;
+  public string MsgToggleConfirmTitle { get; set; } = string.Empty;
+  public string MsgToggleConfirmText  { get; set; } = string.Empty;
+  public string MsgToggleConfirmBtn   { get; set; } = string.Empty;
+  public string MsgToggleSuccess      { get; set; } = string.Empty;
+  public string MsgToggleError        { get; set; } = string.Empty;
   public string LblDelete             { get; set; } = string.Empty;
   public string LblSaveOrder          { get; set; } = string.Empty;
 
@@ -47,6 +52,29 @@ public class IndexModel : AdminPageModel
     try
     {
       await _menuDbHelper.SaveSortOrderAsync(items, CurrentUsername);
+      var msg = await _translation.GetAsync(MessageConstants.UpdateSuccess);
+      return new JsonResult(new { success = true, message = msg });
+    }
+    catch
+    {
+      var msg = await _translation.GetAsync(MessageConstants.SaveError);
+      return new JsonResult(new { success = false, message = msg });
+    }
+  }
+
+  public async Task<IActionResult> OnPostToggleStatusAsync(int id)
+  {
+    try
+    {
+      var menu = await _menuDbHelper.GetByIdAsync(id);
+      if (menu == null)
+        return new JsonResult(new { success = false, message = MsgToggleError });
+
+      var newStatus = menu.Status == StatusConstants.Active
+          ? StatusConstants.Inactive
+          : StatusConstants.Active;
+
+      await _menuDbHelper.UpdateStatusAsync(id, newStatus, CurrentUsername);
       var msg = await _translation.GetAsync(MessageConstants.UpdateSuccess);
       return new JsonResult(new { success = true, message = msg });
     }
@@ -88,6 +116,11 @@ public class IndexModel : AdminPageModel
     MsgDeleteError        = await _translation.GetAsync(MessageConstants.DeleteError);
     MsgSortSuccess        = await _translation.GetAsync(MessageConstants.UpdateSuccess);
     MsgSortError          = await _translation.GetAsync(MessageConstants.SaveError);
+    MsgToggleConfirmTitle = await _translation.GetAsync("ToggleStatusTitle");
+    MsgToggleConfirmText  = await _translation.GetAsync("ToggleStatusConfirm");
+    MsgToggleConfirmBtn   = await _translation.GetAsync("ToggleStatusYes");
+    MsgToggleSuccess      = await _translation.GetAsync(MessageConstants.UpdateSuccess);
+    MsgToggleError        = await _translation.GetAsync(MessageConstants.SaveError);
     LblDelete             = await _translation.GetAsync("Btn.Delete");
     LblSaveOrder          = await _translation.GetAsync("Menu.SaveOrder");
   }
