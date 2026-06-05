@@ -12,6 +12,7 @@ namespace MyApp.Areas.Admin.Pages.Dashboard
   {
     private readonly DashboardDbHelper    _dashboardDbHelper;
     private readonly UserSessionDbHelper  _sessionDbHelper;
+    private readonly AnnouncementDbHelper _announcementDbHelper;
 
     // ── Stat cards (mock data, for future real implementation) ──
     public string  AdminName             { get; set; } = string.Empty;
@@ -51,19 +52,25 @@ namespace MyApp.Areas.Admin.Pages.Dashboard
     public int LanguageCount  { get; set; }
 
     // ── Session widgets ─────────────────────────────────────────
+    public List<Announcement>      ActiveAnnouncements { get; set; } = new();
     public List<UserSession>       ActiveSessions      { get; set; } = new();
     public Dictionary<string, int> ActiveCountBySystem { get; set; } = new();
     public List<UserSession>       RecentLogins        { get; set; } = new();
 
-    public IndexModel(DashboardDbHelper dashboardDbHelper, UserSessionDbHelper sessionDbHelper)
+    public IndexModel(DashboardDbHelper dashboardDbHelper, UserSessionDbHelper sessionDbHelper, AnnouncementDbHelper announcementDbHelper)
     {
-      _dashboardDbHelper = dashboardDbHelper;
-      _sessionDbHelper   = sessionDbHelper;
+      _dashboardDbHelper    = dashboardDbHelper;
+      _sessionDbHelper      = sessionDbHelper;
+      _announcementDbHelper = announcementDbHelper;
     }
 
     public async Task OnGetAsync()
     {
       AdminName = CurrentFullName;
+
+      var langCode = string.IsNullOrEmpty(CurrentLangCode) ? AppConstants.DefaultLanguage : CurrentLangCode;
+      ActiveAnnouncements = await _announcementDbHelper.GetActiveForAudienceAsync(
+          AnnouncementConstants.AudienceAdmin, langCode);
 
       // Real DB data
       AdminUserCount = await _dashboardDbHelper.GetAdminUserCountAsync();

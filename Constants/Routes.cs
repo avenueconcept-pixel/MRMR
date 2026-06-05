@@ -32,6 +32,8 @@ public class Routes
   public const string AdminPriceTier            = "/PriceTiers/Index";
   public const string AdminProductSectionType   = "/ProductSectionTypes/Index";
   public const string AdminEmailTemplate        = "/EmailTemplates/Index";
+  public const string AdminAnnouncements        = "/Announcements/Index";
+  public const string AdminAnnouncementsList    = "/Announcements/List";
   public const string AdminSystems              = "/Systems/Index";
   public const string AdminMaintenances         = "/Maintenances/Index";
 

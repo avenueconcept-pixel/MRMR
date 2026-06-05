@@ -38,6 +38,9 @@ public class AppDbContext : DbContext
   public DbSet<PriceTier>        PriceTiers        => Set<PriceTier>();
   public DbSet<ProductSectionType>            ProductSectionTypes            => Set<ProductSectionType>();
   public DbSet<ProductSectionTypeTranslation> ProductSectionTypeTranslations => Set<ProductSectionTypeTranslation>();
+  public DbSet<Announcement>            Announcements            => Set<Announcement>();
+  public DbSet<AnnouncementTranslation> AnnouncementTranslations => Set<AnnouncementTranslation>();
+  public DbSet<AnnouncementAttachment>  AnnouncementAttachments  => Set<AnnouncementAttachment>();
   public DbSet<AppSystem>                  AppSystems                  => Set<AppSystem>();
   public DbSet<MaintenanceSchedule>        MaintenanceSchedules        => Set<MaintenanceSchedule>();
   public DbSet<MaintenanceScheduleSystem>  MaintenanceScheduleSystems  => Set<MaintenanceScheduleSystem>();
@@ -530,6 +533,65 @@ public class AppDbContext : DbContext
       entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(50).IsRequired();
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.SectionName).HasColumnName("section_name").HasMaxLength(200).IsRequired();
+    });
+
+    // Announcement
+    modelBuilder.Entity<Announcement>(entity =>
+    {
+      entity.ToTable("announcements");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.AnnouncementCode).HasColumnName("announcement_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.Audience).HasColumnName("audience").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.StartAt).HasColumnName("start_at");
+      entity.Property(e => e.EndAt).HasColumnName("end_at");
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.AnnouncementCode).IsUnique();
+
+      entity.HasMany(e => e.Translations)
+            .WithOne(t => t.Announcement)
+            .HasForeignKey(t => t.AnnouncementCode)
+            .HasPrincipalKey(e => e.AnnouncementCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.Attachments)
+            .WithOne(a => a.Announcement)
+            .HasForeignKey(a => a.AnnouncementCode)
+            .HasPrincipalKey(e => e.AnnouncementCode)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // AnnouncementTranslation
+    modelBuilder.Entity<AnnouncementTranslation>(entity =>
+    {
+      entity.ToTable("announcement_translations");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.AnnouncementCode).HasColumnName("announcement_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(300);
+      entity.Property(e => e.Body).HasColumnName("body");
+      entity.HasIndex(e => new { e.AnnouncementCode, e.LanguageCode }).IsUnique();
+    });
+
+    // AnnouncementAttachment
+    modelBuilder.Entity<AnnouncementAttachment>(entity =>
+    {
+      entity.ToTable("announcement_attachments");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.AnnouncementCode).HasColumnName("announcement_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.FileName).HasColumnName("file_name").HasMaxLength(300);
+      entity.Property(e => e.OriginalName).HasColumnName("original_name").HasMaxLength(300);
+      entity.Property(e => e.FileType).HasColumnName("file_type").HasMaxLength(10);
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
     });
 
     // AppSystem

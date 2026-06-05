@@ -1,0 +1,294 @@
+@page "{announcementCode}"
+@model MyApp.Areas.Admin.Pages.Announcements.EditModel
+@{
+  ViewData["title"] = await T.GetAsync("Announcement.EditTitle");
+  var relPath = "uploads/announcements";
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+  <link rel="stylesheet" href="~/vendor/libs/quill/editor.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Announcement.EditTitle") — <span class="text-muted">@Model.AnnouncementCode</span></h4>
+  <a asp-area="Admin" asp-page="/Announcements/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<form method="post" asp-page-handler="Update" id="frmEdit" enctype="multipart/form-data">
+
+  <div class="row g-4">
+
+    @* ── Left column ── *@
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-body">
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("Announcement.Code")</label>
+            <input type="text" class="form-control bg-light" value="@Model.AnnouncementCode" readonly />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("Announcement.Audience")</label>
+            <select asp-for="ddlAudience" class="form-select" asp-items="Model.AudienceOptions"></select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="txtStartAt">
+              @await T.GetAsync("Announcement.StartAt") <span class="text-danger">*</span>
+            </label>
+            <input type="datetime-local" id="txtStartAt" name="txtStartAt" class="form-control"
+                   value="@Model.txtStartAt" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="txtEndAt">
+              @await T.GetAsync("Announcement.EndAt") <span class="text-danger">*</span>
+            </label>
+            <input type="datetime-local" id="txtEndAt" name="txtEndAt" class="form-control"
+                   value="@Model.txtEndAt" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="txtSortOrder">@await T.GetAsync("SortOrder")</label>
+            <input type="number" id="txtSortOrder" name="txtSortOrder" class="form-control"
+                   value="@Model.txtSortOrder" min="0" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("Status")</label>
+            <select asp-for="ddlStatus" class="form-select" asp-items="Model.StatusOptions"></select>
+          </div>
+
+        </div>
+      </div>
+
+      @* ── Audit section ── *@
+      <div class="card mt-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label text-muted small">@await T.GetAsync("CreatedBy")</label>
+              <p class="mb-0">@Model.CreatedBy</p>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-muted small">@await T.GetAsync("CreatedAt")</label>
+              <p class="mb-0">@Model.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-muted small">@await T.GetAsync("UpdatedBy")</label>
+              <p class="mb-0">@Model.UpdatedBy</p>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-muted small">@await T.GetAsync("UpdatedAt")</label>
+              <p class="mb-0">@Model.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @* ── Right column ── *@
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-body">
+
+          <h6 class="mb-3">@await T.GetAsync("Announcement.Translations")</h6>
+
+          @if (Model.TranslationInputs.Count > 0)
+          {
+            <ul class="nav nav-tabs mb-3" id="transTabs">
+              @foreach (var inp in Model.TranslationInputs)
+              {
+                <li class="nav-item">
+                  <a class="nav-link @(inp == Model.TranslationInputs.First() ? "active" : "")"
+                     data-bs-toggle="tab" href="#tab_@inp.LanguageCode">
+                    @inp.Label
+                  </a>
+                </li>
+              }
+            </ul>
+            <div class="tab-content">
+              @foreach (var inp in Model.TranslationInputs)
+              {
+                <div class="tab-pane @(inp == Model.TranslationInputs.First() ? "active" : "")"
+                     id="tab_@inp.LanguageCode">
+                  <div class="mb-3">
+                    <label class="form-label">@await T.GetAsync("Announcement.Title")</label>
+                    <input type="text" name="txtTitle_@inp.LanguageCode" class="form-control"
+                           maxlength="300" value="@inp.Title"
+                           placeholder="@await T.GetAsync("Announcement.Title.Placeholder")" />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">@await T.GetAsync("Announcement.Body")</label>
+                    <input type="hidden" name="hdnBody_@inp.LanguageCode"
+                           id="hdnBody_@inp.LanguageCode" value="@inp.Body" />
+                    <div id="editor_@inp.LanguageCode" style="height:220px;"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <hr class="my-3" />
+
+          @* ── Existing attachments ── *@
+          <h6 class="mb-2">@await T.GetAsync("Announcement.ExistingAttachments")</h6>
+          @if (Model.Attachments.Count == 0)
+          {
+            <p class="text-muted small">@await T.GetAsync("Announcement.NoAttachments")</p>
+          }
+          else
+          {
+            <div class="row g-2 mb-3" id="attachmentList">
+              @foreach (var att in Model.Attachments)
+              {
+                <div class="col-auto" id="att_@att.Id">
+                  <div class="border rounded p-2 d-flex align-items-center gap-2" style="max-width:260px;">
+                    @if (att.FileType == "image")
+                    {
+                      <img src="/@relPath/@att.FileName" alt="@att.OriginalName"
+                           style="width:48px;height:48px;object-fit:cover;border-radius:4px;" />
+                    }
+                    else
+                    {
+                      <i class="ri ri-file-pdf-line fs-3 text-danger"></i>
+                    }
+                    <div class="flex-grow-1 overflow-hidden">
+                      <div class="text-truncate small">@att.OriginalName</div>
+                      <span class="badge bg-label-@(att.FileType == "image" ? "info" : "danger") small">@att.FileType</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            onclick="deleteAttachment(@att.Id)">
+                      <i class="ri ri-delete-bin-line"></i>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @* ── Add new attachments ── *@
+          <h6 class="mb-2">@await T.GetAsync("Announcement.AddAttachments")</h6>
+          <input type="file" name="fileAttachments" class="form-control mb-1" multiple
+                 accept=".jpg,.jpeg,.png,.gif,.pdf" />
+          <div class="form-text">@await T.GetAsync("Announcement.AttachHint")</div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">@await T.GetAsync("SaveChanges")</button>
+    <a asp-area="Admin" asp-page="/Announcements/Index" class="btn btn-outline-secondary">
+      @await T.GetAsync("Cancel")
+    </a>
+    <a href="#" id="btnDelete" class="btn btn-outline-danger ms-auto"
+       data-code="@Model.AnnouncementCode">
+      <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+    </a>
+  </div>
+
+</form>
+
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+  <script src="~/vendor/libs/quill/quill.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)'
+  };
+
+  document.getElementById('btnDelete').addEventListener('click', function (e) {
+    e.preventDefault();
+    var code = this.getAttribute('data-code');
+    Swal.fire({
+      title: pageMsg.deleteConfirmTitle, text: pageMsg.deleteConfirmText,
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: pageMsg.deleteConfirmBtn, cancelButtonText: pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=SoftDelete&announcementCode=' + encodeURIComponent(code), {
+          __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+        }, function (data) {
+          if (data.success) {
+            Swal.fire({ icon: 'success', title: pageMsg.deleteSuccess, timer: 1500, showConfirmButton: false })
+              .then(function () { window.location.href = '@Url.Page(Routes.AdminAnnouncements)'; });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+        });
+      }
+    });
+  });
+
+  function deleteAttachment(id) {
+    $.post('?handler=DeleteAttachment&attachmentId=' + id, {
+      __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+    }, function (data) {
+      if (data.success) {
+        var el = document.getElementById('att_' + id);
+        if (el) el.remove();
+      } else {
+        Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+      }
+    }).fail(function () {
+      Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var editors = {};
+
+    @foreach (var inp in Model.TranslationInputs)
+    {
+      <text>
+    editors['@inp.LanguageCode'] = new Quill('#editor_@inp.LanguageCode', { theme: 'snow' });
+    var initHtml_@(inp.LanguageCode.Replace("-","_")) = document.getElementById('hdnBody_@inp.LanguageCode').value;
+    if (initHtml_@(inp.LanguageCode.Replace("-","_"))) {
+      editors['@inp.LanguageCode'].clipboard.dangerouslyPasteHTML(initHtml_@(inp.LanguageCode.Replace("-","_")));
+    }
+      </text>
+    }
+
+    document.getElementById('frmEdit').addEventListener('submit', function () {
+      @foreach (var inp in Model.TranslationInputs)
+      {
+        <text>
+      document.getElementById('hdnBody_@inp.LanguageCode').value =
+          editors['@inp.LanguageCode'].root.innerHTML;
+        </text>
+      }
+    });
+
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

@@ -37,6 +37,12 @@
 
 <h4 class="py-3 mb-4">@await T.GetAsync("Dashboard.PageTitle") <span class="text-muted fs-6 fw-normal">— @await T.GetAsync("Dashboard.WelcomeBack"), @Model.AdminName</span></h4>
 
+@if (Model.ActiveAnnouncements.Any())
+{
+  await Html.RenderPartialAsync("_Partials/_AnnouncementBanner",
+      (IList<MyApp.Models.Announcement>)Model.ActiveAnnouncements);
+}
+
 @* ── Stat Cards ──────────────────────────────────────────── *@
 <div class="row g-4 mb-4">
 

@@ -65,6 +65,7 @@ builder.Services.AddScoped<PageAccessDbHelper>();
 builder.Services.AddScoped<UomDbHelper>();
 builder.Services.AddScoped<PriceTierDbHelper>();
 builder.Services.AddScoped<ProductSectionTypeDbHelper>();
+builder.Services.AddScoped<AnnouncementDbHelper>();
 builder.Services.AddScoped<SystemDbHelper>();
 builder.Services.AddScoped<MaintenanceDbHelper>();
 builder.Services.AddScoped<MaintenanceService>();

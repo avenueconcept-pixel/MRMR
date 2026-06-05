@@ -1,0 +1,61 @@
+@model IList<MyApp.Models.Announcement>
+@{
+  var relPath = "uploads/announcements";
+}
+
+@if (Model != null && Model.Count > 0)
+{
+  <div class="modal fade" id="modalAnnouncements" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="ri ri-megaphone-line me-2"></i>@await T.GetAsync("Announcement.PopupTitle")
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          @foreach (var ann in Model.Take(3))
+          {
+            var trans = ann.Translations.FirstOrDefault();
+            <div class="mb-4 pb-3 @(ann != Model.Take(3).Last() ? "border-bottom" : "")">
+              @if (!string.IsNullOrEmpty(trans?.Title))
+              {
+                <h6 class="fw-semibold">@trans.Title</h6>
+              }
+              @if (!string.IsNullOrEmpty(trans?.Body))
+              {
+                <div class="mb-2">@Html.Raw(trans.Body)</div>
+              }
+              @if (ann.Attachments.Any())
+              {
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  @foreach (var att in ann.Attachments)
+                  {
+                    <a href="/@relPath/@att.FileName" target="_blank" class="btn btn-sm btn-outline-secondary">
+                      <i class="ri @(att.FileType == "image" ? "ri-image-line" : "ri-file-pdf-line") me-1"></i>@att.OriginalName
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            @await T.GetAsync("Btn.Close")
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      if (!sessionStorage.getItem('annPopupShown')) {
+        $('#modalAnnouncements').modal('show');
+        sessionStorage.setItem('annPopupShown', '1');
+      }
+    });
+  </script>
+}

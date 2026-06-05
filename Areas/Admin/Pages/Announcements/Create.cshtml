@@ -1,0 +1,186 @@
+@page
+@model MyApp.Areas.Admin.Pages.Announcements.CreateModel
+@{
+  ViewData["title"] = await T.GetAsync("Announcement.AddTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+  <link rel="stylesheet" href="~/vendor/libs/quill/editor.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Announcement.AddTitle")</h4>
+  <a asp-area="Admin" asp-page="/Announcements/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<form method="post" asp-page-handler="Create" id="frmCreate" enctype="multipart/form-data">
+
+  <div class="row g-4">
+
+    @* ── Left column ── *@
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-body">
+
+          <div class="mb-3">
+            <label class="form-label" for="txtAnnouncementCode">
+              @await T.GetAsync("Announcement.Code") <span class="text-danger">*</span>
+            </label>
+            <input type="text" id="txtAnnouncementCode" name="txtAnnouncementCode"
+                   class="form-control text-uppercase" maxlength="50"
+                   value="@Model.txtAnnouncementCode"
+                   placeholder="@await T.GetAsync("Announcement.Code.Placeholder")" />
+            <div class="form-text">@await T.GetAsync("Announcement.Code.Hint")</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("Announcement.Audience")</label>
+            <select asp-for="ddlAudience" class="form-select" asp-items="Model.AudienceOptions"></select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="txtStartAt">
+              @await T.GetAsync("Announcement.StartAt") <span class="text-danger">*</span>
+            </label>
+            <input type="datetime-local" id="txtStartAt" name="txtStartAt" class="form-control"
+                   value="@Model.txtStartAt" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="txtEndAt">
+              @await T.GetAsync("Announcement.EndAt") <span class="text-danger">*</span>
+            </label>
+            <input type="datetime-local" id="txtEndAt" name="txtEndAt" class="form-control"
+                   value="@Model.txtEndAt" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="txtSortOrder">@await T.GetAsync("SortOrder")</label>
+            <input type="number" id="txtSortOrder" name="txtSortOrder" class="form-control"
+                   value="@Model.txtSortOrder" min="0" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">@await T.GetAsync("Status")</label>
+            <select asp-for="ddlStatus" class="form-select" asp-items="Model.StatusOptions"></select>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    @* ── Right column ── *@
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-body">
+
+          <h6 class="mb-3">@await T.GetAsync("Announcement.Translations")</h6>
+
+          @if (Model.TranslationInputs.Count > 0)
+          {
+            <ul class="nav nav-tabs mb-3" id="transTabs">
+              @foreach (var inp in Model.TranslationInputs)
+              {
+                <li class="nav-item">
+                  <a class="nav-link @(inp == Model.TranslationInputs.First() ? "active" : "")"
+                     data-bs-toggle="tab" href="#tab_@inp.LanguageCode">
+                    @inp.Label
+                  </a>
+                </li>
+              }
+            </ul>
+            <div class="tab-content">
+              @foreach (var inp in Model.TranslationInputs)
+              {
+                <div class="tab-pane @(inp == Model.TranslationInputs.First() ? "active" : "")"
+                     id="tab_@inp.LanguageCode">
+                  <div class="mb-3">
+                    <label class="form-label">@await T.GetAsync("Announcement.Title")</label>
+                    <input type="text" name="txtTitle_@inp.LanguageCode" class="form-control"
+                           maxlength="300" value="@inp.Title"
+                           placeholder="@await T.GetAsync("Announcement.Title.Placeholder")" />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">@await T.GetAsync("Announcement.Body")</label>
+                    <input type="hidden" name="hdnBody_@inp.LanguageCode"
+                           id="hdnBody_@inp.LanguageCode" value="@inp.Body" />
+                    <div id="editor_@inp.LanguageCode" style="height:220px;"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <hr class="my-3" />
+
+          <h6 class="mb-2">@await T.GetAsync("Announcement.AddAttachments")</h6>
+          <div class="mb-2">
+            <input type="file" name="fileAttachments" class="form-control" multiple
+                   accept=".jpg,.jpeg,.png,.gif,.pdf" />
+            <div class="form-text">@await T.GetAsync("Announcement.AttachHint")</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">@await T.GetAsync("Save")</button>
+    <a asp-area="Admin" asp-page="/Announcements/Index" class="btn btn-outline-secondary">
+      @await T.GetAsync("Cancel")
+    </a>
+  </div>
+
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+  <script src="~/vendor/libs/quill/quill.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var editors = {};
+
+    @foreach (var inp in Model.TranslationInputs)
+    {
+      <text>
+    editors['@inp.LanguageCode'] = new Quill('#editor_@inp.LanguageCode', { theme: 'snow' });
+    var initHtml_@(inp.LanguageCode.Replace("-","_")) = document.getElementById('hdnBody_@inp.LanguageCode').value;
+    if (initHtml_@(inp.LanguageCode.Replace("-","_"))) {
+      editors['@inp.LanguageCode'].clipboard.dangerouslyPasteHTML(initHtml_@(inp.LanguageCode.Replace("-","_")));
+    }
+      </text>
+    }
+
+    document.getElementById('frmCreate').addEventListener('submit', function () {
+      @foreach (var inp in Model.TranslationInputs)
+      {
+        <text>
+      document.getElementById('hdnBody_@inp.LanguageCode').value =
+          editors['@inp.LanguageCode'].root.innerHTML;
+        </text>
+      }
+    });
+
+    document.getElementById('txtAnnouncementCode').addEventListener('input', function () {
+      this.value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+    });
+
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

@@ -1,0 +1,37 @@
+@model IList<MyApp.Models.Announcement>
+@using MyApp.Constants
+@{
+  var relPath = "uploads/announcements";
+}
+
+@foreach (var ann in Model)
+{
+  var trans = ann.Translations.FirstOrDefault();
+  <div class="alert alert-info alert-dismissible mb-3" role="alert">
+    <div class="d-flex align-items-start gap-2">
+      <i class="ri ri-megaphone-line fs-5 mt-1 flex-shrink-0"></i>
+      <div class="flex-grow-1">
+        @if (!string.IsNullOrEmpty(trans?.Title))
+        {
+          <strong>@trans.Title</strong><br />
+        }
+        @if (!string.IsNullOrEmpty(trans?.Body))
+        {
+          <div>@Html.Raw(trans.Body)</div>
+        }
+        @if (ann.Attachments.Any())
+        {
+          <div class="mt-2 d-flex flex-wrap gap-2">
+            @foreach (var att in ann.Attachments)
+            {
+              <a href="/@relPath/@att.FileName" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="ri @(att.FileType == "image" ? "ri-image-line" : "ri-file-pdf-line") me-1"></i>@att.OriginalName
+              </a>
+            }
+          </div>
+        }
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  </div>
+}
