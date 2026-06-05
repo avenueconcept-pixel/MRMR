@@ -27,10 +27,10 @@ function initSortables() {
                 item.dataset.level    = newLevel;
                 item.dataset.parentId = newParent;
 
-                item.classList.remove('menu-group', 'menu-parent', 'menu-child');
-                if (newLevel === 0)      item.classList.add('menu-group');
-                else if (newLevel === 1) item.classList.add('menu-parent');
-                else                     item.classList.add('menu-child');
+                item.classList.remove('menu-group', 'menu-parent', 'menu-child', 'menu-leaf');
+                if (newLevel === 1)      item.classList.add('menu-parent');
+                else if (newLevel === 2) item.classList.add('menu-child');
+                else                    item.classList.add('menu-leaf');
 
                 sortChanged = true;
                 const btn = document.getElementById('btnSaveOrder');

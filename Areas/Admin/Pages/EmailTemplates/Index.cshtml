@@ -1,0 +1,205 @@
+@page
+@model MyApp.Areas.Admin.Pages.EmailTemplates.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Menu.EmailTemplates");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@{
+  var lblActive   = await T.GetAsync("status.active");
+  var lblInactive = await T.GetAsync("status.inactive");
+  var lblAddLang  = await T.GetAsync("EmailTemplate.AddLanguage");
+  var lblNoData   = await T.GetAsync("NoDataFound");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Menu.EmailTemplates")</h4>
+  <a asp-area="Admin" asp-page="/EmailTemplates/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Btn.AddNew")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("EmailTemplate.ListTitle")</h5>
+  </div>
+  <div class="card-body px-0">
+    @if (!Model.GroupedTemplates.Any())
+    {
+      <div class="text-center text-muted py-5">@lblNoData</div>
+    }
+    else
+    {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>@await T.GetAsync("Language")</th>
+              <th>@await T.GetAsync("EmailTemplate.Subject")</th>
+              <th>@await T.GetAsync("Status")</th>
+              <th class="text-end">@await T.GetAsync("Actions")</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var grp in Model.GroupedTemplates)
+            {
+              @* Group header row *@
+              <tr class="table-light">
+                <td colspan="3">
+                  <strong><i class="ri ri-mail-settings-line me-1"></i>@grp.Key</strong>
+                  <span class="badge bg-label-primary ms-2">@grp.Value.Count</span>
+                </td>
+                <td class="text-end">
+                  <a asp-area="Admin" asp-page="/EmailTemplates/Create"
+                     asp-route-templateKey="@grp.Key"
+                     class="btn btn-sm btn-outline-secondary" title="@lblAddLang">
+                    <i class="ri ri-translate-2 me-1"></i>@lblAddLang
+                  </a>
+                </td>
+              </tr>
+              @* Language variant rows *@
+              @foreach (var tmpl in grp.Value)
+              {
+                <tr>
+                  <td class="ps-4">
+                    <span class="badge bg-label-secondary">@tmpl.LanguageCode</span>
+                  </td>
+                  <td>@tmpl.Subject</td>
+                  <td>
+                    @if (tmpl.Status == MyApp.Constants.StatusConstants.Active)
+                    {
+                      <span class="badge bg-label-success">@lblActive</span>
+                    }
+                    else
+                    {
+                      <span class="badge bg-label-warning">@lblInactive</span>
+                    }
+                  </td>
+                  <td class="text-end">
+                    <div class="dropdown">
+                      <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                              data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="ri ri-more-2-fill"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                          <a class="dropdown-item" asp-area="Admin" asp-page="/EmailTemplates/Edit"
+                             asp-route-id="@tmpl.Id">
+                            <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                          </a>
+                        </li>
+                        <li>
+                          <button class="dropdown-item" type="button"
+                                  onclick="toggleStatus(@tmpl.Id)">
+                            <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                          </button>
+                        </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                          <button class="dropdown-item text-danger" type="button"
+                                  onclick="confirmDelete(@tmpl.Id, '@Html.Raw(tmpl.TemplateKey) (@tmpl.LanguageCode)')">
+                            <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+@* Hidden form for AJAX antiforgery token *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    toggleTitle:  '@Html.Raw(Model.MsgToggleConfirmTitle)',
+    toggleText:   '@Html.Raw(Model.MsgToggleConfirmText)',
+    toggleBtn:    '@Html.Raw(Model.MsgToggleConfirmBtn)',
+    deleteTitle:  '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteText:   '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteBtn:    '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:    '@Html.Raw(Model.MsgCancelBtn)',
+    success:      '@Html.Raw(Model.MsgSuccess)',
+    error:        '@Html.Raw(Model.MsgError)'
+  };
+
+  function toggleStatus(id) {
+    Swal.fire({
+      title: pageMsg.toggleTitle,
+      text: pageMsg.toggleText,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.toggleBtn,
+      cancelButtonText: pageMsg.cancelBtn
+    }).then(function (result) {
+      if (!result.isConfirmed) return;
+      $.post('?handler=ToggleStatus', {
+        id: id,
+        __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+      }, function (data) {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          Swal.fire({ icon: 'error', text: pageMsg.error });
+        }
+      }).fail(function () {
+        Swal.fire({ icon: 'error', text: pageMsg.error });
+      });
+    });
+  }
+
+  function confirmDelete(id, label) {
+    Swal.fire({
+      title: pageMsg.deleteTitle + ' ' + label,
+      text: pageMsg.deleteText,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.deleteBtn,
+      cancelButtonText: pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    }).then(function (result) {
+      if (!result.isConfirmed) return;
+      $.post('?handler=SoftDelete', {
+        id: id,
+        __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+      }, function (data) {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          Swal.fire({ icon: 'error', text: data.message || pageMsg.error });
+        }
+      }).fail(function () {
+        Swal.fire({ icon: 'error', text: pageMsg.error });
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

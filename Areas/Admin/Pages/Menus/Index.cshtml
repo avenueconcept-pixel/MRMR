@@ -3,10 +3,16 @@
 @{
   ViewData["title"] = await T.GetAsync("Menu.PageTitle");
 
-  var groups  = Model.AllMenus.Where(m => m.Level == 0).OrderBy(m => m.SortOrder).ToList();
-  var parents = Model.AllMenus.Where(m => m.Level == 1).OrderBy(m => m.SortOrder).ToList();
-  var children = Model.AllMenus.Where(m => m.Level == 2).OrderBy(m => m.SortOrder).ToList();
-  var orphanParents = parents.Where(p => p.ParentId == null).ToList();
+  // Build tree from ParentId relationships (DB uses L1→L2→L3, not L0→L1→L2)
+  var roots         = Model.AllMenus.Where(m => m.ParentId == null).OrderBy(m => m.SortOrder).ToList();
+  var rootIdSet     = roots.Select(r => r.Id).ToHashSet();
+  var children      = Model.AllMenus
+      .Where(m => m.ParentId.HasValue && rootIdSet.Contains(m.ParentId.Value))
+      .OrderBy(m => m.SortOrder).ToList();
+  var childIdSet    = children.Select(c => c.Id).ToHashSet();
+  var grandchildren = Model.AllMenus
+      .Where(m => m.ParentId.HasValue && childIdSet.Contains(m.ParentId.Value))
+      .OrderBy(m => m.SortOrder).ToList();
 }
 
 @section VendorStyles {
@@ -39,55 +45,93 @@
   <div class="card-body p-0">
     <div id="menuTree">
 
-      @* Orphan parents (not assigned to any group) *@
-      @if (orphanParents.Any())
-      {
-        <ul class="sortable-list list-unstyled mb-0" data-level="1" data-parent-id="">
-          @foreach (var parent in orphanParents)
-          {
-            @await Html.PartialAsync("_MenuParentRow", new ViewDataDictionary(ViewData)
-            {
-              { "parent",   parent   },
-              { "children", children },
-              { "model",    Model    }
-            })
-          }
-        </ul>
-      }
-
-      @* Groups with nested parents and children *@
-      <ul class="sortable-list list-unstyled mb-0" data-level="0" data-parent-id="">
-        @foreach (var group in groups)
+      @* Root-level items (ParentId = null) *@
+      <ul class="sortable-list list-unstyled mb-0" data-level="1" data-parent-id="">
+        @foreach (var root in roots)
         {
-          var groupParents = parents.Where(p => p.ParentId == group.Id).ToList();
-          <li class="menu-row menu-group @(group.Status == StatusConstants.Deleted ? "opacity-50" : "")"
-              data-id="@group.Id" data-level="0" data-parent-id="">
-            <div class="d-flex align-items-center px-3 py-2 border-bottom bg-light">
+          var rootChildren = children.Where(c => c.ParentId == root.Id).ToList();
+          <li class="menu-row menu-parent @(root.Status == StatusConstants.Deleted ? "opacity-50" : "")"
+              data-id="@root.Id" data-level="1" data-parent-id="">
+            <div class="d-flex align-items-center px-3 py-2 border-bottom">
               <span class="drag-handle me-2 text-muted" style="cursor:grab;">
                 <i class="ri ri-drag-move-line"></i>
               </span>
-              @if (!string.IsNullOrEmpty(group.MenuIcon))
+              @if (!string.IsNullOrEmpty(root.MenuIcon))
               {
-                <i class="ri @group.MenuIcon me-2 text-secondary"></i>
+                <i class="ri @root.MenuIcon me-2 text-primary"></i>
               }
-              <span class="fw-semibold text-uppercase text-secondary small flex-grow-1">@group.MenuName</span>
-              @await Html.PartialAsync("_MenuStatusBadge", group.Status)
+              <span class="fw-semibold flex-grow-1">@root.MenuName</span>
+              @if (!string.IsNullOrEmpty(root.MenuUrl))
+              {
+                <span class="text-muted small me-2 font-monospace">@root.MenuUrl</span>
+              }
+              @await Html.PartialAsync("_MenuStatusBadge", root.Status)
               @await Html.PartialAsync("_MenuActions", new ViewDataDictionary(ViewData)
               {
-                { "menu",  group },
+                { "menu",  root  },
                 { "model", Model }
               })
             </div>
             <ul class="sortable-list list-unstyled mb-0 ps-4"
-                data-level="1" data-parent-id="@group.Id">
-              @foreach (var parent in groupParents)
+                data-level="2" data-parent-id="@root.Id">
+              @foreach (var child in rootChildren)
               {
-                @await Html.PartialAsync("_MenuParentRow", new ViewDataDictionary(ViewData)
-                {
-                  { "parent",   parent   },
-                  { "children", children },
-                  { "model",    Model    }
-                })
+                var myGrandchildren = grandchildren.Where(gc => gc.ParentId == child.Id).ToList();
+                <li class="menu-row menu-child @(child.Status == StatusConstants.Deleted ? "opacity-50" : "")"
+                    data-id="@child.Id" data-level="2" data-parent-id="@root.Id">
+                  <div class="d-flex align-items-center px-3 py-2 border-bottom">
+                    <span class="drag-handle me-2 text-muted" style="cursor:grab;">
+                      <i class="ri ri-drag-move-line"></i>
+                    </span>
+                    @if (!string.IsNullOrEmpty(child.MenuIcon))
+                    {
+                      <i class="ri @child.MenuIcon me-2 text-secondary"></i>
+                    }
+                    <span class="flex-grow-1 small">@child.MenuName</span>
+                    @if (!string.IsNullOrEmpty(child.MenuUrl))
+                    {
+                      <span class="text-muted small me-2 font-monospace">@child.MenuUrl</span>
+                    }
+                    @await Html.PartialAsync("_MenuStatusBadge", child.Status)
+                    @await Html.PartialAsync("_MenuActions", new ViewDataDictionary(ViewData)
+                    {
+                      { "menu",  child },
+                      { "model", Model }
+                    })
+                  </div>
+                  @if (myGrandchildren.Any())
+                  {
+                    <ul class="sortable-list list-unstyled mb-0 ps-5"
+                        data-level="3" data-parent-id="@child.Id">
+                      @foreach (var gc in myGrandchildren)
+                      {
+                        <li class="menu-row menu-leaf @(gc.Status == StatusConstants.Deleted ? "opacity-50" : "")"
+                            data-id="@gc.Id" data-level="3" data-parent-id="@child.Id">
+                          <div class="d-flex align-items-center px-3 py-2 border-bottom">
+                            <span class="drag-handle me-2 text-muted" style="cursor:grab;">
+                              <i class="ri ri-drag-move-line"></i>
+                            </span>
+                            @if (!string.IsNullOrEmpty(gc.MenuIcon))
+                            {
+                              <i class="ri @gc.MenuIcon me-2 text-info"></i>
+                            }
+                            <span class="flex-grow-1 small">@gc.MenuName</span>
+                            @if (!string.IsNullOrEmpty(gc.MenuUrl))
+                            {
+                              <span class="text-muted small me-2 font-monospace">@gc.MenuUrl</span>
+                            }
+                            @await Html.PartialAsync("_MenuStatusBadge", gc.Status)
+                            @await Html.PartialAsync("_MenuActions", new ViewDataDictionary(ViewData)
+                            {
+                              { "menu",  gc    },
+                              { "model", Model }
+                            })
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </li>
               }
             </ul>
           </li>
