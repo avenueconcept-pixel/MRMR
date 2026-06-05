@@ -106,26 +106,26 @@
 
 @section PageScripts {
 <script>
-  var editors = {};
+  document.addEventListener("DOMContentLoaded", function () {
+    var editors = {};
 
-  @foreach (var lang in Model.Languages)
-  {
-    <text>
-  editors['@lang.LanguageCode'] = new Quill('#editor_@lang.LanguageCode', { theme: 'snow' });
-    </text>
-  }
-
-  document.getElementById('frmCreate').addEventListener('submit', function () {
     @foreach (var lang in Model.Languages)
     {
       <text>
-    document.getElementById('hdnMessage_@lang.LanguageCode').value =
-        editors['@lang.LanguageCode'].root.innerHTML;
-      </text>
+    editors['@lang.LanguageCode'] = new Quill('#editor_@lang.LanguageCode', { theme: 'snow' });
+    </text>
     }
-  });
 
-  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById('frmCreate').addEventListener('submit', function () {
+      @foreach (var lang in Model.Languages)
+      {
+        <text>
+      document.getElementById('hdnMessage_@lang.LanguageCode').value =
+          editors['@lang.LanguageCode'].root.innerHTML;
+        </text>
+      }
+    });
+
     var messageType = '@Model.AlertMessageType';
     if (messageType !== '') {
       Swal.fire({

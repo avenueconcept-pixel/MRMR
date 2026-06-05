@@ -29,7 +29,7 @@ public static class AppConstants
 
   // ─── Input Format (for HTML date input) ───────────
   public const string DateInputFormat = "yyyy-MM-dd";      // ← matches browser
-  public const string DateTimeInputFormat = "yyyy-MM-dd HH:mm"; // ← matches browser
+  public const string DateTimeInputFormat = "yyyy-MM-ddTHH:mm"; // ISO 8601 format — matches browser datetime-local submission
 
   // ─── File Upload ──────────────────────────────────
   public const int MaxFileSizeMB = 10;
