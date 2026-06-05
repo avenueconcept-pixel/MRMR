@@ -570,6 +570,39 @@ Rules:
 - `initDataTable` defaults: `pageLength: 25`, `order: [[0, 'asc']]`
 - For tables that need non-standard options (different order direction, extra `columnDefs`), call `.DataTable({...})` directly — do not override `initDataTable`
 
+### Index pages with server-side pre-filters + DataTables
+
+When an Index page needs both DataTables (client-side search/sort/page) **and** server-side pre-filters (status, type, category, etc.), combine them:
+
+- Filter form uses `method="get"` so the selected filters land in the query string
+- Filter value properties use the `Filter*` prefix and `[BindProperty(SupportsGet = true)]`
+- Option list properties (SelectListItem collections) use the `ddl*` prefix
+- `initDataTable` is still called — it operates on whatever subset the server returned
+
+```csharp
+// PageModel
+[BindProperty(SupportsGet = true)] public string? FilterStatus       { get; set; }
+[BindProperty(SupportsGet = true)] public string? FilterCategoryCode { get; set; }
+
+public List<SelectListItem> ddlStatus   { get; set; } = new();
+public List<SelectListItem> ddlCategory { get; set; } = new();
+```
+
+```cshtml
+@* Filter form *@
+<form method="get" asp-page="/Things/Index">
+  <select asp-for="FilterStatus"       asp-items="@Model.ddlStatus"   class="form-select form-select-sm"></select>
+  <select asp-for="FilterCategoryCode" asp-items="@Model.ddlCategory" class="form-select form-select-sm"></select>
+  <button type="submit" class="btn btn-primary btn-sm">@await T.GetAsync("Btn.Search")</button>
+  <a asp-page="/Things/Index" class="btn btn-outline-secondary btn-sm">@await T.GetAsync("Btn.Clear")</a>
+</form>
+
+@* Table — DataTables works on the server-filtered rows *@
+<table id="tblThings" class="table table-hover align-middle">...</table>
+```
+
+The "Clear" link points to the page with no query-string params, which re-runs OnGetAsync with all filters null. Filter dropdowns include an "All" option with `Value = string.Empty` as the first item.
+
 ### High-volume log/audit pages — server-side pagination, no DataTables
 
 For tables that grow continuously (access logs, audit trails, background-job output), use **server-side pagination** instead of DataTables. DataTables loads all rows into the browser — unsuitable for millions of rows.
@@ -1165,6 +1198,11 @@ public MyMiddleware(RequestDelegate next, PageAccessDbHelper db) { ... }
 ## Never
 
 - Never use Razor reserved keywords as variable names in `.cshtml` files — `section`, `functions`, `namespace`, `page`, `model`, `inherits`, `helper` are all reserved. Using any of these as a `@foreach` loop variable (e.g. `var section in Model.Items`) causes Razor to misparse `@section.Property` as a malformed directive, producing "The 'section' directive must appear at the start of the line" errors. Use descriptive alternatives: `stype` instead of `section`, `func` → `funcItem`, etc.
+- Never use `@(condition ? "selected" : "")` inside an `<option>` tag's attribute area — this causes RZ1031 ("tag helper must not have C# in the element's attribute declaration area"). Use `@if` blocks instead:
+  ```cshtml
+  @if (item.Value == selectedValue) { <option value="@item.Value" selected>@item.Text</option> }
+  else { <option value="@item.Value">@item.Text</option> }
+  ```
 - Never add MVC controllers — this project is Razor Pages only
 - Never query `AppDbContext` directly inside a PageModel — use a `DbHelper`
 - Never hard-code user-facing strings — use `TranslationService` + `MessageConstants`
