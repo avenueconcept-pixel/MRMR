@@ -185,6 +185,26 @@ public class ProductDbHelper : DbHelper
         await _db.SaveChangesAsync();
       });
 
+  public async Task<List<ProductSection>> GetSectionsAsync(string productCode)
+      => await ExecuteAsync(async () =>
+          await _db.ProductSections
+              .Where(s => s.ProductCode == productCode)
+              .Include(s => s.ProductSectionType).ThenInclude(t => t.Translations)
+              .Include(s => s.Translations)
+              .OrderBy(s => s.SortOrder)
+              .ToListAsync());
+
+  public async Task SaveSectionSortAsync(List<SectionSortItem> items, string updatedBy)
+      => await ExecuteAsync(async () =>
+      {
+        foreach (var item in items)
+        {
+          var s = await _db.ProductSections.FindAsync(item.Id);
+          if (s != null) s.SortOrder = item.SortOrder;
+        }
+        await _db.SaveChangesAsync();
+      });
+
   public async Task AddSectionAsync(ProductSection section, List<ProductSectionTranslation> translations, string updatedBy)
       => await ExecuteAsync(async () =>
       {

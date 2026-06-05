@@ -16,8 +16,9 @@ public class EditModel : AdminPageModel
   private readonly CountryDbHelper         _countryDbHelper;
   private readonly LanguageDbHelper        _languageDbHelper;
   private readonly UomDbHelper             _uomDbHelper;
-  private readonly PriceTierDbHelper       _priceTierDbHelper;
-  private readonly TranslationService      _translation;
+  private readonly PriceTierDbHelper            _priceTierDbHelper;
+  private readonly ProductSectionTypeDbHelper   _productSectionTypeDbHelper;
+  private readonly TranslationService           _translation;
   private readonly IWebHostEnvironment     _env;
   private readonly IConfiguration          _config;
 
@@ -43,6 +44,10 @@ public class EditModel : AdminPageModel
   [BindProperty] public string     ddlScheduleType    { get; set; } = string.Empty;
   [BindProperty] public string     txtValidFrom       { get; set; } = string.Empty;
   [BindProperty] public string     txtValidTo         { get; set; } = string.Empty;
+
+  [BindProperty] public string     ddlSectionType     { get; set; } = string.Empty;
+  [BindProperty] public int        txtSectionSort     { get; set; }
+  [BindProperty] public int        txtSectionId       { get; set; }
 
   public string CurrentProductCode { get; set; } = string.Empty;
 
@@ -72,6 +77,10 @@ public class EditModel : AdminPageModel
   public int                        PriceHistoryPageSize => 10;
   public List<SelectListItem>       ScheduleTypeOptions { get; set; } = new();
 
+  public List<ProductSectionRowDto>       ProductSections    { get; set; } = new();
+  public List<SelectListItem>             SectionTypeOptions { get; set; } = new();
+  public List<SectionTranslationInputDto> SectionInputs      { get; set; } = new();
+
   public string   CreatedBy { get; set; } = string.Empty;
   public DateTime CreatedAt { get; set; }
   public string   UpdatedBy { get; set; } = string.Empty;
@@ -86,25 +95,27 @@ public class EditModel : AdminPageModel
   public string LabelDelete           { get; set; } = string.Empty;
 
   public EditModel(
-      ProductDbHelper         productDbHelper,
-      ProductCategoryDbHelper categoryDbHelper,
-      CountryDbHelper         countryDbHelper,
-      LanguageDbHelper        languageDbHelper,
-      UomDbHelper             uomDbHelper,
-      PriceTierDbHelper       priceTierDbHelper,
-      TranslationService      translation,
-      IWebHostEnvironment     env,
-      IConfiguration          config)
+      ProductDbHelper             productDbHelper,
+      ProductCategoryDbHelper     categoryDbHelper,
+      CountryDbHelper             countryDbHelper,
+      LanguageDbHelper            languageDbHelper,
+      UomDbHelper                 uomDbHelper,
+      PriceTierDbHelper           priceTierDbHelper,
+      ProductSectionTypeDbHelper  productSectionTypeDbHelper,
+      TranslationService          translation,
+      IWebHostEnvironment         env,
+      IConfiguration              config)
   {
-    _productDbHelper   = productDbHelper;
-    _categoryDbHelper  = categoryDbHelper;
-    _countryDbHelper   = countryDbHelper;
-    _languageDbHelper  = languageDbHelper;
-    _uomDbHelper       = uomDbHelper;
-    _priceTierDbHelper = priceTierDbHelper;
-    _translation       = translation;
-    _env               = env;
-    _config            = config;
+    _productDbHelper            = productDbHelper;
+    _categoryDbHelper           = categoryDbHelper;
+    _countryDbHelper            = countryDbHelper;
+    _languageDbHelper           = languageDbHelper;
+    _uomDbHelper                = uomDbHelper;
+    _priceTierDbHelper          = priceTierDbHelper;
+    _productSectionTypeDbHelper = productSectionTypeDbHelper;
+    _translation                = translation;
+    _env                        = env;
+    _config                     = config;
   }
 
   public async Task<IActionResult> OnGetAsync(string productCode)
@@ -174,6 +185,23 @@ public class EditModel : AdminPageModel
       new() { Value = ScheduleTypeConstants.Promo,           Text = await _translation.GetAsync("Products.Schedule.Type.Promo") },
       new() { Value = ScheduleTypeConstants.PriceAdjustment, Text = await _translation.GetAsync("Products.Schedule.Type.PriceAdjustment") }
     };
+
+    var sectionEntities = await _productDbHelper.GetSectionsAsync(productCode);
+    var langCode        = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    ProductSections = sectionEntities.Select(s => new ProductSectionRowDto
+    {
+      Id          = s.Id,
+      SectionCode = s.SectionCode,
+      SectionName = s.ProductSectionType?.Translations
+                      .FirstOrDefault(t => t.LanguageCode == langCode)?.SectionName
+                    ?? s.ProductSectionType?.Translations.FirstOrDefault()?.SectionName
+                    ?? s.SectionCode,
+      SortOrder    = s.SortOrder,
+      Translations = s.Translations.ToList()
+    }).ToList();
+
+    await PopulateSectionTypeOptionsAsync();
+    SectionInputs = await BuildSectionInputsAsync(null);
 
     return Page();
   }
@@ -517,6 +545,88 @@ public class EditModel : AdminPageModel
     return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
   }
 
+  // ── Section handlers ──────────────────────────────────────────────────────
+
+  public async Task<IActionResult> OnPostAddSectionAsync(string productCode)
+  {
+    if (string.IsNullOrWhiteSpace(ddlSectionType))
+    {
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
+      return await ReloadPageAsync(productCode);
+    }
+
+    var languages    = await _languageDbHelper.GetAllActiveAsync();
+    var translations = languages.Select(l => new ProductSectionTranslation
+    {
+      LanguageCode = l.LanguageCode,
+      Content      = Request.Form[$"txtSectionContent_{l.LanguageCode}"].ToString()
+    }).ToList();
+
+    var section = new ProductSection
+    {
+      ProductCode = productCode,
+      SectionCode = ddlSectionType,
+      SortOrder   = txtSectionSort
+    };
+
+    await _productDbHelper.AddSectionAsync(section, translations, CurrentUsername);
+
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveSuccess);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostUpdateSectionAsync(string productCode)
+  {
+    if (txtSectionId <= 0 || string.IsNullOrWhiteSpace(ddlSectionType))
+    {
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
+      return await ReloadPageAsync(productCode);
+    }
+
+    var languages    = await _languageDbHelper.GetAllActiveAsync();
+    var translations = languages.Select(l => new ProductSectionTranslation
+    {
+      LanguageCode = l.LanguageCode,
+      Content      = Request.Form[$"txtSectionContent_{l.LanguageCode}"].ToString()
+    }).ToList();
+
+    var section = new ProductSection
+    {
+      Id          = txtSectionId,
+      ProductCode = productCode,
+      SectionCode = ddlSectionType,
+      SortOrder   = txtSectionSort
+    };
+
+    await _productDbHelper.UpdateSectionAsync(section, translations, CurrentUsername);
+
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = await _translation.GetAsync(MessageConstants.UpdateSuccess);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostDeleteSectionAsync(int sectionId, string productCode)
+  {
+    await _productDbHelper.DeleteSectionAsync(sectionId, CurrentUsername);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostSaveSectionSortAsync([FromBody] List<SectionSortItem> items)
+  {
+    try
+    {
+      await _productDbHelper.SaveSectionSortAsync(items, CurrentUsername);
+      return new JsonResult(new { success = true });
+    }
+    catch
+    {
+      return new JsonResult(new { success = false });
+    }
+  }
+
   public async Task<IActionResult> OnPostSaveImageSortAsync([FromBody] List<ImageSortItem> items)
   {
     try
@@ -579,6 +689,21 @@ public class EditModel : AdminPageModel
       new() { Value = ScheduleTypeConstants.Promo,           Text = await _translation.GetAsync("Products.Schedule.Type.Promo") },
       new() { Value = ScheduleTypeConstants.PriceAdjustment, Text = await _translation.GetAsync("Products.Schedule.Type.PriceAdjustment") }
     };
+
+    var sectionEntitiesReload = await _productDbHelper.GetSectionsAsync(productCode);
+    var langCodeReload        = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    ProductSections = sectionEntitiesReload.Select(s => new ProductSectionRowDto
+    {
+      Id          = s.Id,
+      SectionCode = s.SectionCode,
+      SectionName = s.ProductSectionType?.Translations
+                      .FirstOrDefault(t => t.LanguageCode == langCodeReload)?.SectionName
+                    ?? s.SectionCode,
+      SortOrder    = s.SortOrder,
+      Translations = s.Translations.ToList()
+    }).ToList();
+    await PopulateSectionTypeOptionsAsync();
+    SectionInputs = await BuildSectionInputsAsync(null);
 
     return Page();
   }
@@ -644,6 +769,39 @@ public class EditModel : AdminPageModel
       TierName    = t.PriceTier?.TierName ?? t.TierCode,
       VariantCode = t.VariantCode,
       Price       = t.Price
+    }).ToList();
+  }
+
+  private async Task PopulateSectionTypeOptionsAsync()
+  {
+    var langCode = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    var types    = await _productSectionTypeDbHelper.GetAllActiveAsync(langCode);
+    SectionTypeOptions = new List<SelectListItem>
+    {
+      new() { Value = string.Empty, Text = await _translation.GetAsync("Products.Sections.SelectType") }
+    };
+    SectionTypeOptions.AddRange(types.Select(t => new SelectListItem
+    {
+      Value = t.SectionCode,
+      Text  = t.Translations.FirstOrDefault()?.SectionName ?? t.SectionCode
+    }));
+  }
+
+  private async Task<List<SectionTranslationInputDto>> BuildSectionInputsAsync(
+      IList<ProductSectionTranslation>? existing)
+  {
+    var languages = await _languageDbHelper.GetAllActiveAsync();
+    return languages.Select(l =>
+    {
+      var t = existing?.FirstOrDefault(x => x.LanguageCode == l.LanguageCode);
+      return new SectionTranslationInputDto
+      {
+        LanguageCode = l.LanguageCode,
+        LanguageName = l.LanguageName,
+        Content      = existing != null
+            ? t?.Content ?? string.Empty
+            : Request.Form[$"txtSectionContent_{l.LanguageCode}"].ToString()
+      };
     }).ToList();
   }
 

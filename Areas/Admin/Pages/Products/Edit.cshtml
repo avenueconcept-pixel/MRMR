@@ -7,6 +7,7 @@
 @section VendorStyles {
   <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
   <link rel="stylesheet" href="~/vendor/libs/select2/select2.dist.css" />
+  <link rel="stylesheet" href="~/vendor/libs/quill/editor.dist.css" />
 }
 
 <div class="d-flex justify-content-between align-items-center py-3 mb-4">
@@ -580,6 +581,165 @@
   </div>
 </div>
 
+@* ── Content Sections card ────────────────────────────────────────────── *@
+<div class="card mt-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">@await T.GetAsync("Products.Sections.Title")</h5>
+    <small class="text-muted">@await T.GetAsync("Products.Sections.DragHint")</small>
+  </div>
+  <div class="card-body">
+
+    @* ── Add new section form ─────────────────────────────────────────── *@
+    <form method="post" asp-page-handler="AddSection"
+          asp-route-productCode="@Model.CurrentProductCode">
+      @Html.AntiForgeryToken()
+      <h6 class="mb-3">@await T.GetAsync("Products.Sections.AddSection")</h6>
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <select name="ddlSectionType" class="form-select"
+                  asp-items="Model.SectionTypeOptions"></select>
+        </div>
+        <div class="col-md-2">
+          <input type="number" name="txtSectionSort" class="form-control"
+                 value="0" placeholder="@await T.GetAsync("Products.Sections.SortOrder")" />
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+          <button type="submit" class="btn btn-outline-primary">
+            <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Products.Sections.AddSection")
+          </button>
+        </div>
+      </div>
+      @* Language tabs with Quill editors *@
+      <ul class="nav nav-tabs mb-3" role="tablist">
+        @foreach (var (inp, idx) in Model.SectionInputs.Select((x, i) => (x, i)))
+        {
+          <li class="nav-item" role="presentation">
+            <button class="nav-link @(idx == 0 ? "active" : "")" type="button"
+                    data-bs-toggle="tab"
+                    data-bs-target="#sectionTab_@inp.LanguageCode"
+                    role="tab">
+              @inp.LanguageName
+            </button>
+          </li>
+        }
+      </ul>
+      <div class="tab-content mb-3">
+        @foreach (var (inp, idx) in Model.SectionInputs.Select((x, i) => (x, i)))
+        {
+          <div class="tab-pane fade @(idx == 0 ? "show active" : "")"
+               id="sectionTab_@inp.LanguageCode" role="tabpanel">
+            <input type="hidden"
+                   name="txtSectionContent_@inp.LanguageCode"
+                   id="hdnNewSection_@inp.LanguageCode"
+                   value="@inp.Content" />
+            <div id="editorNewSection_@inp.LanguageCode" style="height:200px;"></div>
+          </div>
+        }
+      </div>
+    </form>
+
+    <hr class="my-4" />
+
+    @* ── Existing sections — draggable cards ─────────────────────────── *@
+    @if (Model.ProductSections.Count == 0)
+    {
+      <p class="text-muted small">@await T.GetAsync("Products.Sections.Subtitle")</p>
+    }
+    else
+    {
+      <div id="sectionList">
+        @foreach (var sec in Model.ProductSections)
+        {
+          <div class="card mb-3 shadow-sm" data-id="@sec.Id">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="ri ri-drag-move-line text-muted" style="cursor:grab;"></i>
+              <strong>@sec.SectionName</strong>
+              <span class="text-muted small ms-1">(@sec.SectionCode)</span>
+              <div class="ms-auto d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#sectionEdit_@sec.Id"
+                        aria-expanded="false">
+                  <i class="ri ri-edit-line"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" type="button"
+                        onclick="confirmDeleteSection(@sec.Id, '@Html.Raw(Model.CurrentProductCode)')">
+                  <i class="ri ri-delete-bin-line"></i>
+                </button>
+              </div>
+            </div>
+            @* Collapsible edit form *@
+            <div class="collapse" id="sectionEdit_@sec.Id">
+              <div class="card-body">
+                <form method="post" asp-page-handler="UpdateSection"
+                      asp-route-productCode="@Model.CurrentProductCode">
+                  @Html.AntiForgeryToken()
+                  <input type="hidden" name="txtSectionId" value="@sec.Id" />
+                  <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                      <label class="form-label small">@await T.GetAsync("Products.Sections.SelectType")</label>
+                      <select name="ddlSectionType" class="form-select">
+                        @foreach (var opt in Model.SectionTypeOptions)
+                        {
+                          if (opt.Value == sec.SectionCode)
+                          {
+                            <option value="@opt.Value" selected>@opt.Text</option>
+                          }
+                          else
+                          {
+                            <option value="@opt.Value">@opt.Text</option>
+                          }
+                        }
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label small">@await T.GetAsync("Products.Sections.SortOrder")</label>
+                      <input type="number" name="txtSectionSort" class="form-control"
+                             value="@sec.SortOrder" />
+                    </div>
+                  </div>
+                  @* Language tabs with pre-filled Quill editors *@
+                  <ul class="nav nav-tabs mb-3" role="tablist">
+                    @foreach (var (t, idx) in sec.Translations.Select((x, i) => (x, i)))
+                    {
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link @(idx == 0 ? "active" : "")" type="button"
+                                data-bs-toggle="tab"
+                                data-bs-target="#secEditTab_@(sec.Id)_@t.LanguageCode"
+                                role="tab">
+                          @t.LanguageCode
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                  <div class="tab-content mb-3">
+                    @foreach (var (t, idx) in sec.Translations.Select((x, i) => (x, i)))
+                    {
+                      <div class="tab-pane fade @(idx == 0 ? "show active" : "")"
+                           id="secEditTab_@(sec.Id)_@t.LanguageCode" role="tabpanel">
+                        <input type="hidden"
+                               name="txtSectionContent_@t.LanguageCode"
+                               id="hdnEditSection_@(sec.Id)_@t.LanguageCode"
+                               value="@t.Content" />
+                        <div id="editorEditSection_@(sec.Id)_@t.LanguageCode"
+                             style="height:200px;"></div>
+                      </div>
+                    }
+                  </div>
+                  <button type="submit" class="btn btn-primary">
+                    @await T.GetAsync("SaveChanges")
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>
+
 @* Edit Price modal *@
 <div class="modal fade" id="modalEditPrice" tabindex="-1">
   <div class="modal-dialog modal-sm">
@@ -616,6 +776,7 @@
   <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
   <script src="~/vendor/libs/select2/select2.dist.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+  <script src="~/vendor/libs/quill/quill.dist.js"></script>
 }
 
 @section PageScripts {
@@ -745,6 +906,94 @@
     var form  = document.createElement('form');
     form.method = 'post';
     form.action = '?handler=DeletePricing&pricingId=' + pricingId + '&productCode=' + encodeURIComponent(productCode);
+    var token = document.createElement('input');
+    token.type  = 'hidden';
+    token.name  = '__RequestVerificationToken';
+    token.value = document.querySelector('#formAjax input[name="__RequestVerificationToken"]').value;
+    form.appendChild(token);
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  // ── Section Quill editors ─────────────────────────────────────────────────
+  var secEditors = {};
+
+  @* Init editors for the Add-section form *@
+  @foreach (var inp in Model.SectionInputs)
+  {
+    <text>
+  secEditors['editorNewSection_@inp.LanguageCode'] = new Quill('#editorNewSection_@inp.LanguageCode', { theme: 'snow' });
+    </text>
+    if (!string.IsNullOrEmpty(inp.Content))
+    {
+      <text>
+  secEditors['editorNewSection_@inp.LanguageCode'].clipboard.dangerouslyPasteHTML(@Html.Raw(Json.Serialize(inp.Content)));
+      </text>
+    }
+  }
+
+  @* Init editors for existing-section edit forms *@
+  @foreach (var sec in Model.ProductSections)
+  {
+    foreach (var t in sec.Translations)
+    {
+      <text>
+  secEditors['editorEditSection_@(sec.Id)_@t.LanguageCode'] = new Quill('#editorEditSection_@(sec.Id)_@t.LanguageCode', { theme: 'snow' });
+  secEditors['editorEditSection_@(sec.Id)_@t.LanguageCode'].clipboard.dangerouslyPasteHTML(@Html.Raw(Json.Serialize(t.Content)));
+      </text>
+    }
+  }
+
+  @* Sync all editors to hidden inputs on their parent form's submit *@
+  document.querySelectorAll('form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      Object.keys(secEditors).forEach(function (editorKey) {
+        var hdnKey = editorKey.replace('editor', 'hdn');
+        var hdn    = document.getElementById(hdnKey);
+        if (hdn && form.contains(hdn)) {
+          hdn.value = secEditors[editorKey].root.innerHTML;
+        }
+      });
+    });
+  });
+
+  @* Section sort — drag to reorder *@
+  var sectionList = document.getElementById('sectionList');
+  if (sectionList) {
+    new Sortable(sectionList, {
+      animation: 150,
+      handle:    '.ri-drag-move-line',
+      onEnd: function () {
+        var items = Array.from(sectionList.querySelectorAll('[data-id]')).map(function (el, i) {
+          return { id: parseInt(el.dataset.id), sortOrder: i };
+        });
+        fetch('?handler=SaveSectionSort', {
+          method:  'POST',
+          headers: {
+            'Content-Type':             'application/json',
+            'RequestVerificationToken': document.querySelector('#formAjax input[name="__RequestVerificationToken"]').value
+          },
+          body: JSON.stringify(items)
+        });
+      }
+    });
+  }
+
+  async function confirmDeleteSection(sectionId, productCode) {
+    var result = await Swal.fire({
+      icon: 'warning',
+      title: pageMsg.deleteConfirmTitle,
+      text:  pageMsg.deleteConfirmText,
+      showCancelButton:   true,
+      confirmButtonText:  pageMsg.deleteConfirmBtn,
+      cancelButtonText:   pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    });
+    if (!result.isConfirmed) return;
+    var form  = document.createElement('form');
+    form.method = 'post';
+    form.action = '?handler=DeleteSection&sectionId=' + sectionId
+                + '&productCode=' + encodeURIComponent(productCode);
     var token = document.createElement('input');
     token.type  = 'hidden';
     token.name  = '__RequestVerificationToken';

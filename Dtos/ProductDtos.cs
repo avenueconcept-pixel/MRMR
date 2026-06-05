@@ -1,3 +1,5 @@
+using MyApp.Models;
+
 namespace MyApp.Dtos;
 
 public enum ProductAddResult { Created, Restored, DuplicateActive }
@@ -83,6 +85,28 @@ public class ProductPricingRowDto
   public string  TierName    { get; set; } = string.Empty;
   public string? VariantCode { get; set; }
   public decimal Price       { get; set; }
+}
+
+public class ProductSectionRowDto
+{
+  public int    Id          { get; set; }
+  public string SectionCode { get; set; } = string.Empty;
+  public string SectionName { get; set; } = string.Empty;
+  public int    SortOrder   { get; set; }
+  public List<ProductSectionTranslation> Translations { get; set; } = new();
+}
+
+public class SectionTranslationInputDto
+{
+  public string LanguageCode { get; set; } = string.Empty;
+  public string LanguageName { get; set; } = string.Empty;
+  public string Content      { get; set; } = string.Empty;
+}
+
+public class SectionSortItem
+{
+  public int Id        { get; set; }
+  public int SortOrder { get; set; }
 }
 
 public static class PriceChangeTypeConstants
