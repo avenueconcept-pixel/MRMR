@@ -7,8 +7,8 @@ public class ProductPriceHistory
   public string   CountryCode { get; set; } = string.Empty;
   public string   TierCode    { get; set; } = string.Empty;
   public string   ChangeType  { get; set; } = string.Empty;
-  public DateTime ChangedFrom { get; set; }
-  public DateTime ChangedTo   { get; set; }
+  public decimal ChangedFrom { get; set; }
+  public decimal ChangedTo   { get; set; }
   public string   ChangedBy   { get; set; } = string.Empty;
   public DateTime CreatedAt   { get; set; }
 }

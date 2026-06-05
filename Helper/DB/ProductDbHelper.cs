@@ -287,4 +287,140 @@ public class ProductDbHelper : DbHelper
               .Include(i => i.Country)
               .OrderBy(i => i.SortOrder)
               .ToListAsync());
+
+  // ── Pricing ───────────────────────────────────────────────────────────────
+
+  public async Task<List<ProductPriceTier>> GetPriceTiersAsync(string productCode)
+      => await ExecuteAsync(async () =>
+          await _db.ProductPriceTiers
+              .Where(p => p.ProductCode == productCode)
+              .Include(p => p.Country).ThenInclude(c => c.Translations)
+              .Include(p => p.PriceTier)
+              .OrderBy(p => p.CountryCode)
+              .ThenBy(p => p.TierCode)
+              .ToListAsync());
+
+  public async Task AddPriceTierEntryAsync(ProductPriceTier tier, string createdBy)
+      => await ExecuteAsync(async () =>
+      {
+        _db.ProductPriceTiers.Add(tier);
+        await _db.SaveChangesAsync();
+
+        _db.ProductPriceHistories.Add(new ProductPriceHistory
+        {
+          ProductCode = tier.ProductCode,
+          CountryCode = tier.CountryCode,
+          TierCode    = tier.TierCode,
+          ChangeType  = PriceChangeTypeConstants.ManualUpdate,
+          ChangedFrom = 0,
+          ChangedTo   = tier.Price,
+          ChangedBy   = createdBy,
+          CreatedAt   = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+      });
+
+  public async Task UpdatePriceTierAsync(int id, decimal newPrice, string updatedBy)
+      => await ExecuteAsync(async () =>
+      {
+        var tier = await _db.ProductPriceTiers.FindAsync(id);
+        if (tier == null) return;
+
+        _db.ProductPriceHistories.Add(new ProductPriceHistory
+        {
+          ProductCode = tier.ProductCode,
+          CountryCode = tier.CountryCode,
+          TierCode    = tier.TierCode,
+          ChangeType  = PriceChangeTypeConstants.ManualUpdate,
+          ChangedFrom = tier.Price,
+          ChangedTo   = newPrice,
+          ChangedBy   = updatedBy,
+          CreatedAt   = DateTime.UtcNow
+        });
+
+        tier.Price = newPrice;
+        await _db.SaveChangesAsync();
+      });
+
+  public async Task<List<ProductPriceSchedule>> GetPriceSchedulesAsync(string productCode)
+      => await ExecuteAsync(async () =>
+          await _db.ProductPriceSchedules
+              .Where(s => s.ProductCode == productCode)
+              .Include(s => s.Country).ThenInclude(c => c.Translations)
+              .Include(s => s.PriceTier)
+              .OrderByDescending(s => s.ValidFrom)
+              .ToListAsync());
+
+  public async Task AddPriceScheduleAsync(ProductPriceSchedule schedule, string createdBy)
+      => await ExecuteAsync(async () =>
+      {
+        schedule.Status    = ScheduleStatusConstants.Pending;
+        schedule.CreatedBy = createdBy;
+        schedule.CreatedAt = DateTime.UtcNow;
+        schedule.UpdatedBy = createdBy;
+        schedule.UpdatedAt = DateTime.UtcNow;
+        _db.ProductPriceSchedules.Add(schedule);
+        await _db.SaveChangesAsync();
+      });
+
+  public async Task CancelPriceScheduleAsync(int id, string updatedBy)
+      => await ExecuteAsync(async () =>
+      {
+        var schedule = await _db.ProductPriceSchedules.FindAsync(id);
+        if (schedule == null) return;
+        schedule.Status    = ScheduleStatusConstants.Cancelled;
+        schedule.UpdatedBy = updatedBy;
+        schedule.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+      });
+
+  public async Task<(List<PriceHistoryRowDto> Items, int TotalCount)> GetPriceHistoryAsync(
+      string productCode, int page, int pageSize)
+      => await ExecuteAsync(async () =>
+      {
+        var query = _db.ProductPriceHistories
+            .Where(h => h.ProductCode == productCode)
+            .OrderByDescending(h => h.CreatedAt);
+
+        var total = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(h => new PriceHistoryRowDto
+            {
+              Id          = h.Id,
+              CountryCode = h.CountryCode,
+              TierCode    = h.TierCode,
+              ChangeType  = h.ChangeType,
+              ChangedFrom = h.ChangedFrom,
+              ChangedTo   = h.ChangedTo,
+              ChangedBy   = h.ChangedBy,
+              CreatedAt   = h.CreatedAt
+            })
+            .ToListAsync();
+
+        return (items, total);
+      });
+
+  public async Task DeletePriceTierEntryAsync(int id, string deletedBy)
+      => await ExecuteAsync(async () =>
+      {
+        var tier = await _db.ProductPriceTiers.FindAsync(id);
+        if (tier == null) return;
+
+        _db.ProductPriceHistories.Add(new ProductPriceHistory
+        {
+          ProductCode = tier.ProductCode,
+          CountryCode = tier.CountryCode,
+          TierCode    = tier.TierCode,
+          ChangeType  = PriceChangeTypeConstants.ManualUpdate,
+          ChangedFrom = tier.Price,
+          ChangedTo   = 0,
+          ChangedBy   = deletedBy,
+          CreatedAt   = DateTime.UtcNow
+        });
+
+        _db.ProductPriceTiers.Remove(tier);
+        await _db.SaveChangesAsync();
+      });
 }

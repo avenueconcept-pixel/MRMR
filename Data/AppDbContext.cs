@@ -818,6 +818,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
       entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
       entity.Property(e => e.VariantCode).HasColumnName("variant_code").HasMaxLength(50);
+      entity.Property(e => e.Price).HasColumnName("price").HasPrecision(10, 2);
 
       entity.HasOne(e => e.Country)
             .WithMany()
@@ -877,8 +878,8 @@ public class AppDbContext : DbContext
       entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
       entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
       entity.Property(e => e.ChangeType).HasColumnName("change_type").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.ChangedFrom).HasColumnName("changed_from");
-      entity.Property(e => e.ChangedTo).HasColumnName("changed_to");
+      entity.Property(e => e.ChangedFrom).HasColumnName("changed_from").HasPrecision(10, 2);
+      entity.Property(e => e.ChangedTo).HasColumnName("changed_to").HasPrecision(10, 2);
       entity.Property(e => e.ChangedBy).HasColumnName("changed_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
     });

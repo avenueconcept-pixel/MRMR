@@ -49,6 +49,42 @@ public static class ScheduleTypeConstants
   public const string PriceAdjustment = "price_adjustment";
 }
 
+public class PriceScheduleRowDto
+{
+  public int       Id           { get; set; }
+  public string    CountryCode  { get; set; } = string.Empty;
+  public string    CountryName  { get; set; } = string.Empty;
+  public string    TierCode     { get; set; } = string.Empty;
+  public string    TierName     { get; set; } = string.Empty;
+  public string    ScheduleType { get; set; } = string.Empty;
+  public DateTime  ValidFrom    { get; set; }
+  public DateTime? ValidTo      { get; set; }
+  public string    Status       { get; set; } = string.Empty;
+}
+
+public class PriceHistoryRowDto
+{
+  public long     Id          { get; set; }
+  public string   CountryCode { get; set; } = string.Empty;
+  public string   TierCode    { get; set; } = string.Empty;
+  public string   ChangeType  { get; set; } = string.Empty;
+  public decimal  ChangedFrom { get; set; }
+  public decimal  ChangedTo   { get; set; }
+  public string   ChangedBy   { get; set; } = string.Empty;
+  public DateTime CreatedAt   { get; set; }
+}
+
+public class ProductPricingRowDto
+{
+  public int     Id          { get; set; }
+  public string  CountryCode { get; set; } = string.Empty;
+  public string  CountryName { get; set; } = string.Empty;
+  public string  TierCode    { get; set; } = string.Empty;
+  public string  TierName    { get; set; } = string.Empty;
+  public string? VariantCode { get; set; }
+  public decimal Price       { get; set; }
+}
+
 public static class PriceChangeTypeConstants
 {
   public const string PriceAdjustment = "price_adjustment";

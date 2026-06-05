@@ -286,6 +286,327 @@
   </div>
 </div>
 
+@* ── Pricing card ─────────────────────────────────────────────────────── *@
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Products.Pricing.Title")</h5>
+  </div>
+  <div class="card-body">
+
+    @* Add pricing row form *@
+    <form method="post" asp-page-handler="AddPricing"
+          asp-route-productCode="@Model.CurrentProductCode">
+      @Html.AntiForgeryToken()
+      <div class="row g-3 align-items-end mb-4">
+        <div class="col-md-3">
+          <label class="form-label small">@await T.GetAsync("Products.Pricing.Country")</label>
+          <select name="ddlPricingCountry" class="form-select">
+            @foreach (var item in Model.PricingCountryList)
+            {
+              <option value="@item.Value">@item.Text</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">@await T.GetAsync("Products.Pricing.Tier")</label>
+          <select name="ddlPricingTier" class="form-select">
+            @foreach (var item in Model.PricingTierList)
+            {
+              <option value="@item.Value">@item.Text</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.Pricing.Variant")</label>
+          <input type="text" name="txtPricingVariant" class="form-control"
+                 placeholder="@await T.GetAsync("Products.Pricing.VariantPlaceholder")" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.Pricing.Price")</label>
+          <input type="number" name="txtPricingPrice" class="form-control"
+                 step="0.01" min="0.01" value="0" />
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Products.Pricing.AddBtn")
+          </button>
+        </div>
+      </div>
+    </form>
+
+    @* Pricing table *@
+    @if (Model.PricingRows.Count == 0)
+    {
+      <p class="text-muted small">@await T.GetAsync("Products.Pricing.Empty")</p>
+    }
+    else
+    {
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("Products.Pricing.Country")</th>
+            <th>@await T.GetAsync("Products.Pricing.Tier")</th>
+            <th>@await T.GetAsync("Products.Pricing.Variant")</th>
+            <th class="text-end">@await T.GetAsync("Products.Pricing.Price")</th>
+            <th class="text-center" style="width:80px;">@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var row in Model.PricingRows)
+          {
+            <tr>
+              <td>@row.CountryName <small class="text-muted">(@row.CountryCode)</small></td>
+              <td>@row.TierName</td>
+              <td>@(string.IsNullOrEmpty(row.VariantCode) ? "—" : row.VariantCode)</td>
+              <td class="text-end">@row.Price.ToString("N2")</td>
+              <td class="text-center">
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <button class="dropdown-item" type="button"
+                              onclick="openEditPrice(@row.Id, @row.Price.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </button>
+                    </li>
+                    <li>
+                      <button class="dropdown-item text-danger" type="button"
+                              onclick="confirmDeletePricing(@row.Id, '@Html.Raw(Model.CurrentProductCode)')">
+                        <i class="ri ri-delete-bin-line me-1"></i>@await T.GetAsync("Btn.Delete")
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+  </div>
+</div>
+
+@* ── Schedules card ───────────────────────────────────────────────────── *@
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Products.Schedule.Title")</h5>
+  </div>
+  <div class="card-body">
+
+    @* Add schedule form *@
+    <form method="post" asp-page-handler="AddPriceSchedule"
+          asp-route-productCode="@Model.CurrentProductCode">
+      @Html.AntiForgeryToken()
+      <div class="row g-3 align-items-end mb-4">
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.Pricing.Country")</label>
+          <select name="ddlScheduleCountry" class="form-select">
+            @foreach (var item in Model.PricingCountryList)
+            {
+              <option value="@item.Value">@item.Text</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.Pricing.Tier")</label>
+          <select name="ddlScheduleTier" class="form-select">
+            @foreach (var item in Model.PricingTierList)
+            {
+              <option value="@item.Value">@item.Text</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.Schedule.Type")</label>
+          <select name="ddlScheduleType" class="form-select">
+            @foreach (var item in Model.ScheduleTypeOptions)
+            {
+              <option value="@item.Value">@item.Text</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.Schedule.ValidFrom")</label>
+          <input type="datetime-local" name="txtValidFrom" class="form-control" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">@await T.GetAsync("Products.Schedule.ValidTo")</label>
+          <input type="datetime-local" name="txtValidTo" class="form-control" />
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Products.Schedule.AddBtn")
+          </button>
+        </div>
+      </div>
+    </form>
+
+    @* Schedules table *@
+    @if (Model.PriceSchedules.Count == 0)
+    {
+      <p class="text-muted small">@await T.GetAsync("Products.Schedule.Empty")</p>
+    }
+    else
+    {
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("Products.Pricing.Country")</th>
+            <th>@await T.GetAsync("Products.Pricing.Tier")</th>
+            <th>@await T.GetAsync("Products.Schedule.Type")</th>
+            <th>@await T.GetAsync("Products.Schedule.ValidFrom")</th>
+            <th>@await T.GetAsync("Products.Schedule.ValidTo")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th class="text-center" style="width:80px;">@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var sched in Model.PriceSchedules)
+          {
+            <tr>
+              <td>@sched.CountryName <small class="text-muted">(@sched.CountryCode)</small></td>
+              <td>@sched.TierName</td>
+              <td>@sched.ScheduleType</td>
+              <td>@sched.ValidFrom.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td>@(sched.ValidTo.HasValue ? sched.ValidTo.Value.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat) : "—")</td>
+              <td>
+                @{
+                  var schedBadge = sched.Status switch
+                  {
+                    ScheduleStatusConstants.Pending   => "bg-warning text-dark",
+                    ScheduleStatusConstants.Active    => "bg-success",
+                    ScheduleStatusConstants.Processed => "bg-secondary",
+                    ScheduleStatusConstants.Cancelled => "bg-danger",
+                    _                                 => "bg-secondary"
+                  };
+                }
+                <span class="badge @schedBadge">@sched.Status</span>
+              </td>
+              <td class="text-center">
+                @if (sched.Status == ScheduleStatusConstants.Pending || sched.Status == ScheduleStatusConstants.Active)
+                {
+                  <form method="post" asp-page-handler="CancelSchedule"
+                        asp-route-scheduleId="@sched.Id"
+                        asp-route-productCode="@Model.CurrentProductCode"
+                        style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            title="@await T.GetAsync("Products.Schedule.Cancel")">
+                      <i class="ri ri-close-line"></i>
+                    </button>
+                  </form>
+                }
+                else
+                {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+  </div>
+</div>
+
+@* ── Price History card ────────────────────────────────────────────────── *@
+@{
+  var histTotalPages = (int)Math.Ceiling((double)Model.PriceHistoryTotal / Model.PriceHistoryPageSize);
+}
+<div class="card mt-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <h5 class="mb-0">@await T.GetAsync("Products.History.Title")</h5>
+    <span class="badge bg-secondary">@Model.PriceHistoryTotal</span>
+  </div>
+  <div class="card-body">
+
+    @if (Model.PriceHistory.Count == 0)
+    {
+      <p class="text-muted small">@await T.GetAsync("Products.History.Empty")</p>
+    }
+    else
+    {
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("Products.Pricing.Country")</th>
+            <th>@await T.GetAsync("Products.Pricing.Tier")</th>
+            <th>@await T.GetAsync("Products.History.ChangeType")</th>
+            <th class="text-end">@await T.GetAsync("Products.History.From")</th>
+            <th class="text-end">@await T.GetAsync("Products.History.To")</th>
+            <th>@await T.GetAsync("ChangedBy")</th>
+            <th>@await T.GetAsync("CreatedAt")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var hist in Model.PriceHistory)
+          {
+            <tr>
+              <td>@hist.CountryCode</td>
+              <td>@hist.TierCode</td>
+              <td>@hist.ChangeType</td>
+              <td class="text-end">@hist.ChangedFrom.ToString("N2")</td>
+              <td class="text-end">@hist.ChangedTo.ToString("N2")</td>
+              <td>@hist.ChangedBy</td>
+              <td>@hist.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (histTotalPages > 1)
+      {
+        <nav>
+          <ul class="pagination pagination-sm justify-content-end mb-0">
+            @for (int p = 1; p <= histTotalPages; p++)
+            {
+              <li class="page-item @(p == Model.PriceHistoryPage ? "active" : "")">
+                <a class="page-link"
+                   asp-page="/Products/Edit"
+                   asp-route-productCode="@Model.CurrentProductCode"
+                   asp-route-priceHistoryPage="@p">@p</a>
+              </li>
+            }
+          </ul>
+        </nav>
+      }
+    }
+
+  </div>
+</div>
+
+@* Edit Price modal *@
+<div class="modal fade" id="modalEditPrice" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form method="post" asp-page-handler="UpdatePricing"
+            asp-route-productCode="@Model.CurrentProductCode">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="txtUpdatePricingId" id="hdnUpdatePricingId" />
+        <div class="modal-header">
+          <h6 class="modal-title">@await T.GetAsync("Products.Pricing.EditPrice")</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label small">@await T.GetAsync("Products.Pricing.Price")</label>
+          <input type="number" name="txtUpdatePrice" id="txtUpdatePriceModal"
+                 class="form-control" step="0.01" min="0" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  data-bs-dismiss="modal">@await T.GetAsync("Btn.Cancel")</button>
+          <button type="submit" class="btn btn-primary btn-sm">@await T.GetAsync("SaveChanges")</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 @* Hidden form supplies antiforgery token for AJAX calls *@
 <form id="formAjax" method="post">
   @Html.AntiForgeryToken()
@@ -395,6 +716,35 @@
     var form  = document.createElement('form');
     form.method = 'post';
     form.action = '?handler=DeleteImage&imageId=' + imageId + '&productCode=' + encodeURIComponent(productCode);
+    var token = document.createElement('input');
+    token.type  = 'hidden';
+    token.name  = '__RequestVerificationToken';
+    token.value = document.querySelector('#formAjax input[name="__RequestVerificationToken"]').value;
+    form.appendChild(token);
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  function openEditPrice(pricingId, currentPrice) {
+    document.getElementById('hdnUpdatePricingId').value   = pricingId;
+    document.getElementById('txtUpdatePriceModal').value  = currentPrice;
+    new bootstrap.Modal(document.getElementById('modalEditPrice')).show();
+  }
+
+  async function confirmDeletePricing(pricingId, productCode) {
+    var result = await Swal.fire({
+      icon: 'warning',
+      title: pageMsg.deleteConfirmTitle,
+      text:  pageMsg.deleteConfirmText,
+      showCancelButton:   true,
+      confirmButtonText:  pageMsg.deleteConfirmBtn,
+      cancelButtonText:   pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    });
+    if (!result.isConfirmed) return;
+    var form  = document.createElement('form');
+    form.method = 'post';
+    form.action = '?handler=DeletePricing&pricingId=' + pricingId + '&productCode=' + encodeURIComponent(productCode);
     var token = document.createElement('input');
     token.type  = 'hidden';
     token.name  = '__RequestVerificationToken';

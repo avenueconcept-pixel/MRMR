@@ -16,6 +16,7 @@ public class EditModel : AdminPageModel
   private readonly CountryDbHelper         _countryDbHelper;
   private readonly LanguageDbHelper        _languageDbHelper;
   private readonly UomDbHelper             _uomDbHelper;
+  private readonly PriceTierDbHelper       _priceTierDbHelper;
   private readonly TranslationService      _translation;
   private readonly IWebHostEnvironment     _env;
   private readonly IConfiguration          _config;
@@ -27,8 +28,21 @@ public class EditModel : AdminPageModel
   [BindProperty] public int        txtSortOrder      { get; set; }
   [BindProperty] public string     ddlStatus         { get; set; } = StatusConstants.Active;
   [BindProperty] public IFormFile? fileProductImage  { get; set; }
-  [BindProperty] public string     ddlImageCountry   { get; set; } = string.Empty;
-  [BindProperty] public string     ddlImageLanguage  { get; set; } = string.Empty;
+  [BindProperty] public string     ddlImageCountry    { get; set; } = string.Empty;
+  [BindProperty] public string     ddlImageLanguage   { get; set; } = string.Empty;
+
+  [BindProperty] public string     ddlPricingCountry  { get; set; } = string.Empty;
+  [BindProperty] public string     ddlPricingTier     { get; set; } = string.Empty;
+  [BindProperty] public string     txtPricingVariant  { get; set; } = string.Empty;
+  [BindProperty] public decimal    txtPricingPrice    { get; set; }
+  [BindProperty] public int        txtUpdatePricingId { get; set; }
+  [BindProperty] public decimal    txtUpdatePrice     { get; set; }
+
+  [BindProperty] public string     ddlScheduleCountry { get; set; } = string.Empty;
+  [BindProperty] public string     ddlScheduleTier    { get; set; } = string.Empty;
+  [BindProperty] public string     ddlScheduleType    { get; set; } = string.Empty;
+  [BindProperty] public string     txtValidFrom       { get; set; } = string.Empty;
+  [BindProperty] public string     txtValidTo         { get; set; } = string.Empty;
 
   public string CurrentProductCode { get; set; } = string.Empty;
 
@@ -45,6 +59,18 @@ public class EditModel : AdminPageModel
   public List<ProductImage>   ProductImages     { get; set; } = new();
   public List<SelectListItem> ImageCountryList  { get; set; } = new();
   public List<SelectListItem> ImageLanguageList { get; set; } = new();
+
+  public List<ProductPricingRowDto> PricingRows         { get; set; } = new();
+  public List<SelectListItem>       PricingCountryList  { get; set; } = new();
+  public List<SelectListItem>       PricingTierList     { get; set; } = new();
+
+  public List<PriceScheduleRowDto>  PriceSchedules      { get; set; } = new();
+  public List<PriceHistoryRowDto>   PriceHistory        { get; set; } = new();
+  public int                        PriceHistoryTotal   { get; set; }
+  [BindProperty(SupportsGet = true)]
+  public int                        PriceHistoryPage    { get; set; } = 1;
+  public int                        PriceHistoryPageSize => 10;
+  public List<SelectListItem>       ScheduleTypeOptions { get; set; } = new();
 
   public string   CreatedBy { get; set; } = string.Empty;
   public DateTime CreatedAt { get; set; }
@@ -65,18 +91,20 @@ public class EditModel : AdminPageModel
       CountryDbHelper         countryDbHelper,
       LanguageDbHelper        languageDbHelper,
       UomDbHelper             uomDbHelper,
+      PriceTierDbHelper       priceTierDbHelper,
       TranslationService      translation,
       IWebHostEnvironment     env,
       IConfiguration          config)
   {
-    _productDbHelper  = productDbHelper;
-    _categoryDbHelper = categoryDbHelper;
-    _countryDbHelper  = countryDbHelper;
-    _languageDbHelper = languageDbHelper;
-    _uomDbHelper      = uomDbHelper;
-    _translation      = translation;
-    _env              = env;
-    _config           = config;
+    _productDbHelper   = productDbHelper;
+    _categoryDbHelper  = categoryDbHelper;
+    _countryDbHelper   = countryDbHelper;
+    _languageDbHelper  = languageDbHelper;
+    _uomDbHelper       = uomDbHelper;
+    _priceTierDbHelper = priceTierDbHelper;
+    _translation       = translation;
+    _env               = env;
+    _config            = config;
   }
 
   public async Task<IActionResult> OnGetAsync(string productCode)
@@ -118,6 +146,34 @@ public class EditModel : AdminPageModel
 
     ProductImages = await _productDbHelper.GetImagesAsync(productCode);
     await PopulateImageDropdownsAsync();
+
+    await PopulatePricingDropdownsAsync();
+    PricingRows = await BuildPricingRowsAsync(productCode);
+
+    var scheduleEntities = await _productDbHelper.GetPriceSchedulesAsync(productCode);
+    PriceSchedules = scheduleEntities.Select(s => new PriceScheduleRowDto
+    {
+      Id           = s.Id,
+      CountryCode  = s.CountryCode,
+      CountryName  = s.Country?.Translations.FirstOrDefault()?.CountryName ?? s.CountryCode,
+      TierCode     = s.TierCode,
+      TierName     = s.PriceTier?.TierName ?? s.TierCode,
+      ScheduleType = s.ScheduleType,
+      ValidFrom    = s.ValidFrom,
+      ValidTo      = s.ValidTo,
+      Status       = s.Status
+    }).ToList();
+
+    var (histItems, histTotal) = await _productDbHelper.GetPriceHistoryAsync(
+        productCode, PriceHistoryPage, PriceHistoryPageSize);
+    PriceHistory      = histItems;
+    PriceHistoryTotal = histTotal;
+
+    ScheduleTypeOptions = new List<SelectListItem>
+    {
+      new() { Value = ScheduleTypeConstants.Promo,           Text = await _translation.GetAsync("Products.Schedule.Type.Promo") },
+      new() { Value = ScheduleTypeConstants.PriceAdjustment, Text = await _translation.GetAsync("Products.Schedule.Type.PriceAdjustment") }
+    };
 
     return Page();
   }
@@ -365,6 +421,102 @@ public class EditModel : AdminPageModel
     return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
   }
 
+  // ── Pricing handlers ──────────────────────────────────────────────────────
+
+  public async Task<IActionResult> OnPostAddPricingAsync(string productCode)
+  {
+    if (string.IsNullOrWhiteSpace(ddlPricingCountry) || string.IsNullOrWhiteSpace(ddlPricingTier) || txtPricingPrice <= 0)
+    {
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
+      return await ReloadPageAsync(productCode);
+    }
+
+    var tier = new ProductPriceTier
+    {
+      ProductCode = productCode,
+      CountryCode = ddlPricingCountry,
+      TierCode    = ddlPricingTier,
+      VariantCode = string.IsNullOrWhiteSpace(txtPricingVariant) ? null : txtPricingVariant.Trim(),
+      Price       = txtPricingPrice
+    };
+
+    await _productDbHelper.AddPriceTierEntryAsync(tier, CurrentUsername);
+
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveSuccess);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostDeletePricingAsync(int pricingId, string productCode)
+  {
+    await _productDbHelper.DeletePriceTierEntryAsync(pricingId, CurrentUsername);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostUpdatePricingAsync(string productCode)
+  {
+    if (txtUpdatePricingId <= 0 || txtUpdatePrice < 0)
+    {
+      SetError(await _translation.GetAsync("Products.Pricing.Error.InvalidPrice"));
+      return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+    }
+    await _productDbHelper.UpdatePriceTierAsync(txtUpdatePricingId, txtUpdatePrice, CurrentUsername);
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveSuccess);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostAddPriceScheduleAsync(string productCode)
+  {
+    if (string.IsNullOrWhiteSpace(ddlScheduleCountry) ||
+        string.IsNullOrWhiteSpace(ddlScheduleTier)    ||
+        string.IsNullOrWhiteSpace(ddlScheduleType)    ||
+        string.IsNullOrWhiteSpace(txtValidFrom))
+    {
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
+      return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+    }
+
+    if (!DateTime.TryParseExact(txtValidFrom, AppConstants.DateTimeInputFormat,
+            null, System.Globalization.DateTimeStyles.None, out var validFromLocal))
+    {
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
+      return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+    }
+
+    DateTime? validToUtc = null;
+    if (!string.IsNullOrWhiteSpace(txtValidTo) &&
+        DateTime.TryParseExact(txtValidTo, AppConstants.DateTimeInputFormat,
+            null, System.Globalization.DateTimeStyles.None, out var validToLocal))
+    {
+      validToUtc = validToLocal.ToUtcFromUserTimezone(UserTimezone);
+    }
+
+    var schedule = new ProductPriceSchedule
+    {
+      ProductCode  = productCode,
+      CountryCode  = ddlScheduleCountry,
+      TierCode     = ddlScheduleTier,
+      ScheduleType = ddlScheduleType,
+      ValidFrom    = validFromLocal.ToUtcFromUserTimezone(UserTimezone),
+      ValidTo      = validToUtc
+    };
+
+    await _productDbHelper.AddPriceScheduleAsync(schedule, CurrentUsername);
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveSuccess);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostCancelScheduleAsync(int scheduleId, string productCode)
+  {
+    await _productDbHelper.CancelPriceScheduleAsync(scheduleId, CurrentUsername);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
   public async Task<IActionResult> OnPostSaveImageSortAsync([FromBody] List<ImageSortItem> items)
   {
     try
@@ -400,6 +552,34 @@ public class EditModel : AdminPageModel
       LabelDelete           = await _translation.GetAsync("Btn.Delete");
     }
     await PopulateImageDropdownsAsync();
+    await PopulatePricingDropdownsAsync();
+    PricingRows = await BuildPricingRowsAsync(productCode);
+
+    var scheduleEntities = await _productDbHelper.GetPriceSchedulesAsync(productCode);
+    PriceSchedules = scheduleEntities.Select(s => new PriceScheduleRowDto
+    {
+      Id           = s.Id,
+      CountryCode  = s.CountryCode,
+      CountryName  = s.Country?.Translations.FirstOrDefault()?.CountryName ?? s.CountryCode,
+      TierCode     = s.TierCode,
+      TierName     = s.PriceTier?.TierName ?? s.TierCode,
+      ScheduleType = s.ScheduleType,
+      ValidFrom    = s.ValidFrom,
+      ValidTo      = s.ValidTo,
+      Status       = s.Status
+    }).ToList();
+
+    var (histItems, histTotal) = await _productDbHelper.GetPriceHistoryAsync(
+        productCode, 1, PriceHistoryPageSize);
+    PriceHistory      = histItems;
+    PriceHistoryTotal = histTotal;
+
+    ScheduleTypeOptions = new List<SelectListItem>
+    {
+      new() { Value = ScheduleTypeConstants.Promo,           Text = await _translation.GetAsync("Products.Schedule.Type.Promo") },
+      new() { Value = ScheduleTypeConstants.PriceAdjustment, Text = await _translation.GetAsync("Products.Schedule.Type.PriceAdjustment") }
+    };
+
     return Page();
   }
 
@@ -419,6 +599,51 @@ public class EditModel : AdminPageModel
     {
       Value = l.LanguageCode,
       Text  = l.LanguageName
+    }).ToList();
+  }
+
+  private async Task PopulatePricingDropdownsAsync()
+  {
+    var langCode  = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    var countries = await _countryDbHelper.GetAllActiveAsync(langCode);
+    var tiers     = await _priceTierDbHelper.GetAllActiveAsync();
+
+    PricingCountryList = new List<SelectListItem>
+    {
+      new() { Value = string.Empty, Text = await _translation.GetAsync("Products.Pricing.SelectCountry") }
+    };
+    PricingCountryList.AddRange(countries.Select(c => new SelectListItem
+    {
+      Value = c.CountryCode,
+      Text  = c.Translations.FirstOrDefault()?.CountryName ?? c.CountryCode
+    }));
+
+    PricingTierList = new List<SelectListItem>
+    {
+      new() { Value = string.Empty, Text = await _translation.GetAsync("Products.Pricing.SelectTier") }
+    };
+    PricingTierList.AddRange(tiers.Select(t => new SelectListItem
+    {
+      Value = t.TierCode,
+      Text  = t.TierName
+    }));
+  }
+
+  private async Task<List<ProductPricingRowDto>> BuildPricingRowsAsync(string productCode)
+  {
+    var langCode = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    var tiers    = await _productDbHelper.GetPriceTiersAsync(productCode);
+    return tiers.Select(t => new ProductPricingRowDto
+    {
+      Id          = t.Id,
+      CountryCode = t.CountryCode,
+      CountryName = t.Country?.Translations.FirstOrDefault(x => x.LanguageCode == langCode)?.CountryName
+                    ?? t.Country?.Translations.FirstOrDefault()?.CountryName
+                    ?? t.CountryCode,
+      TierCode    = t.TierCode,
+      TierName    = t.PriceTier?.TierName ?? t.TierCode,
+      VariantCode = t.VariantCode,
+      Price       = t.Price
     }).ToList();
   }
 

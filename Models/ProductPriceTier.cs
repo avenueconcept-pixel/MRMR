@@ -7,6 +7,7 @@ public class ProductPriceTier
   public string  CountryCode { get; set; } = string.Empty;
   public string  TierCode    { get; set; } = string.Empty;
   public string? VariantCode { get; set; }
+  public decimal Price       { get; set; }
 
   public Product?   Product   { get; set; }
   public Country?   Country   { get; set; }
