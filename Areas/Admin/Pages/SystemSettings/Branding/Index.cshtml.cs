@@ -33,8 +33,10 @@ public class IndexModel : AdminPageModel
   [BindProperty] public string     txtAdminFooter        { get; set; } = string.Empty;
   [BindProperty] public string     txtCustomerFooter     { get; set; } = string.Empty;
   [BindProperty] public IFormFile? fileLogoImage         { get; set; }
+  [BindProperty] public IFormFile? fileFaviconImage      { get; set; }
 
-  public string CurrentLogoPath { get; set; } = string.Empty;
+  public string CurrentLogoPath    { get; set; } = string.Empty;
+  public string CurrentFaviconPath { get; set; } = string.Empty;
 
   public async Task OnGetAsync()
   {
@@ -46,6 +48,7 @@ public class IndexModel : AdminPageModel
     txtAdminFooter        = branding.AdminFooterText;
     txtCustomerFooter     = branding.CustomerFooterText;
     CurrentLogoPath       = branding.LogoPath;
+    CurrentFaviconPath    = branding.FaviconPath;
   }
 
   public async Task<IActionResult> OnPostSaveAsync()
@@ -94,6 +97,43 @@ public class IndexModel : AdminPageModel
         await fileLogoImage.CopyToAsync(stream);
 
       await _appSettingsDbHelper.SetAsync("global", "logo_path", filename, CurrentUsername);
+    }
+
+    if (fileFaviconImage != null)
+    {
+      var ext = Path.GetExtension(fileFaviconImage.FileName).ToLowerInvariant();
+      if (ext != ".jpg" && ext != ".jpeg" && ext != ".png")
+      {
+        AlertMessageType    = MessageType.Error;
+        AlertMessageContent = await _translation.GetAsync("SystemSettings.Branding.Error.InvalidFileType");
+        CurrentLogoPath    = (await _appSettingsDbHelper.GetBrandingAsync()).LogoPath;
+        return Page();
+      }
+
+      if (fileFaviconImage.Length > 2 * 1024 * 1024)
+      {
+        AlertMessageType    = MessageType.Error;
+        AlertMessageContent = await _translation.GetAsync("SystemSettings.Branding.Error.FileTooLarge");
+        CurrentLogoPath    = (await _appSettingsDbHelper.GetBrandingAsync()).LogoPath;
+        return Page();
+      }
+
+      var relPath  = _config["UploadPaths:Branding"] ?? "uploads/branding";
+      var fullPath = Path.Combine(_env.WebRootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
+      Directory.CreateDirectory(fullPath);
+
+      var oldFavicon = await _appSettingsDbHelper.GetAsync("global", "favicon_path");
+      if (!string.IsNullOrEmpty(oldFavicon))
+      {
+        var oldFile = Path.Combine(fullPath, oldFavicon);
+        if (System.IO.File.Exists(oldFile)) System.IO.File.Delete(oldFile);
+      }
+
+      var filename = $"{Guid.NewGuid()}{ext}";
+      using (var stream = new FileStream(Path.Combine(fullPath, filename), FileMode.Create))
+        await fileFaviconImage.CopyToAsync(stream);
+
+      await _appSettingsDbHelper.SetAsync("global", "favicon_path", filename, CurrentUsername);
     }
 
     await _appSettingsDbHelper.SetAsync("admin",    "system_name", txtAdminSystemName.Trim(),    CurrentUsername);

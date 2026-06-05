@@ -50,7 +50,7 @@ public class AppSettingsDbHelper : DbHelper
       => await ExecuteAsync(async () =>
       {
         var rows = await _db.AppSettings
-            .Where(s => (s.SystemCode == "global"   && s.SettingKey == "logo_path")
+            .Where(s => (s.SystemCode == "global"   && (s.SettingKey == "logo_path" || s.SettingKey == "favicon_path"))
                      || (s.SystemCode == "admin"    && (s.SettingKey == "system_name" || s.SettingKey == "footer_text"))
                      || (s.SystemCode == "customer" && (s.SettingKey == "system_name" || s.SettingKey == "footer_text")))
             .ToListAsync();
@@ -62,6 +62,7 @@ public class AppSettingsDbHelper : DbHelper
         return new BrandingDto
         {
           LogoPath           = Get("global",   "logo_path"),
+          FaviconPath        = Get("global",   "favicon_path"),
           AdminSystemName    = Get("admin",    "system_name"),
           CustomerSystemName = Get("customer", "system_name"),
           AdminFooterText    = Get("admin",    "footer_text"),

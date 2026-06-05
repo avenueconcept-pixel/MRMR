@@ -1,0 +1,28 @@
+@inject MyApp.Services.TranslationService T
+<div class="modal fade" id="modalImageCrop" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static"
+     data-title="@await T.GetAsync("ImageCrop.ModalTitle")"
+     data-confirm="@await T.GetAsync("ImageCrop.ConfirmBtn")"
+     data-cancel="@await T.GetAsync("ImageCrop.CancelBtn")">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCropTitle">@await T.GetAsync("ImageCrop.ModalTitle")</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center" style="background:#f8f8f8;min-height:350px;">
+        <img id="imgCropSource" src="" alt="crop-source"
+             style="max-width:100%;display:block;margin:0 auto;" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" id="btnCropCancel"
+                data-bs-dismiss="modal">
+          @await T.GetAsync("ImageCrop.CancelBtn")
+        </button>
+        <button type="button" class="btn btn-primary" id="btnCropConfirm">
+          <i class="ri ri-crop-line me-1"></i>@await T.GetAsync("ImageCrop.ConfirmBtn")
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

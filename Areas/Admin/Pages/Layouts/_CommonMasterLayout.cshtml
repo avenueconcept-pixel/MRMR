@@ -23,10 +23,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
 
   @{
-    string title       = ViewData["title"] as string ?? "";
-    string appName     = TempData.Peek("appName") as string ?? "";
-    string brandLogo   = await _brandingSvc.GetAsync("global", "logo_path");
-    string adminSysName = await _brandingSvc.GetAsync("admin", "system_name");
+    string title        = ViewData["title"] as string ?? "";
+    string appName      = TempData.Peek("appName") as string ?? "";
+    string brandLogo    = await _brandingSvc.GetAsync("global", "logo_path");
+    string faviconPath  = await _brandingSvc.GetAsync("global", "favicon_path");
+    string adminSysName = await _brandingSvc.GetAsync("admin",  "system_name");
+    string iconSrc      = !string.IsNullOrEmpty(faviconPath) ? faviconPath : brandLogo;
     if (!string.IsNullOrEmpty(adminSysName)) appName = adminSysName;
   }
   <title>@title | @appName</title>
@@ -41,14 +43,17 @@
   <link rel="canonical" href="@TempData.Peek("productPage")" />
 
   <!-- Favicon -->
-  @if (!string.IsNullOrEmpty(brandLogo))
+  @if (!string.IsNullOrEmpty(iconSrc))
   {
-    <link rel="icon" type="image/png" href="/uploads/branding/@brandLogo" />
+    <link rel="icon" type="image/png" href="/uploads/branding/@iconSrc" />
   }
   else
   {
     <link rel="icon" type="image/x-icon" href="~/img/favicon/favicon.ico" />
   }
+
+  <!-- Cropper.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
 
   <!-- Core Styles -->
   @await Html.PartialAsync("Layouts/Sections/_Styles" + ViewData["frontVar"])
@@ -84,8 +89,15 @@
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <script src="~/js/admin-datatable.js"></script>
 
+  <!-- Cropper.js + Image crop component -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+  <script src="~/js/image-crop.js"></script>
+
   <!-- Page Scripts-->
   @RenderSection("PageScripts", required: false)
+
+  @* Image crop modal — one instance shared by all upload points on the page *@
+  @await Html.PartialAsync("~/Areas/Admin/Pages/_Partials/_ImageCropModal.cshtml")
 </body>
 
 </html>

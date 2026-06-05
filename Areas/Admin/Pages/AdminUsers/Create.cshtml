@@ -30,7 +30,12 @@
                style="width:80px;height:80px;object-fit:cover;border-radius:50%;border:2px solid #dee2e6;" />
           <div>
             <input type="file" id="fileProfileImage" name="fileProfileImage"
-                   accept=".jpg,.jpeg,.png" class="form-control" style="max-width:320px;" />
+                   accept=".jpg,.jpeg,.png" class="form-control" style="max-width:320px;"
+                   data-crop="true"
+                   data-crop-ratio="1"
+                   data-crop-output-width="300"
+                   data-crop-output-height="300"
+                   data-crop-preview="#imgPreview" />
             <div class="form-text">@await T.GetAsync("AdminUser.ProfileImageHint")</div>
           </div>
         </div>
