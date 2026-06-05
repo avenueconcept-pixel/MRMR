@@ -3,8 +3,6 @@
 @{
   ViewData["title"] = await T.GetAsync("AdminUser.AddTitle");
   var msgPasswordMismatch = await T.GetAsync("AdminUser.PasswordMismatch");
-  var msgFileTooLarge     = await T.GetAsync("AdminUser.FileTooLarge");
-  var msgInvalidFileType  = await T.GetAsync("AdminUser.InvalidFileType");
 }
 
 @section VendorStyles {
@@ -158,27 +156,6 @@
 
 @section PageScripts {
 <script>
-  document.getElementById('fileProfileImage').addEventListener('change', function () {
-    var file = this.files[0];
-    if (!file) return;
-    var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    if (!allowedTypes.includes(file.type)) {
-      Swal.fire({ icon: 'error', text: '@Html.Raw(msgInvalidFileType)' });
-      this.value = '';
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      Swal.fire({ icon: 'error', text: '@Html.Raw(msgFileTooLarge)' });
-      this.value = '';
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function (e) {
-      document.getElementById('imgPreview').src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
   document.getElementById('btnTogglePwd').addEventListener('click', function () {
     var input = document.getElementById('txtPassword');
     var icon  = document.getElementById('iconTogglePwd');
