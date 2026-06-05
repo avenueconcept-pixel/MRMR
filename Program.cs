@@ -71,6 +71,7 @@ builder.Services.AddScoped<MaintenanceDbHelper>();
 builder.Services.AddScoped<MaintenanceService>();
 builder.Services.AddScoped<AppSettingsDbHelper>();
 builder.Services.AddScoped<AppSettingsService>();
+builder.Services.AddScoped<ProductDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));

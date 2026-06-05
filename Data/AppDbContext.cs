@@ -46,6 +46,17 @@ public class AppDbContext : DbContext
   public DbSet<MaintenanceScheduleSystem>  MaintenanceScheduleSystems  => Set<MaintenanceScheduleSystem>();
   public DbSet<MaintenanceScheduleMessage> MaintenanceScheduleMessages => Set<MaintenanceScheduleMessage>();
   public DbSet<AppSetting>                 AppSettings                 => Set<AppSetting>();
+  public DbSet<Product>                    Products                    => Set<Product>();
+  public DbSet<ProductTranslation>         ProductTranslations         => Set<ProductTranslation>();
+  public DbSet<ProductCategoryMap>         ProductCategoryMaps         => Set<ProductCategoryMap>();
+  public DbSet<ProductCountry>             ProductCountries            => Set<ProductCountry>();
+  public DbSet<ProductPriceTier>           ProductPriceTiers           => Set<ProductPriceTier>();
+  public DbSet<ProductPriceSchedule>       ProductPriceSchedules       => Set<ProductPriceSchedule>();
+  public DbSet<ProductPriceHistory>        ProductPriceHistories       => Set<ProductPriceHistory>();
+  public DbSet<ProductSection>             ProductSections             => Set<ProductSection>();
+  public DbSet<ProductSectionTranslation>  ProductSectionTranslations  => Set<ProductSectionTranslation>();
+  public DbSet<ProductImage>               ProductImages               => Set<ProductImage>();
+  public DbSet<ProductPackageItem>         ProductPackageItems         => Set<ProductPackageItem>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -679,6 +690,272 @@ public class AppDbContext : DbContext
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
             .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.HasIndex(e => new { e.SystemCode, e.SettingKey }).IsUnique();
+    });
+
+    // Product
+    modelBuilder.Entity<Product>(entity =>
+    {
+      entity.ToTable("products");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.ProductType).HasColumnName("product_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.ProductNature).HasColumnName("product_nature").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.UomCode).HasColumnName("uom_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Pv).HasColumnName("pv").HasPrecision(10, 2);
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.ProductCode).IsUnique();
+
+      entity.HasOne(e => e.UnitOfMeasure)
+            .WithMany()
+            .HasForeignKey(e => e.UomCode)
+            .HasPrincipalKey(e => e.UomCode)
+            .OnDelete(DeleteBehavior.Restrict);
+
+      entity.HasMany(e => e.Translations)
+            .WithOne(t => t.Product)
+            .HasForeignKey(t => t.ProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.CategoryMaps)
+            .WithOne(c => c.Product)
+            .HasForeignKey(c => c.ProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.Countries)
+            .WithOne(c => c.Product)
+            .HasForeignKey(c => c.ProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.PriceTiers)
+            .WithOne(p => p.Product)
+            .HasForeignKey(p => p.ProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.Sections)
+            .WithOne(s => s.Product)
+            .HasForeignKey(s => s.ProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.Images)
+            .WithOne(i => i.Product)
+            .HasForeignKey(i => i.ProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasMany(e => e.PackageItems)
+            .WithOne(p => p.PackageProduct)
+            .HasForeignKey(p => p.PackageProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // ProductTranslation
+    modelBuilder.Entity<ProductTranslation>(entity =>
+    {
+      entity.ToTable("product_translations");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.ProductName).HasColumnName("product_name").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.ShortDescription).HasColumnName("short_description").IsRequired();
+      entity.HasIndex(e => new { e.ProductCode, e.LanguageCode }).IsUnique();
+    });
+
+    // ProductCategoryMap
+    modelBuilder.Entity<ProductCategoryMap>(entity =>
+    {
+      entity.ToTable("product_category_map");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.CategoryCode).HasColumnName("category_code").HasMaxLength(20).IsRequired();
+      entity.HasIndex(e => new { e.ProductCode, e.CategoryCode }).IsUnique();
+
+      entity.HasOne(e => e.ProductCategory)
+            .WithMany()
+            .HasForeignKey(e => e.CategoryCode)
+            .HasPrincipalKey(e => e.CategoryCode)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // ProductCountry
+    modelBuilder.Entity<ProductCountry>(entity =>
+    {
+      entity.ToTable("product_countries");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.IsEnabled).HasColumnName("is_enabled");
+      entity.Property(e => e.StockStatus).HasColumnName("stock_status").HasMaxLength(20).IsRequired();
+      entity.HasIndex(e => new { e.ProductCode, e.CountryCode }).IsUnique();
+
+      entity.HasOne(e => e.Country)
+            .WithMany()
+            .HasForeignKey(e => e.CountryCode)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // ProductPriceTier
+    modelBuilder.Entity<ProductPriceTier>(entity =>
+    {
+      entity.ToTable("product_price_tiers");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.VariantCode).HasColumnName("variant_code").HasMaxLength(50);
+
+      entity.HasOne(e => e.Country)
+            .WithMany()
+            .HasForeignKey(e => e.CountryCode)
+            .OnDelete(DeleteBehavior.Restrict);
+
+      entity.HasOne(e => e.PriceTier)
+            .WithMany()
+            .HasForeignKey(e => e.TierCode)
+            .HasPrincipalKey(e => e.TierCode)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // ProductPriceSchedule
+    modelBuilder.Entity<ProductPriceSchedule>(entity =>
+    {
+      entity.ToTable("product_price_schedules");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.ScheduleType).HasColumnName("schedule_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.ValidFrom).HasColumnName("valid_from");
+      entity.Property(e => e.ValidTo).HasColumnName("valid_to");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+
+      entity.HasOne(e => e.Product)
+            .WithMany()
+            .HasForeignKey(e => e.ProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
+      entity.HasOne(e => e.Country)
+            .WithMany()
+            .HasForeignKey(e => e.CountryCode)
+            .OnDelete(DeleteBehavior.Restrict);
+
+      entity.HasOne(e => e.PriceTier)
+            .WithMany()
+            .HasForeignKey(e => e.TierCode)
+            .HasPrincipalKey(e => e.TierCode)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // ProductPriceHistory
+    modelBuilder.Entity<ProductPriceHistory>(entity =>
+    {
+      entity.ToTable("product_price_history");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.ChangeType).HasColumnName("change_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.ChangedFrom).HasColumnName("changed_from");
+      entity.Property(e => e.ChangedTo).HasColumnName("changed_to");
+      entity.Property(e => e.ChangedBy).HasColumnName("changed_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+    });
+
+    // ProductSection
+    modelBuilder.Entity<ProductSection>(entity =>
+    {
+      entity.ToTable("product_sections");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.HasIndex(e => new { e.ProductCode, e.SectionCode }).IsUnique();
+
+      entity.HasOne(e => e.ProductSectionType)
+            .WithMany()
+            .HasForeignKey(e => e.SectionCode)
+            .HasPrincipalKey(e => e.SectionCode)
+            .OnDelete(DeleteBehavior.Restrict);
+
+      entity.HasMany(e => e.Translations)
+            .WithOne(t => t.ProductSection)
+            .HasForeignKey(t => t.ProductSectionId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // ProductSectionTranslation
+    modelBuilder.Entity<ProductSectionTranslation>(entity =>
+    {
+      entity.ToTable("product_section_translations");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductSectionId).HasColumnName("product_section_id");
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.Content).HasColumnName("content").IsRequired();
+      entity.HasIndex(e => new { e.ProductSectionId, e.LanguageCode }).IsUnique();
+    });
+
+    // ProductImage
+    modelBuilder.Entity<ProductImage>(entity =>
+    {
+      entity.ToTable("product_images");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.ImageFilename).HasColumnName("image_filename").HasMaxLength(255).IsRequired();
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+
+      entity.HasOne(e => e.Country)
+            .WithMany()
+            .HasForeignKey(e => e.CountryCode)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // ProductPackageItem
+    modelBuilder.Entity<ProductPackageItem>(entity =>
+    {
+      entity.ToTable("product_package_items");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.PackageProductCode).HasColumnName("package_product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.ItemProductCode).HasColumnName("item_product_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.Quantity).HasColumnName("quantity");
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.HasIndex(e => new { e.PackageProductCode, e.ItemProductCode }).IsUnique();
+
+      entity.HasOne(e => e.ItemProduct)
+            .WithMany()
+            .HasForeignKey(e => e.ItemProductCode)
+            .HasPrincipalKey(e => e.ProductCode)
+            .OnDelete(DeleteBehavior.Restrict);
     });
 
     // Customer

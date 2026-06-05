@@ -54,7 +54,6 @@
   <ItemGroup>
     <Compile Remove="Dtos\CustomerDtos.cs" />
     <Compile Remove="Dtos\JobsheetDtos.cs" />
-    <Compile Remove="Dtos\ProductDtos.cs" />
     <Compile Remove="Helper\AppConstants.cs" />
     <Compile Remove="Helper\JobsheetHelper.cs" />
     <Compile Remove="Helper\SharedHelper.cs" />
