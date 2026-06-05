@@ -45,7 +45,7 @@ public class RegionDbHelper : DbHelper
       => await ExecuteAsync(() => _db.Regions
           .AnyAsync(r => r.RegionCode == regionCode && r.Id != excludeId && r.Status != StatusConstants.Deleted));
 
-  public async Task<RegionAddResult> CreateAsync(Region region, List<string> countryCodes, string createdBy)
+  public async Task<RegionAddResult> AddAsync(Region region, List<string> countryCodes, string createdBy)
       => await ExecuteAsync(async () =>
       {
         var existing = await _db.Regions

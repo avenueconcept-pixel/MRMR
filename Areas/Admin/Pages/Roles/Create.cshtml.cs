@@ -69,7 +69,7 @@ public class CreateModel : AdminPageModel
     };
 
     var permissions = ParseSelectedPerms(SelectedPerms);
-    var result = await _roleDbHelper.CreateAsync(role, SelectedMenus, permissions, CurrentUsername);
+    var result = await _roleDbHelper.AddAsync(role, SelectedMenus, permissions, CurrentUsername);
 
     switch (result)
     {

@@ -89,7 +89,7 @@ public class EditModel : AdminPageModel
       return Page();
     }
 
-    if (await _deptDbHelper.IsDeptNameExistsAsync(txtDeptName.Trim(), id))
+    if (await _deptDbHelper.IsNameExistsAsync(txtDeptName.Trim(), id))
     {
       AlertMessageType    = MessageType.Error;
       AlertMessageTitle   = MessageTitle.Error;

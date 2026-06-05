@@ -57,7 +57,7 @@ public class CreateModel : AdminPageModel
       Status     = ddlStatus
     };
 
-    var result = await _regionDbHelper.CreateAsync(region, SelectedCountries, CurrentUsername);
+    var result = await _regionDbHelper.AddAsync(region, SelectedCountries, CurrentUsername);
 
     if (result == RegionAddResult.DuplicateActive)
     {

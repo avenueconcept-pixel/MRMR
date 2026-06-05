@@ -48,7 +48,7 @@ public class CreateModel : AdminPageModel
       Status   = ddlStatus
     };
 
-    var result = await _deptDbHelper.CreateAsync(dept, CurrentUsername);
+    var result = await _deptDbHelper.AddAsync(dept, CurrentUsername);
 
     if (result == DeptAddResult.DuplicateActive)
     {

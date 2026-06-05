@@ -134,7 +134,7 @@ public class MenuDbHelper : DbHelper
       => await ExecuteAsync(() => _db.Menus
           .AnyAsync(m => m.ParentId == id && m.Status != StatusConstants.Deleted));
 
-  public async Task<MenuAddResult> CreateAsync(Menu menu, string createdBy)
+  public async Task<MenuAddResult> AddAsync(Menu menu, string createdBy)
       => await ExecuteAsync(async () =>
       {
         var existing = await _db.Menus

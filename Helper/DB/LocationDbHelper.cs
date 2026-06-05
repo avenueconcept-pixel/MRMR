@@ -46,11 +46,11 @@ public class LocationDbHelper : DbHelper
         return items.OrderBy(l => l.LocationName).ToList();
       });
 
-  public async Task<bool> IsLocationCodeExistsAsync(string locationCode, int excludeId = 0)
+  public async Task<bool> IsCodeExistsAsync(string locationCode, int excludeId = 0)
       => await ExecuteAsync(() => _db.Locations
           .AnyAsync(l => l.LocationCode == locationCode && l.Id != excludeId && l.Status != StatusConstants.Deleted));
 
-  public async Task<LocationAddResult> CreateAsync(Location location, string createdBy)
+  public async Task<LocationAddResult> AddAsync(Location location, string createdBy)
       => await ExecuteAsync(async () =>
       {
         var existing = await _db.Locations

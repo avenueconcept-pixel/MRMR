@@ -11,7 +11,7 @@ public class PasswordResetTokenDbHelper : DbHelper
 {
   public PasswordResetTokenDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory) : base(db, audit, loggerFactory) { }
 
-  public async Task<PasswordResetToken> CreateAsync(string userType, int userId)
+  public async Task<PasswordResetToken> AddAsync(string userType, int userId)
       => await ExecuteAsync(async () =>
       {
         var existing = await _db.PasswordResetTokens

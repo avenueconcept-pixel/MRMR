@@ -101,7 +101,7 @@ public class CreateModel : AdminPageModel
       Status       = ddlStatus
     };
 
-    var result = await _locationDbHelper.CreateAsync(location, CurrentUsername);
+    var result = await _locationDbHelper.AddAsync(location, CurrentUsername);
 
     if (result == LocationAddResult.DuplicateActive)
     {

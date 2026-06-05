@@ -76,7 +76,7 @@ namespace MyApp.Areas.Admin.Pages
           ? AppConstants.DefaultLanguage
           : adminUser.LastLoginLang;
 
-      var resetToken = await _tokenDbHelper.CreateAsync(UserTypeConstants.Admin, adminUser.Id);
+      var resetToken = await _tokenDbHelper.AddAsync(UserTypeConstants.Admin, adminUser.Id);
 
       var resetLink = Url.Page(
           "/ResetPassword",

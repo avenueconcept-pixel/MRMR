@@ -56,7 +56,7 @@ public class CreateModel : AdminPageModel
       Status       = ddlStatus
     };
 
-    await _languageDbHelper.CreateAsync(language, CurrentUsername);
+    await _languageDbHelper.AddAsync(language, CurrentUsername);
 
     AlertMessageType    = MessageType.Success;
     AlertMessageTitle   = MessageTitle.Success;

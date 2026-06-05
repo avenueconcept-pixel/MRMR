@@ -33,13 +33,13 @@ public class DepartmentDbHelper : DbHelper
   public async Task<Department?> GetByIdAsync(int id)
       => await ExecuteAsync<Department?>(async () => await _db.Departments.FindAsync(id));
 
-  public async Task<bool> IsDeptNameExistsAsync(string deptName, int excludeId = 0)
+  public async Task<bool> IsNameExistsAsync(string deptName, int excludeId = 0)
       => await ExecuteAsync<bool>(() => _db.Departments
           .AnyAsync(d => d.DeptName.ToLower() == deptName.Trim().ToLower()
                       && d.Id != excludeId
                       && d.Status != StatusConstants.Deleted));
 
-  public async Task<DeptAddResult> CreateAsync(Department dept, string createdBy)
+  public async Task<DeptAddResult> AddAsync(Department dept, string createdBy)
       => await ExecuteAsync<DeptAddResult>(async () =>
       {
         var existing = await _db.Departments

@@ -34,11 +34,11 @@ public class RoleDbHelper : DbHelper
           .Include(r => r.RolePermissions)
           .FirstOrDefaultAsync(r => r.Id == id && r.Status != StatusConstants.Deleted));
 
-  public async Task<bool> IsRoleCodeExistsAsync(string roleCode, int excludeId = 0)
+  public async Task<bool> IsCodeExistsAsync(string roleCode, int excludeId = 0)
       => await ExecuteAsync(() => _db.Roles
           .AnyAsync(r => r.RoleCode == roleCode && r.Id != excludeId && r.Status != StatusConstants.Deleted));
 
-  public async Task<RoleAddResult> CreateAsync(
+  public async Task<RoleAddResult> AddAsync(
       Role role,
       List<int> menuIds,
       List<(int PermissionId, bool IsGranted)> permissions,

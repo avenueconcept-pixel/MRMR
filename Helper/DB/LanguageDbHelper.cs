@@ -31,7 +31,7 @@ public class LanguageDbHelper : DbHelper
   public async Task<Language?> GetByIdAsync(int id)
       => await ExecuteAsync(async () => await _db.Languages.FindAsync(id));
 
-  public async Task CreateAsync(Language language, string createdBy)
+  public async Task AddAsync(Language language, string createdBy)
       => await ExecuteAsync(async () =>
       {
         var entity = new Language

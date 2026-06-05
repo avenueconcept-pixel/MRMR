@@ -82,7 +82,7 @@ public class CreateModel : AdminPageModel
       Status   = ddlStatus
     };
 
-    var result = await _menuDbHelper.CreateAsync(menu, CurrentUsername);
+    var result = await _menuDbHelper.AddAsync(menu, CurrentUsername);
 
     if (result == MenuAddResult.DuplicateActive)
     {

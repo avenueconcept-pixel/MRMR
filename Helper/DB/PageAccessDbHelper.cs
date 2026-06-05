@@ -67,50 +67,97 @@ public class PageAccessDbHelper
       int       pageSize)
       => await ExecuteAsync(async () =>
       {
-        var mainItems = await _auditDb.PageAccessHistories
+        // Apply all filters at DB level before loading — never load full table into memory
+        var mainQuery = _auditDb.PageAccessHistories.AsNoTracking()
             .Where(p =>
                 (string.IsNullOrEmpty(username)       || p.Username.Contains(username)) &&
                 (string.IsNullOrEmpty(systemType)     || p.SystemType == systemType) &&
                 (string.IsNullOrEmpty(pageUrlKeyword) || p.PageUrl.Contains(pageUrlKeyword)) &&
                 (startDate == null                    || p.AccessedAt >= startDate) &&
-                (endDate   == null                    || p.AccessedAt <= endDate))
-            .AsNoTracking()
-            .ToListAsync();
+                (endDate   == null                    || p.AccessedAt <= endDate));
 
-        var archiveRaw = await _auditDb.PageAccessHistoryArchives
+        var archiveQuery = _auditDb.PageAccessHistoryArchives.AsNoTracking()
             .Where(a =>
                 (string.IsNullOrEmpty(username)       || a.Username.Contains(username)) &&
                 (string.IsNullOrEmpty(systemType)     || a.SystemType == systemType) &&
                 (string.IsNullOrEmpty(pageUrlKeyword) || a.PageUrl.Contains(pageUrlKeyword)) &&
                 (startDate == null                    || a.AccessedAt >= startDate) &&
-                (endDate   == null                    || a.AccessedAt <= endDate))
-            .AsNoTracking()
-            .ToListAsync();
+                (endDate   == null                    || a.AccessedAt <= endDate));
 
-        var archiveItems = archiveRaw.Select(a => new PageAccessHistory
+        var mainCount    = await mainQuery.CountAsync();
+        var archiveCount = await archiveQuery.CountAsync();
+        var totalCount   = mainCount + archiveCount;
+
+        var skip = (page - 1) * pageSize;
+
+        List<PageAccessHistory> pagedItems;
+
+        if (skip < mainCount)
         {
-          Id           = a.Id,
-          SystemType   = a.SystemType,
-          UserId       = a.UserId,
-          Username     = a.Username,
-          FullName     = a.FullName,
-          SessionToken = a.SessionToken,
-          PageUrl      = a.PageUrl,
-          HttpMethod   = a.HttpMethod,
-          QueryString  = a.QueryString,
-          ResponseTime = a.ResponseTime,
-          AccessedAt   = a.AccessedAt
-        }).ToList();
+          // Current page starts within main table — take from main first, fill remainder from archive
+          var mainItems = await mainQuery
+              .OrderByDescending(p => p.AccessedAt)
+              .Skip(skip)
+              .Take(pageSize)
+              .ToListAsync();
 
-        var combined = mainItems.Concat(archiveItems)
-            .OrderByDescending(p => p.AccessedAt)
-            .ToList();
+          var remaining = pageSize - mainItems.Count;
+          if (remaining > 0)
+          {
+            var archiveRaw = await archiveQuery
+                .OrderByDescending(a => a.AccessedAt)
+                .Take(remaining)
+                .ToListAsync();
 
-        var totalCount = combined.Count;
-        var pagedItems = combined
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+            var archiveItems = archiveRaw.Select(a => new PageAccessHistory
+            {
+              Id           = a.Id,
+              SystemType   = a.SystemType,
+              UserId       = a.UserId,
+              Username     = a.Username,
+              FullName     = a.FullName,
+              SessionToken = a.SessionToken,
+              PageUrl      = a.PageUrl,
+              HttpMethod   = a.HttpMethod,
+              QueryString  = a.QueryString,
+              ResponseTime = a.ResponseTime,
+              AccessedAt   = a.AccessedAt
+            }).ToList();
+
+            pagedItems = mainItems.Concat(archiveItems)
+                .OrderByDescending(p => p.AccessedAt)
+                .ToList();
+          }
+          else
+          {
+            pagedItems = mainItems;
+          }
+        }
+        else
+        {
+          // Current page is entirely within archive table
+          var archiveSkip = skip - mainCount;
+          var archiveRaw  = await archiveQuery
+              .OrderByDescending(a => a.AccessedAt)
+              .Skip(archiveSkip)
+              .Take(pageSize)
+              .ToListAsync();
+
+          pagedItems = archiveRaw.Select(a => new PageAccessHistory
+          {
+            Id           = a.Id,
+            SystemType   = a.SystemType,
+            UserId       = a.UserId,
+            Username     = a.Username,
+            FullName     = a.FullName,
+            SessionToken = a.SessionToken,
+            PageUrl      = a.PageUrl,
+            HttpMethod   = a.HttpMethod,
+            QueryString  = a.QueryString,
+            ResponseTime = a.ResponseTime,
+            AccessedAt   = a.AccessedAt
+          }).ToList();
+        }
 
         return (pagedItems, totalCount);
       });

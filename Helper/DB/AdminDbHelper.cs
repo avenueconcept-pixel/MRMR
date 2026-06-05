@@ -67,7 +67,21 @@ public class AdminDbHelper : DbHelper
   public async Task UpdateAsync(AdminUser adminUser)
       => await ExecuteAsync(async () =>
       {
-        _db.AdminUsers.Update(adminUser);
+        var existing = await _db.AdminUsers.FindAsync(adminUser.Id);
+        if (existing == null) return;
+        existing.FullName             = adminUser.FullName;
+        existing.Email                = adminUser.Email;
+        existing.RoleId               = adminUser.RoleId;
+        existing.DeptId               = adminUser.DeptId;
+        existing.CountryCode          = adminUser.CountryCode;
+        existing.RegionId             = adminUser.RegionId;
+        existing.MobileCountryCode    = adminUser.MobileCountryCode;
+        existing.MobileNo             = adminUser.MobileNo;
+        existing.IsForceChangePassword = adminUser.IsForceChangePassword;
+        existing.ProfileImage         = adminUser.ProfileImage;
+        existing.Status               = adminUser.Status;
+        existing.UpdatedAt            = DateTime.UtcNow;
+        existing.UpdatedBy            = adminUser.UpdatedBy;
         await _db.SaveChangesAsync();
       });
 }
