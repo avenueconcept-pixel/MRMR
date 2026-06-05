@@ -21,7 +21,7 @@
 
 <div class="card">
   <div class="card-body">
-    <form method="post" asp-page-handler="Update">
+    <form method="post" asp-page-handler="Update" enctype="multipart/form-data">
 
       @* ── Basic Info ─────────────────────────────────── *@
       <div class="row g-4">
@@ -179,6 +179,113 @@
   </div>
 </div>
 
+@* ── Images card ─────────────────────────────────────────────────────── *@
+<div class="card mt-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">@await T.GetAsync("Products.Images.Title")</h5>
+    <small class="text-muted">@await T.GetAsync("Products.Images.DragHint")</small>
+  </div>
+  <div class="card-body">
+
+    @* Upload form *@
+    <form method="post" asp-page-handler="UploadImage"
+          asp-route-productCode="@Model.CurrentProductCode"
+          enctype="multipart/form-data">
+      @Html.AntiForgeryToken()
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small">@await T.GetAsync("Products.CountryAvailability")</label>
+          <select name="ddlImageCountry" class="form-select">
+            <option value="">@await T.GetAsync("Products.Images.SelectCountry")</option>
+            @foreach (var item in Model.ImageCountryList)
+            {
+              <option value="@item.Value">@item.Text</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">@await T.GetAsync("Products.Images.SelectLanguage")</label>
+          <select name="ddlImageLanguage" class="form-select">
+            <option value="">@await T.GetAsync("Products.Images.SelectLanguage")</option>
+            @foreach (var item in Model.ImageLanguageList)
+            {
+              <option value="@item.Value">@item.Text</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">@await T.GetAsync("Products.Images.Upload")</label>
+          <input type="file" name="fileProductImage" class="form-control"
+                 accept=".jpg,.jpeg,.png"
+                 data-crop="true"
+                 data-crop-ratio="1"
+                 data-crop-output-width="800"
+                 data-crop-output-height="800"
+                 data-crop-preview="#imgUploadPreview" />
+          <img id="imgUploadPreview" src="" alt=""
+               style="display:none;height:80px;width:80px;object-fit:cover;border-radius:6px;margin-top:8px;" />
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="ri ri-upload-line me-1"></i>@await T.GetAsync("Products.Images.Upload")
+          </button>
+        </div>
+      </div>
+    </form>
+
+    @* Image grid *@
+    @if (Model.ProductImages.Count == 0)
+    {
+      <p class="text-muted small mt-3">@await T.GetAsync("Products.Images.Subtitle")</p>
+    }
+    else
+    {
+      <div id="imageGrid" class="row g-3 mt-2">
+        @foreach (var img in Model.ProductImages)
+        {
+          <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6" data-id="@img.Id">
+            <div class="card h-100 @(img.IsPrimary ? "border-primary border-2" : "")">
+              <img src="/uploads/product/@img.ImageFilename"
+                   class="card-img-top" style="height:120px;object-fit:cover;cursor:grab;" />
+              <div class="card-body p-2 text-center">
+                <small class="text-muted d-block">
+                  @(img.Country?.Translations.FirstOrDefault()?.CountryName ?? img.CountryCode)
+                  / @img.LanguageCode
+                </small>
+                @if (img.IsPrimary)
+                {
+                  <span class="badge bg-primary mt-1">@await T.GetAsync("Products.Images.Primary")</span>
+                }
+              </div>
+              <div class="card-footer p-1 d-flex gap-1 justify-content-center">
+                @if (!img.IsPrimary)
+                {
+                  <form method="post"
+                        asp-page-handler="SetPrimaryImage"
+                        asp-route-imageId="@img.Id"
+                        asp-route-productCode="@Model.CurrentProductCode">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-primary"
+                            title="@await T.GetAsync("Products.Images.SetPrimary")">
+                      <i class="ri ri-star-line"></i>
+                    </button>
+                  </form>
+                }
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        onclick="confirmDeleteImage(@img.Id, '@Html.Raw(Model.CurrentProductCode)')"
+                        title="@await T.GetAsync("Btn.Delete")">
+                  <i class="ri ri-delete-bin-line"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>
+
 @* Hidden form supplies antiforgery token for AJAX calls *@
 <form id="formAjax" method="post">
   @Html.AntiForgeryToken()
@@ -187,6 +294,7 @@
 @section VendorScripts {
   <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
   <script src="~/vendor/libs/select2/select2.dist.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 }
 
 @section PageScripts {
@@ -247,6 +355,54 @@
       }
     });
   });
+
+  @if (Model.ProductImages.Count > 0)
+  {
+    <text>
+  var imageGrid = document.getElementById('imageGrid');
+  if (imageGrid) {
+    new Sortable(imageGrid, {
+      animation: 150,
+      onEnd: function () {
+        var items = Array.from(imageGrid.querySelectorAll('[data-id]')).map(function (el, i) {
+          return { id: parseInt(el.dataset.id), sortOrder: i };
+        });
+        fetch('?handler=SaveImageSort', {
+          method:  'POST',
+          headers: {
+            'Content-Type':              'application/json',
+            'RequestVerificationToken':  document.querySelector('#formAjax input[name="__RequestVerificationToken"]').value
+          },
+          body: JSON.stringify(items)
+        });
+      }
+    });
+  }
+    </text>
+  }
+
+  async function confirmDeleteImage(imageId, productCode) {
+    var result = await Swal.fire({
+      icon: 'warning',
+      title: pageMsg.deleteConfirmTitle,
+      text:  pageMsg.deleteConfirmText,
+      showCancelButton:   true,
+      confirmButtonText:  pageMsg.deleteConfirmBtn,
+      cancelButtonText:   pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    });
+    if (!result.isConfirmed) return;
+    var form  = document.createElement('form');
+    form.method = 'post';
+    form.action = '?handler=DeleteImage&imageId=' + imageId + '&productCode=' + encodeURIComponent(productCode);
+    var token = document.createElement('input');
+    token.type  = 'hidden';
+    token.name  = '__RequestVerificationToken';
+    token.value = document.querySelector('#formAjax input[name="__RequestVerificationToken"]').value;
+    form.appendChild(token);
+    document.body.appendChild(form);
+    form.submit();
+  }
 
   document.addEventListener("DOMContentLoaded", function () {
     var messageType = '@Model.AlertMessageType';

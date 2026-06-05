@@ -925,17 +925,24 @@ public class AppDbContext : DbContext
       entity.HasKey(e => e.Id);
       entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
       entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.ImageFilename).HasColumnName("image_filename").HasMaxLength(255).IsRequired();
+      entity.Property(e => e.ImageFilename).HasColumnName("image_filename").HasMaxLength(200).IsRequired();
       entity.Property(e => e.SortOrder).HasColumnName("sort_order");
       entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
 
+      entity.HasOne(e => e.Product)
+            .WithMany(p => p.Images)
+            .HasForeignKey(e => e.ProductCode)
+            .HasPrincipalKey(p => p.ProductCode)
+            .OnDelete(DeleteBehavior.Cascade);
+
       entity.HasOne(e => e.Country)
             .WithMany()
             .HasForeignKey(e => e.CountryCode)
+            .HasPrincipalKey(c => c.CountryCode)
             .OnDelete(DeleteBehavior.Restrict);
     });
 

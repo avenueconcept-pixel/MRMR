@@ -17,13 +17,18 @@ public class EditModel : AdminPageModel
   private readonly LanguageDbHelper        _languageDbHelper;
   private readonly UomDbHelper             _uomDbHelper;
   private readonly TranslationService      _translation;
+  private readonly IWebHostEnvironment     _env;
+  private readonly IConfiguration          _config;
 
-  [BindProperty] public string  ddlProductType   { get; set; } = string.Empty;
-  [BindProperty] public string  ddlProductNature { get; set; } = string.Empty;
-  [BindProperty] public string  ddlUom           { get; set; } = string.Empty;
-  [BindProperty] public decimal txtPv            { get; set; }
-  [BindProperty] public int     txtSortOrder     { get; set; }
-  [BindProperty] public string  ddlStatus        { get; set; } = StatusConstants.Active;
+  [BindProperty] public string     ddlProductType    { get; set; } = string.Empty;
+  [BindProperty] public string     ddlProductNature  { get; set; } = string.Empty;
+  [BindProperty] public string     ddlUom            { get; set; } = string.Empty;
+  [BindProperty] public decimal    txtPv             { get; set; }
+  [BindProperty] public int        txtSortOrder      { get; set; }
+  [BindProperty] public string     ddlStatus         { get; set; } = StatusConstants.Active;
+  [BindProperty] public IFormFile? fileProductImage  { get; set; }
+  [BindProperty] public string     ddlImageCountry   { get; set; } = string.Empty;
+  [BindProperty] public string     ddlImageLanguage  { get; set; } = string.Empty;
 
   public string CurrentProductCode { get; set; } = string.Empty;
 
@@ -36,6 +41,10 @@ public class EditModel : AdminPageModel
   public List<SelectListItem>             ProductNatureOptions { get; set; } = new();
   public List<SelectListItem>             StatusOptions        { get; set; } = new();
   public List<SelectListItem>             StockStatusOptions   { get; set; } = new();
+
+  public List<ProductImage>   ProductImages     { get; set; } = new();
+  public List<SelectListItem> ImageCountryList  { get; set; } = new();
+  public List<SelectListItem> ImageLanguageList { get; set; } = new();
 
   public string   CreatedBy { get; set; } = string.Empty;
   public DateTime CreatedAt { get; set; }
@@ -56,7 +65,9 @@ public class EditModel : AdminPageModel
       CountryDbHelper         countryDbHelper,
       LanguageDbHelper        languageDbHelper,
       UomDbHelper             uomDbHelper,
-      TranslationService      translation)
+      TranslationService      translation,
+      IWebHostEnvironment     env,
+      IConfiguration          config)
   {
     _productDbHelper  = productDbHelper;
     _categoryDbHelper = categoryDbHelper;
@@ -64,6 +75,8 @@ public class EditModel : AdminPageModel
     _languageDbHelper = languageDbHelper;
     _uomDbHelper      = uomDbHelper;
     _translation      = translation;
+    _env              = env;
+    _config           = config;
   }
 
   public async Task<IActionResult> OnGetAsync(string productCode)
@@ -102,6 +115,9 @@ public class EditModel : AdminPageModel
     MsgDeleteSuccess      = await _translation.GetAsync(MessageConstants.DeleteSuccess);
     MsgDeleteError        = await _translation.GetAsync(MessageConstants.DeleteError);
     LabelDelete           = await _translation.GetAsync("Btn.Delete");
+
+    ProductImages = await _productDbHelper.GetImagesAsync(productCode);
+    await PopulateImageDropdownsAsync();
 
     return Page();
   }
@@ -259,5 +275,157 @@ public class EditModel : AdminPageModel
         StockStatus = Request.Form[$"countryStock_{c.CountryCode}"].FirstOrDefault() ?? StockStatusConstants.Available
       };
     }).ToList();
+  }
+
+  // ── Image handlers ────────────────────────────────────────────────────────
+
+  public async Task<IActionResult> OnPostUploadImageAsync(string productCode)
+  {
+    CurrentProductCode = productCode;
+
+    if (fileProductImage == null || fileProductImage.Length == 0)
+    {
+      SetError(await _translation.GetAsync(MessageConstants.RequiredField));
+      return await ReloadPageAsync(productCode);
+    }
+
+    var ext = Path.GetExtension(fileProductImage.FileName).ToLower();
+    if (ext is not (".jpg" or ".jpeg" or ".png"))
+    {
+      SetError(await _translation.GetAsync("Products.Images.Error.InvalidFileType"));
+      return await ReloadPageAsync(productCode);
+    }
+
+    if (fileProductImage.Length > 2 * 1024 * 1024)
+    {
+      SetError(await _translation.GetAsync("Products.Images.Error.FileTooLarge"));
+      return await ReloadPageAsync(productCode);
+    }
+
+    if (string.IsNullOrWhiteSpace(ddlImageCountry))
+    {
+      SetError(await _translation.GetAsync("Products.Images.Error.SelectCountry"));
+      return await ReloadPageAsync(productCode);
+    }
+
+    if (string.IsNullOrWhiteSpace(ddlImageLanguage))
+    {
+      SetError(await _translation.GetAsync("Products.Images.Error.SelectLanguage"));
+      return await ReloadPageAsync(productCode);
+    }
+
+    var relPath  = _config["UploadPaths:Product"] ?? "uploads/product";
+    var fullPath = Path.Combine(_env.WebRootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
+    Directory.CreateDirectory(fullPath);
+
+    var filename = $"{Guid.NewGuid():N}{ext}";
+    using (var stream = System.IO.File.Create(Path.Combine(fullPath, filename)))
+      await fileProductImage.CopyToAsync(stream);
+
+    var nextSort = (await _productDbHelper.GetImagesAsync(productCode)).Count;
+
+    await _productDbHelper.AddImageAsync(new ProductImage
+    {
+      ProductCode   = productCode,
+      CountryCode   = ddlImageCountry,
+      LanguageCode  = ddlImageLanguage,
+      ImageFilename = filename,
+      SortOrder     = nextSort,
+      IsPrimary     = false
+    }, CurrentUsername);
+
+    AlertMessageType    = MessageType.Success;
+    AlertMessageTitle   = MessageTitle.Success;
+    AlertMessageContent = await _translation.GetAsync(MessageConstants.SaveSuccess);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostDeleteImageAsync(int imageId, string productCode)
+  {
+    var images = await _productDbHelper.GetImagesAsync(productCode);
+    var img    = images.FirstOrDefault(i => i.Id == imageId);
+    if (img != null && !string.IsNullOrEmpty(img.ImageFilename))
+    {
+      var relPath  = _config["UploadPaths:Product"] ?? "uploads/product";
+      var filePath = Path.Combine(
+          _env.WebRootPath,
+          relPath.Replace('/', Path.DirectorySeparatorChar),
+          img.ImageFilename);
+      if (System.IO.File.Exists(filePath))
+        System.IO.File.Delete(filePath);
+    }
+
+    await _productDbHelper.DeleteImageAsync(imageId);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostSetPrimaryImageAsync(int imageId, string productCode)
+  {
+    await _productDbHelper.SetPrimaryImageAsync(productCode, imageId);
+    return RedirectToPage(Routes.AdminProductsEdit, new { productCode });
+  }
+
+  public async Task<IActionResult> OnPostSaveImageSortAsync([FromBody] List<ImageSortItem> items)
+  {
+    try
+    {
+      await _productDbHelper.UpdateImageSortAsync(items.Select(i => i.Id).ToList(), CurrentUsername);
+      return new JsonResult(new { success = true });
+    }
+    catch
+    {
+      return new JsonResult(new { success = false });
+    }
+  }
+
+  private async Task<IActionResult> ReloadPageAsync(string productCode)
+  {
+    var product = await _productDbHelper.GetByCodeAsync(productCode);
+    if (product != null)
+    {
+      SelectedCategoryCodes = product.CategoryMaps.Select(m => m.CategoryCode).ToList();
+      await PopulateDropdownsAsync();
+      TranslationInputs = await BuildTranslationInputsAsync(product.Translations.ToList());
+      CountrySelections = await BuildCountrySelectionsAsync(product.Countries.ToList());
+      ProductImages     = await _productDbHelper.GetImagesAsync(productCode);
+      CreatedBy = product.CreatedBy; CreatedAt = product.CreatedAt;
+      UpdatedBy = product.UpdatedBy; UpdatedAt = product.UpdatedAt;
+      var entityName        = product.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.ProductName ?? productCode;
+      MsgDeleteConfirmTitle = $"{await _translation.GetAsync("Confirm.DeleteTitle")} {entityName}";
+      MsgDeleteConfirmText  = await _translation.GetAsync("Confirm.DeleteText");
+      MsgDeleteConfirmBtn   = await _translation.GetAsync("Btn.YesDelete");
+      MsgCancelBtn          = await _translation.GetAsync("Btn.Cancel");
+      MsgDeleteSuccess      = await _translation.GetAsync(MessageConstants.DeleteSuccess);
+      MsgDeleteError        = await _translation.GetAsync(MessageConstants.DeleteError);
+      LabelDelete           = await _translation.GetAsync("Btn.Delete");
+    }
+    await PopulateImageDropdownsAsync();
+    return Page();
+  }
+
+  private async Task PopulateImageDropdownsAsync()
+  {
+    var langCode   = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    var countries  = await _countryDbHelper.GetAllActiveAsync(langCode);
+    var languages  = await _languageDbHelper.GetAllActiveAsync();
+
+    ImageCountryList = countries.Select(c => new SelectListItem
+    {
+      Value = c.CountryCode,
+      Text  = c.Translations.FirstOrDefault()?.CountryName ?? c.CountryCode
+    }).ToList();
+
+    ImageLanguageList = languages.Select(l => new SelectListItem
+    {
+      Value = l.LanguageCode,
+      Text  = l.LanguageName
+    }).ToList();
+  }
+
+  private void SetError(string message)
+  {
+    AlertMessageType    = MessageType.Error;
+    AlertMessageTitle   = MessageTitle.Error;
+    AlertMessageContent = message;
   }
 }

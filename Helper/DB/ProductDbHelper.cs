@@ -269,16 +269,22 @@ public class ProductDbHelper : DbHelper
         await _db.SaveChangesAsync();
       });
 
-  public async Task SetPrimaryImageAsync(int imageId, string productCode, string countryCode, string languageCode, string updatedBy)
+  public async Task SetPrimaryImageAsync(string productCode, int imageId)
       => await ExecuteAsync(async () =>
       {
         var images = await _db.ProductImages
-            .Where(i => i.ProductCode == productCode && i.CountryCode == countryCode && i.LanguageCode == languageCode)
+            .Where(i => i.ProductCode == productCode)
             .ToListAsync();
-
         foreach (var img in images)
           img.IsPrimary = img.Id == imageId;
-
         await _db.SaveChangesAsync();
       });
+
+  public async Task<List<ProductImage>> GetImagesAsync(string productCode)
+      => await ExecuteAsync(async () =>
+          await _db.ProductImages
+              .Where(i => i.ProductCode == productCode)
+              .Include(i => i.Country)
+              .OrderBy(i => i.SortOrder)
+              .ToListAsync());
 }

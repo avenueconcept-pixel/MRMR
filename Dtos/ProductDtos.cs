@@ -18,6 +18,12 @@ public class CountrySelectionDto
   public string StockStatus { get; set; } = StockStatusConstants.Available;
 }
 
+public class ImageSortItem
+{
+  public int Id        { get; set; }
+  public int SortOrder { get; set; }
+}
+
 public static class ProductTypeConstants
 {
   public const string Standard = "standard";
