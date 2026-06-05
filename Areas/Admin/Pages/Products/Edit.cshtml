@@ -740,6 +740,81 @@
   </div>
 </div>
 
+@* ── Components card (package products only) ──────────────────────────── *@
+@if (Model.ProductType == ProductTypeConstants.Package)
+{
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Products.Tabs.Components")</h5>
+  </div>
+  <div class="card-body">
+
+    @* ── Add component ────────────────────────────────────────────────── *@
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label class="form-label">@await T.GetAsync("Products.Components.SelectProduct")</label>
+        <select id="ddlComponentCode" name="ddlComponentCode" class="form-select"
+                data-placeholder="@await T.GetAsync("Products.Components.SearchPlaceholder")">
+          <option value=""></option>
+          @foreach (var opt in Model.ComponentOptions)
+          {
+            <option value="@opt.Value">@opt.Text</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">@await T.GetAsync("Products.Components.Quantity")</label>
+        <input type="number" id="txtComponentQty" name="txtComponentQty"
+               class="form-control" value="1" min="1" />
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="button" id="btnAddComponent" class="btn btn-primary w-100">
+          <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Btn.Add")
+        </button>
+      </div>
+    </div>
+
+    @* ── Component list ───────────────────────────────────────────────── *@
+    @if (!Model.PackageItems.Any())
+    {
+      <p class="text-muted text-center py-3">@await T.GetAsync("Products.Components.Empty")</p>
+    }
+    else
+    {
+      <table class="table table-hover align-middle" id="tblComponents">
+        <thead>
+          <tr>
+            <th style="width:40px;"></th>
+            <th>@await T.GetAsync("Products.Components.ProductName")</th>
+            <th>@await T.GetAsync("Products.Components.ProductCode")</th>
+            <th style="width:120px;">@await T.GetAsync("Products.Components.Quantity")</th>
+            <th style="width:80px;"></th>
+          </tr>
+        </thead>
+        <tbody id="componentList">
+          @foreach (var item in Model.PackageItems)
+          {
+            <tr data-id="@item.Id">
+              <td><i class="ri ri-drag-move-line text-muted" style="cursor:grab;"></i></td>
+              <td>@item.ComponentName</td>
+              <td><code>@item.ComponentCode</code></td>
+              <td>@item.Quantity</td>
+              <td>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-component"
+                        data-id="@item.Id">
+                  <i class="ri ri-delete-bin-line"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+  </div>
+</div>
+}
+
 @* Edit Price modal *@
 <div class="modal fade" id="modalEditPrice" tabindex="-1">
   <div class="modal-dialog modal-sm">
@@ -1001,6 +1076,80 @@
     form.appendChild(token);
     document.body.appendChild(form);
     form.submit();
+  }
+
+  @* ── Package Components JS ─────────────────────────────────────────────── *@
+  @if (Model.ProductType == ProductTypeConstants.Package)
+  {
+    <text>
+  (function () {
+    var productCode = '@Html.Raw(Model.CurrentProductCode)';
+    var token = $('#formAjax input[name="__RequestVerificationToken"]').val();
+
+    $('#ddlComponentCode').select2({
+      placeholder: '@await T.GetAsync("Products.Components.SearchPlaceholder")',
+      allowClear: true,
+      width: '100%'
+    });
+
+    var componentList = document.getElementById('componentList');
+    if (componentList) {
+      new Sortable(componentList, {
+        handle:    '.ri-drag-move-line',
+        animation: 150,
+        onEnd: function () {
+          var order = [];
+          $('#componentList tr').each(function (i) {
+            order.push({ id: parseInt($(this).data('id')), sortOrder: i + 1 });
+          });
+          fetch('?handler=SavePackageItemSort&productCode=' + encodeURIComponent(productCode), {
+            method:  'POST',
+            headers: {
+              'Content-Type':             'application/json',
+              'RequestVerificationToken': token
+            },
+            body: JSON.stringify(order)
+          });
+        }
+      });
+    }
+
+    $('#btnAddComponent').on('click', function () {
+      var componentCode = $('#ddlComponentCode').val();
+      var qty           = parseInt($('#txtComponentQty').val()) || 1;
+      if (!componentCode) {
+        Swal.fire({ icon: 'warning', text: '@await T.GetAsync("Products.Components.SelectRequired")' });
+        return;
+      }
+      $.post('?handler=AddPackageItem&productCode=' + encodeURIComponent(productCode), {
+        __RequestVerificationToken: token,
+        ddlComponentCode: componentCode,
+        txtComponentQty:  qty
+      }, function (data) {
+        if (data.success) {
+          location.reload();
+        } else {
+          Swal.fire({ icon: 'error', text: data.message });
+        }
+      }).fail(function () {
+        Swal.fire({ icon: 'error', text: '@Html.Raw(Model.MsgDeleteError)' });
+      });
+    });
+
+    $(document).on('click', '.btn-remove-component', function () {
+      var itemId = $(this).data('id');
+      $.post('?handler=DeletePackageItem&itemId=' + itemId + '&productCode=' + encodeURIComponent(productCode), {
+        __RequestVerificationToken: token
+      }, function (data) {
+        if (data.success) {
+          location.reload();
+        } else {
+          Swal.fire({ icon: 'error', text: data.message });
+        }
+      });
+    });
+  })();
+    </text>
   }
 
   document.addEventListener("DOMContentLoaded", function () {

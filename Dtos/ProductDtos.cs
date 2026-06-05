@@ -109,6 +109,21 @@ public class SectionSortItem
   public int SortOrder { get; set; }
 }
 
+public class PackageItemRowDto
+{
+  public int    Id            { get; set; }
+  public string ComponentCode { get; set; } = string.Empty;
+  public string ComponentName { get; set; } = string.Empty;
+  public int    Quantity      { get; set; }
+  public int    SortOrder     { get; set; }
+}
+
+public class PackageItemSortItem
+{
+  public int Id        { get; set; }
+  public int SortOrder { get; set; }
+}
+
 public static class PriceChangeTypeConstants
 {
   public const string PriceAdjustment = "price_adjustment";

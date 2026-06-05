@@ -185,6 +185,62 @@ public class ProductDbHelper : DbHelper
         await _db.SaveChangesAsync();
       });
 
+  // ── Package items ─────────────────────────────────────────────────────────
+
+  public async Task<List<ProductPackageItem>> GetPackageItemsAsync(string packageCode)
+      => await ExecuteAsync(async () =>
+          await _db.ProductPackageItems
+              .Where(p => p.PackageProductCode == packageCode)
+              .Include(p => p.ItemProduct).ThenInclude(c => c!.Translations)
+              .OrderBy(p => p.SortOrder)
+              .ToListAsync());
+
+  public async Task AddPackageItemAsync(ProductPackageItem item)
+      => await ExecuteAsync(async () =>
+      {
+        var maxSort = await _db.ProductPackageItems
+            .Where(p => p.PackageProductCode == item.PackageProductCode)
+            .MaxAsync(p => (int?)p.SortOrder) ?? 0;
+        item.SortOrder = maxSort + 1;
+        _db.ProductPackageItems.Add(item);
+        await _db.SaveChangesAsync();
+      });
+
+  public async Task DeletePackageItemAsync(int id)
+      => await ExecuteAsync(async () =>
+      {
+        var item = await _db.ProductPackageItems.FindAsync(id);
+        if (item != null)
+        {
+          _db.ProductPackageItems.Remove(item);
+          await _db.SaveChangesAsync();
+        }
+      });
+
+  public async Task SavePackageItemSortAsync(List<PackageItemSortItem> items)
+      => await ExecuteAsync(async () =>
+      {
+        foreach (var s in items)
+        {
+          var item = await _db.ProductPackageItems.FindAsync(s.Id);
+          if (item != null) item.SortOrder = s.SortOrder;
+        }
+        await _db.SaveChangesAsync();
+      });
+
+  public async Task<List<Product>> GetAllActiveNonPackageAsync(string languageCode)
+      => await ExecuteAsync(async () =>
+      {
+        var items = await _db.Products
+            .Where(p => p.Status == StatusConstants.Active
+                     && p.ProductType != ProductTypeConstants.Package)
+            .Include(p => p.Translations.Where(t => t.LanguageCode == languageCode))
+            .ToListAsync();
+        return items
+            .OrderBy(p => p.Translations.FirstOrDefault()?.ProductName ?? p.ProductCode)
+            .ToList();
+      });
+
   public async Task<List<ProductSection>> GetSectionsAsync(string productCode)
       => await ExecuteAsync(async () =>
           await _db.ProductSections

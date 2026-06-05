@@ -49,6 +49,9 @@ public class EditModel : AdminPageModel
   [BindProperty] public int        txtSectionSort     { get; set; }
   [BindProperty] public int        txtSectionId       { get; set; }
 
+  [BindProperty] public string     ddlComponentCode   { get; set; } = string.Empty;
+  [BindProperty] public int        txtComponentQty    { get; set; } = 1;
+
   public string CurrentProductCode { get; set; } = string.Empty;
 
   public List<string>                    SelectedCategoryCodes { get; set; } = new();
@@ -80,6 +83,10 @@ public class EditModel : AdminPageModel
   public List<ProductSectionRowDto>       ProductSections    { get; set; } = new();
   public List<SelectListItem>             SectionTypeOptions { get; set; } = new();
   public List<SectionTranslationInputDto> SectionInputs      { get; set; } = new();
+
+  public string                  ProductType       { get; set; } = string.Empty;
+  public List<PackageItemRowDto> PackageItems      { get; set; } = new();
+  public List<SelectListItem>    ComponentOptions  { get; set; } = new();
 
   public string   CreatedBy { get; set; } = string.Empty;
   public DateTime CreatedAt { get; set; }
@@ -130,6 +137,7 @@ public class EditModel : AdminPageModel
     }
 
     CurrentProductCode    = product.ProductCode;
+    ProductType           = product.ProductType;
     ddlProductType        = product.ProductType;
     ddlProductNature      = product.ProductNature;
     ddlUom                = product.UomCode;
@@ -202,6 +210,12 @@ public class EditModel : AdminPageModel
 
     await PopulateSectionTypeOptionsAsync();
     SectionInputs = await BuildSectionInputsAsync(null);
+
+    if (product.ProductType == ProductTypeConstants.Package)
+    {
+      PackageItems = await BuildPackageItemsAsync(productCode);
+      await PopulateComponentOptionsAsync(productCode);
+    }
 
     return Page();
   }
@@ -627,6 +641,63 @@ public class EditModel : AdminPageModel
     }
   }
 
+  // ── Package item handlers ─────────────────────────────────────────────────
+
+  public async Task<IActionResult> OnPostAddPackageItemAsync(string productCode)
+  {
+    try
+    {
+      if (string.IsNullOrEmpty(ddlComponentCode))
+      {
+        var errMsg = await _translation.GetAsync(MessageConstants.SaveError);
+        return new JsonResult(new { success = false, message = errMsg });
+      }
+      var item = new ProductPackageItem
+      {
+        PackageProductCode = productCode,
+        ItemProductCode    = ddlComponentCode,
+        Quantity           = txtComponentQty < 1 ? 1 : txtComponentQty
+      };
+      await _productDbHelper.AddPackageItemAsync(item);
+      var msg = await _translation.GetAsync(MessageConstants.SaveSuccess);
+      return new JsonResult(new { success = true, message = msg });
+    }
+    catch
+    {
+      var msg = await _translation.GetAsync(MessageConstants.SaveError);
+      return new JsonResult(new { success = false, message = msg });
+    }
+  }
+
+  public async Task<IActionResult> OnPostDeletePackageItemAsync(int itemId, string productCode)
+  {
+    try
+    {
+      await _productDbHelper.DeletePackageItemAsync(itemId);
+      var msg = await _translation.GetAsync(MessageConstants.DeleteSuccess);
+      return new JsonResult(new { success = true, message = msg });
+    }
+    catch
+    {
+      var msg = await _translation.GetAsync(MessageConstants.DeleteError);
+      return new JsonResult(new { success = false, message = msg });
+    }
+  }
+
+  public async Task<IActionResult> OnPostSavePackageItemSortAsync([FromBody] List<PackageItemSortItem> items)
+  {
+    try
+    {
+      await _productDbHelper.SavePackageItemSortAsync(items);
+      return new JsonResult(new { success = true });
+    }
+    catch
+    {
+      var msg = await _translation.GetAsync(MessageConstants.SaveError);
+      return new JsonResult(new { success = false, message = msg });
+    }
+  }
+
   public async Task<IActionResult> OnPostSaveImageSortAsync([FromBody] List<ImageSortItem> items)
   {
     try
@@ -645,6 +716,7 @@ public class EditModel : AdminPageModel
     var product = await _productDbHelper.GetByCodeAsync(productCode);
     if (product != null)
     {
+      ProductType           = product.ProductType;
       SelectedCategoryCodes = product.CategoryMaps.Select(m => m.CategoryCode).ToList();
       await PopulateDropdownsAsync();
       TranslationInputs = await BuildTranslationInputsAsync(product.Translations.ToList());
@@ -704,6 +776,12 @@ public class EditModel : AdminPageModel
     }).ToList();
     await PopulateSectionTypeOptionsAsync();
     SectionInputs = await BuildSectionInputsAsync(null);
+
+    if (ProductType == ProductTypeConstants.Package)
+    {
+      PackageItems = await BuildPackageItemsAsync(productCode);
+      await PopulateComponentOptionsAsync(productCode);
+    }
 
     return Page();
   }
@@ -770,6 +848,37 @@ public class EditModel : AdminPageModel
       VariantCode = t.VariantCode,
       Price       = t.Price
     }).ToList();
+  }
+
+  private async Task<List<PackageItemRowDto>> BuildPackageItemsAsync(string packageCode)
+  {
+    var langCode = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    var items    = await _productDbHelper.GetPackageItemsAsync(packageCode);
+    return items.Select(i => new PackageItemRowDto
+    {
+      Id            = i.Id,
+      ComponentCode = i.ItemProductCode,
+      ComponentName = i.ItemProduct?.Translations.FirstOrDefault(t => t.LanguageCode == langCode)?.ProductName
+                      ?? i.ItemProduct?.Translations.FirstOrDefault()?.ProductName
+                      ?? i.ItemProductCode,
+      Quantity      = i.Quantity,
+      SortOrder     = i.SortOrder
+    }).ToList();
+  }
+
+  private async Task PopulateComponentOptionsAsync(string excludePackageCode)
+  {
+    var langCode      = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    var products      = await _productDbHelper.GetAllActiveNonPackageAsync(langCode);
+    var existingCodes = PackageItems.Select(p => p.ComponentCode).ToHashSet();
+
+    ComponentOptions = products
+        .Where(p => p.ProductCode != excludePackageCode && !existingCodes.Contains(p.ProductCode))
+        .Select(p => new SelectListItem
+        {
+          Value = p.ProductCode,
+          Text  = $"{p.Translations.FirstOrDefault()?.ProductName ?? p.ProductCode} ({p.ProductCode})"
+        }).ToList();
   }
 
   private async Task PopulateSectionTypeOptionsAsync()
