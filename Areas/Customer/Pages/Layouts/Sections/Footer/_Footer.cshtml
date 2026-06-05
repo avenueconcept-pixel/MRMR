@@ -1,0 +1,13 @@
+@inject MyApp.Services.AppSettingsService _customerFooterSvc
+@{
+  var customerFooter = await _customerFooterSvc.GetAsync("customer", "footer_text");
+}
+
+@if (!string.IsNullOrEmpty(customerFooter))
+{
+  <footer class="content-footer footer bg-footer-theme">
+    <div class="container py-3 footer-custom-text">
+      @Html.Raw(customerFooter)
+    </div>
+  </footer>
+}

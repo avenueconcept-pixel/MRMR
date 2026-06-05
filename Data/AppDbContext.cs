@@ -45,6 +45,7 @@ public class AppDbContext : DbContext
   public DbSet<MaintenanceSchedule>        MaintenanceSchedules        => Set<MaintenanceSchedule>();
   public DbSet<MaintenanceScheduleSystem>  MaintenanceScheduleSystems  => Set<MaintenanceScheduleSystem>();
   public DbSet<MaintenanceScheduleMessage> MaintenanceScheduleMessages => Set<MaintenanceScheduleMessage>();
+  public DbSet<AppSetting>                 AppSettings                 => Set<AppSetting>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -663,6 +664,21 @@ public class AppDbContext : DbContext
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10);
       entity.Property(e => e.Message).HasColumnName("message");
       entity.HasIndex(e => new { e.MaintenanceId, e.LanguageCode }).IsUnique();
+    });
+
+    // AppSetting
+    modelBuilder.Entity<AppSetting>(entity =>
+    {
+      entity.ToTable("app_settings");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.SystemCode).HasColumnName("system_code").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.SettingKey).HasColumnName("setting_key").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.SettingValue).HasColumnName("setting_value").IsRequired();
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => new { e.SystemCode, e.SettingKey }).IsUnique();
     });
 
     // Customer

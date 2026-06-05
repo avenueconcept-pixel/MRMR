@@ -36,6 +36,7 @@ public class Routes
   public const string AdminAnnouncementsList    = "/Announcements/List";
   public const string AdminSystems              = "/Systems/Index";
   public const string AdminMaintenances         = "/Maintenances/Index";
+  public const string AdminSystemBranding       = "/SystemSettings/Branding/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

@@ -8,6 +8,7 @@
 }
 
 @inject IHttpContextAccessor httpContextAccessor
+@inject MyApp.Services.AppSettingsService _brandingSvc
 
 <!DOCTYPE html>
 <html lang="en" class="@(ViewData["navbarType"] is string navbarType ? navbarType : "")
@@ -22,10 +23,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
 
   @{
-    string title = ViewData["title"] as string ?? "";
-    string appName = TempData.Peek("appName") as string ?? "";
+    string title       = ViewData["title"] as string ?? "";
+    string appName     = TempData.Peek("appName") as string ?? "";
+    string brandLogo   = await _brandingSvc.GetAsync("global", "logo_path");
+    string adminSysName = await _brandingSvc.GetAsync("admin", "system_name");
+    if (!string.IsNullOrEmpty(adminSysName)) appName = adminSysName;
   }
-  <title>@title | @appName - Asp.Net Core Admin Template</title>
+  <title>@title | @appName</title>
   <meta name="description" content="@TempData.Peek("description")" />
   <meta name="keywords" content="@TempData.Peek("keywords")" />
   <meta property="og:title" content="@TempData.Peek("ogTitle")" />
@@ -37,7 +41,14 @@
   <link rel="canonical" href="@TempData.Peek("productPage")" />
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="~/img/favicon/favicon.ico" />
+  @if (!string.IsNullOrEmpty(brandLogo))
+  {
+    <link rel="icon" type="image/png" href="/uploads/branding/@brandLogo" />
+  }
+  else
+  {
+    <link rel="icon" type="image/x-icon" href="~/img/favicon/favicon.ico" />
+  }
 
   <!-- Core Styles -->
   @await Html.PartialAsync("Layouts/Sections/_Styles" + ViewData["frontVar"])

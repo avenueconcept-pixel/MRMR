@@ -1,8 +1,10 @@
 @page
 @model MyApp.Areas.Admin.Pages.LoginModel
+@inject MyApp.Services.AppSettingsService _loginBrandingSvc
 @{
 	Layout = "Layouts/_BlankLayout";
 	ViewData["Title"] = await T.GetAsync("Login");
+	var loginLogo = await _loginBrandingSvc.GetAsync("global", "logo_path");
 }
 
 
@@ -37,8 +39,14 @@
 				<!-- Logo -->
 				<div class="app-brand justify-content-center mt-5">
 					<a class="app-brand-link gap-2">
-						<span class="app-brand-logo demo"><img src="~/img/LogoLogin.png" width="300px" /></span>
-						@* <span class="app-brand-text demo text-heading fw-semibold">@TempData.Peek("appName")</span> *@
+						@if (!string.IsNullOrEmpty(loginLogo))
+						{
+							<img src="/uploads/branding/@loginLogo" style="height:80px;object-fit:contain;" />
+						}
+						else
+						{
+							<span class="app-brand-logo demo"><img src="~/img/LogoLogin.png" width="300px" /></span>
+						}
 					</a>
 				</div>
 				<!-- /Logo -->

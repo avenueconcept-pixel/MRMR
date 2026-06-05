@@ -1,0 +1,195 @@
+@page
+@model MyApp.Areas.Admin.Pages.SystemSettings.Branding.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("SystemSettings.Branding.Title");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+  <link rel="stylesheet" href="~/vendor/libs/quill/editor.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <div>
+    <h4 class="mb-1">@await T.GetAsync("SystemSettings.Branding.Title")</h4>
+    <small class="text-muted">@await T.GetAsync("SystemSettings.Branding.Subtitle")</small>
+  </div>
+</div>
+
+<form method="post" asp-page-handler="Save" enctype="multipart/form-data">
+
+  <div class="row g-4">
+
+    @* ── Logo section ── *@
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-4">@await T.GetAsync("SystemSettings.Branding.LogoSection")</h5>
+
+          @if (!string.IsNullOrEmpty(Model.CurrentLogoPath))
+          {
+            <div class="mb-3 text-center">
+              <p class="form-label text-muted small">@await T.GetAsync("SystemSettings.Branding.CurrentLogo")</p>
+              <img src="/uploads/branding/@Model.CurrentLogoPath"
+                   style="height:120px;max-width:100%;object-fit:contain;border:1px solid #dee2e6;border-radius:8px;padding:8px;" />
+            </div>
+          }
+          else
+          {
+            <div class="mb-3 text-center text-muted small">
+              <i class="ri ri-image-line" style="font-size:3rem;"></i>
+              <p>@await T.GetAsync("SystemSettings.Branding.NoLogo")</p>
+            </div>
+          }
+
+          <div class="mb-3">
+            <label class="form-label" for="fileLogoImage">
+              @await T.GetAsync("SystemSettings.Branding.UploadLogo")
+            </label>
+            <input type="file" id="fileLogoImage" name="fileLogoImage"
+                   class="form-control" accept=".jpg,.jpeg,.png" />
+            <div class="form-text">@await T.GetAsync("SystemSettings.Branding.LogoHint")</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @* ── System Names section ── *@
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-4">@await T.GetAsync("SystemSettings.Branding.SystemNamesSection")</h5>
+
+          <div class="mb-4">
+            <label class="form-label" for="txtAdminSystemName">
+              @await T.GetAsync("SystemSettings.Branding.AdminSystemName") <span class="text-danger">*</span>
+            </label>
+            <div class="form-floating form-floating-outline">
+              <input type="text" id="txtAdminSystemName" name="txtAdminSystemName"
+                     class="form-control" maxlength="100"
+                     value="@Model.txtAdminSystemName"
+                     placeholder="@await T.GetAsync("SystemSettings.Branding.AdminSystemName")" />
+              <label for="txtAdminSystemName">@await T.GetAsync("SystemSettings.Branding.AdminSystemName")</label>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label" for="txtCustomerSystemName">
+              @await T.GetAsync("SystemSettings.Branding.CustomerSystemName") <span class="text-danger">*</span>
+            </label>
+            <div class="form-floating form-floating-outline">
+              <input type="text" id="txtCustomerSystemName" name="txtCustomerSystemName"
+                     class="form-control" maxlength="100"
+                     value="@Model.txtCustomerSystemName"
+                     placeholder="@await T.GetAsync("SystemSettings.Branding.CustomerSystemName")" />
+              <label for="txtCustomerSystemName">@await T.GetAsync("SystemSettings.Branding.CustomerSystemName")</label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  @* ── Footer section ── *@
+  <div class="col-12 mt-2">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title mb-1">@await T.GetAsync("SystemSettings.Branding.FooterSection")</h5>
+        <p class="text-muted small mb-4">@await T.GetAsync("SystemSettings.Branding.FooterHint")</p>
+
+        @* Hidden inputs — submitted with form *@
+        <input type="hidden" name="txtAdminFooter"    id="hdnAdminFooter"    value="@Model.txtAdminFooter" />
+        <input type="hidden" name="txtCustomerFooter" id="hdnCustomerFooter" value="@Model.txtCustomerFooter" />
+
+        @* Tabs *@
+        <ul class="nav nav-tabs mb-3" id="footerTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-admin-footer" data-bs-toggle="tab"
+                    data-bs-target="#pane-admin-footer" type="button" role="tab">
+              @await T.GetAsync("SystemSettings.Branding.AdminFooter")
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-customer-footer" data-bs-toggle="tab"
+                    data-bs-target="#pane-customer-footer" type="button" role="tab">
+              @await T.GetAsync("SystemSettings.Branding.CustomerFooter")
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="pane-admin-footer" role="tabpanel">
+            <div id="editorAdminFooter" style="height:150px;"></div>
+          </div>
+          <div class="tab-pane fade" id="pane-customer-footer" role="tabpanel">
+            <div id="editorCustomerFooter" style="height:150px;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  @* ── Save button ── *@
+  <div class="d-flex justify-content-end mt-4">
+    <button type="submit" class="btn btn-primary">
+      <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+    </button>
+  </div>
+
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+  <script src="~/vendor/libs/quill/quill.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle ?? string.Empty)),
+        text:  @Html.Raw(Json.Serialize(Model.AlertMessageContent ?? string.Empty))
+      });
+    }
+
+    var editors = {};
+    editors['admin']    = new Quill('#editorAdminFooter',    { theme: 'snow' });
+    editors['customer'] = new Quill('#editorCustomerFooter', { theme: 'snow' });
+
+    var adminVal = document.getElementById('hdnAdminFooter').value;
+    if (adminVal) editors['admin'].clipboard.dangerouslyPasteHTML(adminVal);
+
+    var customerVal = document.getElementById('hdnCustomerFooter').value;
+    if (customerVal) editors['customer'].clipboard.dangerouslyPasteHTML(customerVal);
+
+    document.querySelector('form').addEventListener('submit', function () {
+      document.getElementById('hdnAdminFooter').value    = editors['admin'].root.innerHTML;
+      document.getElementById('hdnCustomerFooter').value = editors['customer'].root.innerHTML;
+    });
+
+    var logoInput = document.getElementById('fileLogoImage');
+    if (logoInput) {
+      logoInput.addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        var ext = file.name.split('.').pop().toLowerCase();
+        if (ext !== 'jpg' && ext !== 'jpeg' && ext !== 'png') {
+          Swal.fire({ icon: 'error', text: '@await T.GetAsync("SystemSettings.Branding.Error.InvalidFileType")' });
+          this.value = '';
+          return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          Swal.fire({ icon: 'error', text: '@await T.GetAsync("SystemSettings.Branding.Error.FileTooLarge")' });
+          this.value = '';
+        }
+      });
+    }
+  });
+</script>
+}

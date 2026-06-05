@@ -1,10 +1,18 @@
+@inject MyApp.Services.AppSettingsService _footerBrandingSvc
 @{
   TempData.Keep();
   ViewData["containerNav"] ??= "container-fluid";
+  var adminFooter = await _footerBrandingSvc.GetAsync("admin", "footer_text");
 }
 
 <!-- Footer -->
 <footer class="content-footer footer bg-footer-theme">
+  @if (!string.IsNullOrEmpty(adminFooter))
+  {
+    <div class="@ViewData["containerNav"] py-3 footer-custom-text">
+      @Html.Raw(adminFooter)
+    </div>
+  }
   <div class="@ViewData["containerNav"]">
     <div class="footer-container d-flex align-items-center justify-content-between py-4 flex-md-row flex-column">
       <div class="mb-2 mb-md-0">
