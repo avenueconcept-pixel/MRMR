@@ -1,0 +1,160 @@
+@page
+@model MyApp.Areas.Admin.Pages.Members.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("Members.Title.Index");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Members.Title.Index")</h4>
+  <a asp-area="Admin" asp-page="/Members/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i>@await T.GetAsync("Members.Title.Create")
+  </a>
+</div>
+
+@* Filter form *@
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" asp-area="Admin" asp-page="/Members/Index">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label form-label-sm">@await T.GetAsync("Members.Status")</label>
+          <select asp-for="FilterStatus" asp-items="@Model.ddlStatus" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label form-label-sm">@await T.GetAsync("Members.Country")</label>
+          <select asp-for="FilterCountryCode" asp-items="@Model.ddlCountry" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label form-label-sm">@await T.GetAsync("Members.CurrentRank")</label>
+          <select asp-for="FilterRankCode" asp-items="@Model.ddlRank" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label form-label-sm">@await T.GetAsync("Members.IsActivated")</label>
+          <select name="FilterIsActivated" class="form-select form-select-sm">
+            @foreach (var item in Model.ddlActivated)
+            {
+              @if (item.Value == (Model.FilterIsActivated.HasValue ? Model.FilterIsActivated.Value.ToString().ToLower() : string.Empty))
+              {
+                <option value="@item.Value" selected>@item.Text</option>
+              }
+              else
+              {
+                <option value="@item.Value">@item.Text</option>
+              }
+            }
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary btn-sm me-1">
+            <i class="ri ri-search-line me-1"></i>@await T.GetAsync("Btn.Search")
+          </button>
+          <a asp-area="Admin" asp-page="/Members/Index" class="btn btn-outline-secondary btn-sm">
+            @await T.GetAsync("Btn.Clear")
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("Members.Title.Index")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblMembers" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>@await T.GetAsync("Members.Username")</th>
+            <th>@await T.GetAsync("Members.FullName")</th>
+            <th>@await T.GetAsync("Members.Country")</th>
+            <th>@await T.GetAsync("Members.Sponsor")</th>
+            <th>@await T.GetAsync("Members.CurrentRank")</th>
+            <th>@await T.GetAsync("Members.IsActivated")</th>
+            <th>@await T.GetAsync("Members.Status")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @{var rowNum = 1;}
+          @foreach (var member in Model.Items)
+          {
+            @{
+              var statusBadge  = member.Status == StatusConstants.Active ? "bg-success" : "bg-secondary";
+              var statusLabel  = member.Status == StatusConstants.Active
+                  ? await T.GetAsync("status.active")
+                  : await T.GetAsync("status.inactive");
+              var activatedBadge = member.IsActivated ? "bg-success" : "bg-warning text-dark";
+              var activatedLabel = member.IsActivated
+                  ? await T.GetAsync("Members.Filter.Activated")
+                  : await T.GetAsync("Members.Filter.NotActivated");
+              var countryName = member.Country?.Translations.FirstOrDefault()?.CountryName ?? member.CountryCode;
+            }
+            <tr>
+              <td>@rowNum</td>
+              <td><strong>@member.Username</strong></td>
+              <td>@member.FullName</td>
+              <td>@countryName</td>
+              <td>@(member.Sponsor?.Username ?? "-")</td>
+              <td>@(member.CurrentRankCode ?? "-")</td>
+              <td><span class="badge @activatedBadge">@activatedLabel</span></td>
+              <td><span class="badge @statusBadge">@statusLabel</span></td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Members/Edit"
+                         asp-route-id="@member.Id">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/Members/Manage"
+                         asp-route-id="@member.Id">
+                        <i class="ri ri-settings-3-line me-1"></i>@await T.GetAsync("Members.Title.Manage")
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            rowNum++;
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  $(document).ready(function () {
+    initDataTable('#tblMembers', 8);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

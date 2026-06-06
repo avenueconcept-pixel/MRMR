@@ -1,0 +1,376 @@
+@page
+@model MyApp.Areas.Admin.Pages.Members.CreateModel
+@{
+  ViewData["title"] = await T.GetAsync("Members.Title.Create");
+  var searchUrl = Url.Page("/Members/Index", "SearchMembers", new { area = "Admin" });
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.dist.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" rel="stylesheet" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Members.Title.Create")</h4>
+  <a asp-area="Admin" asp-page="/Members/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Btn.Back")
+  </a>
+</div>
+
+<form method="post" asp-page-handler="Create" enctype="multipart/form-data">
+  @Html.AntiForgeryToken()
+
+  <ul class="nav nav-tabs mb-4" id="memberTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-account" data-bs-toggle="tab" data-bs-target="#pane-account" type="button">
+        <i class="ri ri-user-line me-1"></i>@await T.GetAsync("Members.Tab.Account")
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-personal" data-bs-toggle="tab" data-bs-target="#pane-personal" type="button">
+        <i class="ri ri-id-card-line me-1"></i>@await T.GetAsync("Members.Tab.Personal")
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-address" data-bs-toggle="tab" data-bs-target="#pane-address" type="button">
+        <i class="ri ri-map-pin-line me-1"></i>@await T.GetAsync("Members.Tab.Address")
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-bank" data-bs-toggle="tab" data-bs-target="#pane-bank" type="button">
+        <i class="ri ri-bank-line me-1"></i>@await T.GetAsync("Members.Tab.Bank")
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-network" data-bs-toggle="tab" data-bs-target="#pane-network" type="button">
+        <i class="ri ri-node-tree me-1"></i>@await T.GetAsync("Members.Tab.Network")
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    @* ── Tab 1: Account ── *@
+    <div class="tab-pane fade show active" id="pane-account" role="tabpanel">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="txtUsername">@await T.GetAsync("Members.Username") <span class="text-danger">*</span></label>
+              <input type="text" id="txtUsername" name="txtUsername" class="form-control"
+                     value="@Model.txtUsername" placeholder="@await T.GetAsync("Members.Username")" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="txtJoinedAt">@await T.GetAsync("Members.JoinedAt")</label>
+              <input type="date" id="txtJoinedAt" name="txtJoinedAt" class="form-control"
+                     value="@Model.txtJoinedAt" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="txtPassword">@await T.GetAsync("Password") <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="password" id="txtPassword" name="txtPassword" class="form-control"
+                       placeholder="············" />
+                <button class="btn btn-outline-secondary" type="button" id="btnTogglePwd" tabindex="-1">
+                  <i id="iconTogglePwd" class="ri ri-eye-off-line"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="txtConfirmPassword">@await T.GetAsync("ConfirmPassword") <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="password" id="txtConfirmPassword" name="txtConfirmPassword" class="form-control"
+                       placeholder="············" />
+                <button class="btn btn-outline-secondary" type="button" id="btnToggleConfirmPwd" tabindex="-1">
+                  <i id="iconToggleConfirmPwd" class="ri ri-eye-off-line"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @* ── Tab 2: Personal ── *@
+    <div class="tab-pane fade" id="pane-personal" role="tabpanel">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="txtFullName">@await T.GetAsync("Members.FullName") <span class="text-danger">*</span></label>
+              <input type="text" id="txtFullName" name="txtFullName" class="form-control"
+                     value="@Model.txtFullName" placeholder="@await T.GetAsync("Members.FullName")" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ddlIdType">@await T.GetAsync("Members.IdType") <span class="text-danger">*</span></label>
+              <select id="ddlIdType" name="ddlIdType" class="form-select" asp-items="@Model.ddlIdTypes">
+                <option value="">-- @await T.GetAsync("Members.IdType") --</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="txtIdNo">@await T.GetAsync("Members.IdNo") <span class="text-danger">*</span></label>
+              <input type="text" id="txtIdNo" name="txtIdNo" class="form-control"
+                     value="@Model.txtIdNo" placeholder="@await T.GetAsync("Members.IdNo")" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="txtEmail">@await T.GetAsync("Members.Email") <span class="text-danger">*</span></label>
+              <input type="email" id="txtEmail" name="txtEmail" class="form-control"
+                     value="@Model.txtEmail" placeholder="@await T.GetAsync("Members.Email")" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">@await T.GetAsync("Members.Phone") <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="text" name="txtPhoneCountryCode" class="form-control" style="max-width:90px"
+                       value="@Model.txtPhoneCountryCode" placeholder="+60" />
+                <input type="text" name="txtPhoneNumber" class="form-control"
+                       value="@Model.txtPhoneNumber" placeholder="@await T.GetAsync("Members.Phone")" />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="ddlCountryCode">@await T.GetAsync("Members.Country") <span class="text-danger">*</span></label>
+              <select id="ddlCountryCode" name="ddlCountryCode" class="form-select" asp-items="@Model.ddlCountry">
+                <option value="">-- @await T.GetAsync("Members.Country") --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="fileProfileImage">@await T.GetAsync("Members.ProfileImage")</label>
+              <input type="file" id="fileProfileImage" name="fileProfileImage" class="form-control"
+                     accept=".jpg,.jpeg,.png" />
+              <div id="cropContainer" class="mt-2" style="display:none; max-width:300px;">
+                <img id="cropPreview" src="" style="max-width:100%;" />
+              </div>
+              <input type="hidden" id="hdnCroppedImage" name="hdnCroppedImage" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @* ── Tab 3: Address ── *@
+    <div class="tab-pane fade" id="pane-address" role="tabpanel">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="txtAddressLine1">@await T.GetAsync("Members.AddressLine1") <span class="text-danger">*</span></label>
+              <input type="text" id="txtAddressLine1" name="txtAddressLine1" class="form-control"
+                     value="@Model.txtAddressLine1" placeholder="@await T.GetAsync("Members.AddressLine1")" />
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="txtAddressLine2">@await T.GetAsync("Members.AddressLine2")</label>
+              <input type="text" id="txtAddressLine2" name="txtAddressLine2" class="form-control"
+                     value="@Model.txtAddressLine2" placeholder="@await T.GetAsync("Members.AddressLine2")" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="txtCity">@await T.GetAsync("Members.City") <span class="text-danger">*</span></label>
+              <input type="text" id="txtCity" name="txtCity" class="form-control"
+                     value="@Model.txtCity" placeholder="@await T.GetAsync("Members.City")" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="txtState">@await T.GetAsync("Members.State") <span class="text-danger">*</span></label>
+              <input type="text" id="txtState" name="txtState" class="form-control"
+                     value="@Model.txtState" placeholder="@await T.GetAsync("Members.State")" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="txtPostcode">@await T.GetAsync("Members.Postcode") <span class="text-danger">*</span></label>
+              <input type="text" id="txtPostcode" name="txtPostcode" class="form-control"
+                     value="@Model.txtPostcode" placeholder="@await T.GetAsync("Members.Postcode")" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @* ── Tab 4: Bank ── *@
+    <div class="tab-pane fade" id="pane-bank" role="tabpanel">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="txtBankName">@await T.GetAsync("Members.BankName")</label>
+              <input type="text" id="txtBankName" name="txtBankName" class="form-control"
+                     value="@Model.txtBankName" placeholder="@await T.GetAsync("Members.BankName")" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="txtBankAccountName">@await T.GetAsync("Members.BankAccountName")</label>
+              <input type="text" id="txtBankAccountName" name="txtBankAccountName" class="form-control"
+                     value="@Model.txtBankAccountName" placeholder="@await T.GetAsync("Members.BankAccountName")" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="txtBankAccountNo">@await T.GetAsync("Members.BankAccountNo")</label>
+              <input type="text" id="txtBankAccountNo" name="txtBankAccountNo" class="form-control"
+                     value="@Model.txtBankAccountNo" placeholder="@await T.GetAsync("Members.BankAccountNo")" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @* ── Tab 5: Network ── *@
+    <div class="tab-pane fade" id="pane-network" role="tabpanel">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">@await T.GetAsync("Members.Sponsor")</label>
+              <input type="hidden" id="SponsorId" name="SponsorId" value="@Model.SponsorId" />
+              <select id="selectSponsor" class="form-select select2-sponsor" style="width:100%">
+                <option value="">@await T.GetAsync("Members.SearchPlaceholder")</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">@await T.GetAsync("Members.BinaryPlacement")</label>
+              <div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="ddlBinaryPlacement"
+                         id="radioAuto" value="auto" checked="@(Model.ddlBinaryPlacement == "auto")" />
+                  <label class="form-check-label" for="radioAuto">@await T.GetAsync("Members.Placement.Auto")</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="ddlBinaryPlacement"
+                         id="radioManual" value="manual" />
+                  <label class="form-check-label" for="radioManual">@await T.GetAsync("Members.Placement.Manual")</label>
+                </div>
+              </div>
+            </div>
+
+            <div id="manualPlacementFields" class="col-12 row g-3" style="display:none;">
+              <div class="col-md-6">
+                <label class="form-label">@await T.GetAsync("Members.BinaryParent")</label>
+                <input type="hidden" id="BinaryParentId" name="BinaryParentId" value="@Model.BinaryParentId" />
+                <select id="selectBinaryParent" class="form-select select2-binary" style="width:100%">
+                  <option value="">@await T.GetAsync("Members.SearchPlaceholder")</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">@await T.GetAsync("Members.BinaryPosition")</label>
+                <select name="ddlBinaryPosition" id="ddlBinaryPosition" class="form-select">
+                  <option value="left">@await T.GetAsync("Members.Placement.Left")</option>
+                  <option value="right">@await T.GetAsync("Members.Placement.Right")</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mt-4">
+    <button type="submit" class="btn btn-primary">
+      <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+    </button>
+    <a asp-area="Admin" asp-page="/Members/Index" class="btn btn-outline-secondary ms-2">
+      @await T.GetAsync("Btn.Cancel")
+    </a>
+  </div>
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+  <script src="~/vendor/libs/select2/select2.dist.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+}
+
+@section PageScripts {
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+
+  // Password show/hide
+  document.getElementById('btnTogglePwd').addEventListener('click', function () {
+    var input = document.getElementById('txtPassword');
+    var icon  = document.getElementById('iconTogglePwd');
+    if (input.type === 'password') { input.type = 'text'; icon.classList.replace('ri-eye-off-line', 'ri-eye-line'); }
+    else { input.type = 'password'; icon.classList.replace('ri-eye-line', 'ri-eye-off-line'); }
+  });
+  document.getElementById('btnToggleConfirmPwd').addEventListener('click', function () {
+    var input = document.getElementById('txtConfirmPassword');
+    var icon  = document.getElementById('iconToggleConfirmPwd');
+    if (input.type === 'password') { input.type = 'text'; icon.classList.replace('ri-eye-off-line', 'ri-eye-line'); }
+    else { input.type = 'password'; icon.classList.replace('ri-eye-line', 'ri-eye-off-line'); }
+  });
+
+  // Select2 — Sponsor
+  $('#selectSponsor').select2({
+    placeholder: '@await T.GetAsync("Members.SearchPlaceholder")',
+    allowClear: true,
+    minimumInputLength: 1,
+    ajax: {
+      url: '@searchUrl',
+      dataType: 'json',
+      delay: 300,
+      data: function (params) { return { term: params.term }; },
+      processResults: function (data) { return { results: data }; }
+    }
+  }).on('select2:select', function (e) {
+    document.getElementById('SponsorId').value = e.params.data.id;
+  }).on('select2:unselect', function () {
+    document.getElementById('SponsorId').value = '';
+  });
+
+  // Select2 — Binary Parent
+  $('#selectBinaryParent').select2({
+    placeholder: '@await T.GetAsync("Members.SearchPlaceholder")',
+    allowClear: true,
+    minimumInputLength: 1,
+    ajax: {
+      url: '@searchUrl',
+      dataType: 'json',
+      delay: 300,
+      data: function (params) { return { term: params.term }; },
+      processResults: function (data) { return { results: data }; }
+    }
+  }).on('select2:select', function (e) {
+    document.getElementById('BinaryParentId').value = e.params.data.id;
+  }).on('select2:unselect', function () {
+    document.getElementById('BinaryParentId').value = '';
+  });
+
+  // Binary placement toggle
+  document.querySelectorAll('input[name="ddlBinaryPlacement"]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      document.getElementById('manualPlacementFields').style.display =
+        this.value === 'manual' ? 'flex' : 'none';
+    });
+  });
+
+  // Profile image crop
+  var cropper;
+  document.getElementById('fileProfileImage').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      var container = document.getElementById('cropContainer');
+      var img       = document.getElementById('cropPreview');
+      img.src = ev.target.result;
+      container.style.display = 'block';
+      if (cropper) cropper.destroy();
+      cropper = new Cropper(img, {
+        aspectRatio: 1,
+        viewMode: 1,
+        autoCropArea: 1
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Before submit: write cropped canvas back to file input via hidden field
+  document.querySelector('form').addEventListener('submit', function () {
+    if (cropper) {
+      document.getElementById('hdnCroppedImage').value =
+        cropper.getCroppedCanvas({ width: 400, height: 400 }).toDataURL('image/jpeg');
+    }
+  });
+</script>
+}

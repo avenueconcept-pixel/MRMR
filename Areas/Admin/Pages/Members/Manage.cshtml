@@ -1,0 +1,299 @@
+@page
+@model MyApp.Areas.Admin.Pages.Members.ManageModel
+@{
+  ViewData["title"] = await T.GetAsync("Members.Title.Manage");
+  var searchUrl = Url.Page("/Members/Index", "SearchMembers", new { area = "Admin" });
+  var activatedBadge = Model.IsActivated ? "bg-success" : "bg-warning text-dark";
+  var activatedLabel = Model.IsActivated
+      ? await T.GetAsync("Members.Filter.Activated")
+      : await T.GetAsync("Members.Filter.NotActivated");
+  var statusBadge = Model.Status == StatusConstants.Active ? "bg-success" : "bg-secondary";
+  var statusLabel = Model.Status == StatusConstants.Active
+      ? await T.GetAsync("status.active")
+      : await T.GetAsync("status.inactive");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+  <link rel="stylesheet" href="~/vendor/libs/select2/select2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Members.Title.Manage")</h4>
+  <div>
+    <a asp-area="Admin" asp-page="/Members/Edit" asp-route-id="@Model.MemberId"
+       class="btn btn-outline-secondary me-2">
+      <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+    </a>
+    <a asp-area="Admin" asp-page="/Members/Index" class="btn btn-outline-secondary">
+      <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Btn.Back")
+    </a>
+  </div>
+</div>
+
+@* Member summary header *@
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="mb-1">@Model.Username — @Model.FullName</h5>
+    <div class="d-flex gap-2 flex-wrap">
+      <span class="badge @activatedBadge">@activatedLabel</span>
+      <span class="badge @statusBadge">@statusLabel</span>
+      @if (!string.IsNullOrEmpty(Model.CurrentRankCode))
+      {
+        <span class="badge bg-info">@Model.CurrentRankCode</span>
+      }
+    </div>
+    <small class="text-muted">
+      @await T.GetAsync("Members.Sponsor"): @(Model.SponsorUsername ?? "-") &nbsp;|&nbsp;
+      @await T.GetAsync("Members.BinaryParent"): @(Model.BinaryParentUsername ?? "-") (@(Model.BinaryPosition ?? "-"))
+    </small>
+  </div>
+</div>
+
+@* Hidden antiforgery for all AJAX forms *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@* ── 1. Change Username ── *@
+<div class="card mb-4">
+  <div class="card-header">
+    <h6 class="mb-0">@await T.GetAsync("Members.Manage.ChangeUsername")</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label">@await T.GetAsync("Members.Username")</label>
+        <input type="text" id="txtNewUsername" class="form-control"
+               value="@Model.Username" placeholder="@await T.GetAsync("Members.Username")" />
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-primary" onclick="saveSection('ChangeUsername', { txtNewUsername: document.getElementById('txtNewUsername').value })">
+          <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── 2. Change Sponsor ── *@
+<div class="card mb-4">
+  <div class="card-header">
+    <h6 class="mb-0">@await T.GetAsync("Members.Manage.ChangeSponsor")</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label">@await T.GetAsync("Members.Sponsor")</label>
+        @if (!string.IsNullOrEmpty(Model.SponsorUsername))
+        {
+          <p class="mb-1 text-muted small">@await T.GetAsync("Current"): @Model.SponsorUsername</p>
+        }
+        <input type="hidden" id="hdnNewSponsorId" value="" />
+        <select id="selectNewSponsor" class="form-select" style="width:100%">
+          <option value="">@await T.GetAsync("Members.SearchPlaceholder")</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-primary"
+                onclick="saveSection('ChangeSponsor', { NewSponsorId: document.getElementById('hdnNewSponsorId').value || null })">
+          <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── 3. Change Binary Parent ── *@
+<div class="card mb-4">
+  <div class="card-header">
+    <h6 class="mb-0">@await T.GetAsync("Members.Manage.ChangeBinary")</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label">@await T.GetAsync("Members.BinaryParent")</label>
+        @if (!string.IsNullOrEmpty(Model.BinaryParentUsername))
+        {
+          <p class="mb-1 text-muted small">@await T.GetAsync("Current"): @Model.BinaryParentUsername (@Model.BinaryPosition)</p>
+        }
+        <input type="hidden" id="hdnNewBinaryParentId" value="" />
+        <select id="selectNewBinaryParent" class="form-select" style="width:100%">
+          <option value="">@await T.GetAsync("Members.SearchPlaceholder")</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">@await T.GetAsync("Members.BinaryPosition")</label>
+        <select id="ddlNewBinaryPos" class="form-select">
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-primary"
+                onclick="saveSection('ChangeBinary', { NewBinaryParentId: document.getElementById('hdnNewBinaryParentId').value || null, ddlNewBinaryPos: document.getElementById('ddlNewBinaryPos').value })">
+          <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── 4. Change Rank ── *@
+<div class="card mb-4">
+  <div class="card-header">
+    <h6 class="mb-0">@await T.GetAsync("Members.Manage.ChangeRank")</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">@await T.GetAsync("Members.CurrentRank")</label>
+        <select id="ddlNewRankCode" class="form-select" asp-items="@Model.ddlRanks">
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-primary"
+                onclick="saveSection('ChangeRank', { ddlNewRankCode: document.getElementById('ddlNewRankCode').value || null })">
+          <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── 5. Change Status ── *@
+<div class="card mb-4">
+  <div class="card-header">
+    <h6 class="mb-0">@await T.GetAsync("Members.Manage.ChangeStatus")</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">@await T.GetAsync("Members.Status")</label>
+        <select id="ddlNewStatus" class="form-select" asp-items="@Model.ddlStatuses">
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-primary"
+                onclick="saveSection('ChangeStatus', { ddlNewStatus: document.getElementById('ddlNewStatus').value })">
+          <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* ── 6. Change Log ── *@
+<div class="card">
+  <div class="card-header">
+    <h6 class="mb-0">@await T.GetAsync("Members.ChangeLog")</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("Members.ChangeType")</th>
+            <th>@await T.GetAsync("Members.OldValue")</th>
+            <th>@await T.GetAsync("Members.NewValue")</th>
+            <th>@await T.GetAsync("ChangedBy")</th>
+            <th>@await T.GetAsync("ChangedAt")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var log in Model.ChangeLogs)
+          {
+            <tr>
+              <td><span class="badge bg-secondary">@log.ChangeType</span></td>
+              <td>@log.OldValue</td>
+              <td>@log.NewValue</td>
+              <td>@log.ChangedBy</td>
+              <td>@log.ChangedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+            </tr>
+          }
+          @if (!Model.ChangeLogs.Any())
+          {
+            <tr><td colspan="5" class="text-center text-muted">—</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+  <script src="~/vendor/libs/select2/select2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var memberId = @Model.MemberId;
+  var antiForgeryToken = $('#formAjax input[name="__RequestVerificationToken"]').val();
+
+  function saveSection(handler, data) {
+    data.__RequestVerificationToken = antiForgeryToken;
+    $.post('?handler=' + handler + '&id=' + memberId, data, function (res) {
+      if (res.success) {
+        Swal.fire({ icon: 'success', title: res.message, timer: 1500, showConfirmButton: false })
+          .then(function () { location.reload(); });
+      } else {
+        Swal.fire({ icon: 'error', text: res.message });
+      }
+    }).fail(function () {
+      Swal.fire({ icon: 'error', text: 'Request failed.' });
+    });
+  }
+
+  // Select2 — New Sponsor
+  $('#selectNewSponsor').select2({
+    placeholder: '@await T.GetAsync("Members.SearchPlaceholder")',
+    allowClear: true,
+    minimumInputLength: 1,
+    ajax: {
+      url: '@searchUrl',
+      dataType: 'json',
+      delay: 300,
+      data: function (params) { return { term: params.term }; },
+      processResults: function (data) { return { results: data }; }
+    }
+  }).on('select2:select', function (e) {
+    document.getElementById('hdnNewSponsorId').value = e.params.data.id;
+  }).on('select2:unselect', function () {
+    document.getElementById('hdnNewSponsorId').value = '';
+  });
+
+  // Select2 — New Binary Parent
+  $('#selectNewBinaryParent').select2({
+    placeholder: '@await T.GetAsync("Members.SearchPlaceholder")',
+    allowClear: true,
+    minimumInputLength: 1,
+    ajax: {
+      url: '@searchUrl',
+      dataType: 'json',
+      delay: 300,
+      data: function (params) { return { term: params.term }; },
+      processResults: function (data) { return { results: data }; }
+    }
+  }).on('select2:select', function (e) {
+    document.getElementById('hdnNewBinaryParentId').value = e.params.data.id;
+  }).on('select2:unselect', function () {
+    document.getElementById('hdnNewBinaryParentId').value = '';
+  });
+
+  // Set current rank/status selects to current values
+  document.getElementById('ddlNewRankCode').value = '@(Model.CurrentRankCode ?? string.Empty)';
+  document.getElementById('ddlNewStatus').value   = '@Model.Status';
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

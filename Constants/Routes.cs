@@ -39,6 +39,10 @@ public class Routes
   public const string AdminSystems              = "/Systems/Index";
   public const string AdminMaintenances         = "/Maintenances/Index";
   public const string AdminSystemBranding       = "/SystemSettings/Branding/Index";
+  public const string AdminMembers              = "/Members/Index";
+  public const string AdminMembersCreate        = "/Members/Create";
+  public const string AdminMembersEdit          = "/Members/Edit";
+  public const string AdminMembersManage        = "/Members/Manage";
 
   // Customer
   public const string CustomerLogin = "/Login";

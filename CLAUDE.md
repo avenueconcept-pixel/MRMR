@@ -1189,6 +1189,271 @@ var label = await _translationService.GetAsync(MessageConstants.SaveSuccess);
 
 ---
 
+### Cropper.js profile image crop + AJAX upload
+
+Use Cropper.js via CDN for 1:1 profile image cropping before upload. Never bundle it — load from CDN in `VendorStyles` / `VendorScripts`:
+
+```html
+@section VendorStyles  { <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" rel="stylesheet" /> }
+@section VendorScripts { <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script> }
+```
+
+**Pattern — file input → preview → crop → AJAX upload to a separate handler:**
+
+The upload form is independent from the main edit form so images can be replaced without re-submitting other fields. The handler returns `{ success, filename, message }`.
+
+```html
+<form method="post" asp-page-handler="UploadImage" asp-route-id="@Model.EntityId"
+      enctype="multipart/form-data" id="formUploadImage">
+  @Html.AntiForgeryToken()
+  <input type="file" id="fileProfileImage" name="fileProfileImage"
+         class="form-control mb-2" accept=".jpg,.jpeg,.png" style="max-width:300px;" />
+  <div id="cropContainer" style="display:none; max-width:300px;" class="mb-2">
+    <img id="cropPreview" src="" style="max-width:100%;" />
+  </div>
+  <button type="button" id="btnUploadImage" class="btn btn-sm btn-outline-primary" style="display:none;">
+    <i class="ri ri-upload-line me-1"></i>@await T.GetAsync("Btn.Upload")
+  </button>
+</form>
+```
+
+```javascript
+var cropper;
+document.getElementById('fileProfileImage').addEventListener('change', function (e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (ev) {
+    var img = document.getElementById('cropPreview');
+    img.src = ev.target.result;
+    document.getElementById('cropContainer').style.display = 'block';
+    document.getElementById('btnUploadImage').style.display = 'inline-block';
+    if (cropper) cropper.destroy();
+    cropper = new Cropper(img, { aspectRatio: 1, viewMode: 1, autoCropArea: 1 });
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('btnUploadImage').addEventListener('click', function () {
+  if (!cropper) return;
+  cropper.getCroppedCanvas({ width: 400, height: 400 }).toBlob(function (blob) {
+    var formData = new FormData(document.getElementById('formUploadImage'));
+    formData.set('fileProfileImage', blob, 'profile.jpg');
+    $.ajax({
+      url: document.getElementById('formUploadImage').action,
+      type: 'POST', data: formData, processData: false, contentType: false,
+      success: function (data) {
+        if (data.success) {
+          document.getElementById('currentAvatar').src = '/uploads/entity-profiles/' + data.filename + '?t=' + Date.now();
+          document.getElementById('cropContainer').style.display = 'none';
+          document.getElementById('btnUploadImage').style.display = 'none';
+          Swal.fire({ icon: 'success', title: data.message, timer: 1500, showConfirmButton: false });
+        } else {
+          Swal.fire({ icon: 'error', text: data.message });
+        }
+      }
+    });
+  }, 'image/jpeg');
+});
+```
+
+**PageModel — handler returns `{ success, filename, message }`:**
+```csharp
+[BindProperty] public IFormFile? fileProfileImage { get; set; }
+
+public async Task<IActionResult> OnPostUploadImageAsync(int id)
+{
+  if (fileProfileImage == null || fileProfileImage.Length == 0)
+    return new JsonResult(new { success = false, message = "No file." });
+
+  var relPath  = _config["UploadPaths:EntityProfile"] ?? "uploads/entity-profiles";
+  var fullPath = Path.Combine(_env.WebRootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
+  var entity   = await _dbHelper.GetByIdAsync(id);
+
+  if (!string.IsNullOrEmpty(entity?.ProfileImage))
+  {
+    var old = Path.Combine(fullPath, entity.ProfileImage);
+    if (System.IO.File.Exists(old)) System.IO.File.Delete(old);
+  }
+
+  var filename = await ProfileImageHelper.SaveProfileImageAsync(fileProfileImage, entity!.Username, fullPath);
+  await _dbHelper.UpdateProfileImageAsync(id, filename, CurrentUsername);
+
+  var msg = await _translation.GetAsync(MessageConstants.UpdateSuccess);
+  return new JsonResult(new { success = true, filename, message = msg });
+}
+```
+
+On soft delete: do **not** delete the physical image file.
+
+---
+
+### Select2 AJAX search — `OnGetSearch*Async` handler
+
+When Select2 needs AJAX search (e.g. member/sponsor lookups), add a named GET handler on the Index page. Select2 requires `id` and `text` fields in the response array.
+
+**Handler on Index PageModel:**
+```csharp
+public async Task<IActionResult> OnGetSearchMembersAsync(string term)
+{
+  var results = await _memberDbHelper.SearchAsync(term ?? string.Empty);
+  return new JsonResult(results.Select(r => new
+  {
+    id   = r.Id,
+    text = $"{r.Username} — {r.FullName}"
+  }));
+}
+```
+
+**URL in `.cshtml` (computed once in `@{ }` block, reused for multiple Select2 instances):**
+```cshtml
+@{
+  var searchUrl = Url.Page("/Members/Index", "SearchMembers", new { area = "Admin" });
+}
+```
+
+**Select2 init:**
+```javascript
+$('#selectSponsor').select2({
+  placeholder: 'Search...',
+  allowClear: true,
+  minimumInputLength: 1,
+  ajax: {
+    url: '@searchUrl',
+    dataType: 'json',
+    delay: 300,
+    data: function (params) { return { term: params.term }; },
+    processResults: function (data) { return { results: data }; }
+  }
+}).on('select2:select', function (e) {
+  document.getElementById('hdnSponsorId').value = e.params.data.id;
+}).on('select2:unselect', function () {
+  document.getElementById('hdnSponsorId').value = '';
+});
+```
+
+Hidden input stores the selected ID; Select2 `<select>` is for display only:
+```html
+<input type="hidden" id="hdnSponsorId" name="SponsorId" value="" />
+<select id="selectSponsor" class="form-select" style="width:100%">
+  <option value="">@await T.GetAsync("Members.SearchPlaceholder")</option>
+</select>
+```
+
+---
+
+### Multi-section Manage page pattern
+
+When an entity needs multiple independent administrative actions (change username, change sponsor, change rank, change status, etc.), create a dedicated `/Manage` page separate from `/Edit`. Each action is a card with its own AJAX save. The Edit page links to Manage; Manage links back to Edit.
+
+**Page structure:**
+- `Manage.cshtml.cs` / `Manage.cshtml` in the same entity folder
+- One `OnPost*Async` handler per action — all return `JsonResult`
+- Single hidden `#formAjax` form supplies antiforgery token for every section
+- Shared `saveSection(handler, data)` JS posts to `?handler=X&id=entityId`
+- On success: `location.reload()` refreshes the summary header
+
+**PageModel — `[BindProperty]` per section input, plain properties for display:**
+```csharp
+// Section inputs — bound from POST body
+[BindProperty] public string  txtNewUsername { get; set; } = string.Empty;
+[BindProperty] public int?    NewSponsorId   { get; set; }
+[BindProperty] public string? ddlNewRankCode { get; set; }
+
+// Display — populated in PopulateAsync(), never overwritten by POST
+public string Username        { get; set; } = string.Empty;
+public string CurrentRankCode { get; set; } = string.Empty;
+```
+
+**Handler pattern (repeat for each action):**
+```csharp
+public async Task<IActionResult> OnPostChangeUsernameAsync(int id)
+{
+  try
+  {
+    await _dbHelper.ChangeUsernameAsync(id, txtNewUsername.Trim(), CurrentUsername);
+    var msg = await _translation.GetAsync(MessageConstants.UpdateSuccess);
+    return new JsonResult(new { success = true, message = msg });
+  }
+  catch
+  {
+    var msg = await _translation.GetAsync(MessageConstants.SaveError);
+    return new JsonResult(new { success = false, message = msg });
+  }
+}
+```
+
+**`saveSection` JS (placed once at the top of `@section PageScripts`):**
+```javascript
+var entityId = @Model.EntityId;
+var antiForgeryToken = $('#formAjax input[name="__RequestVerificationToken"]').val();
+
+function saveSection(handler, data) {
+  data.__RequestVerificationToken = antiForgeryToken;
+  $.post('?handler=' + handler + '&id=' + entityId, data, function (res) {
+    if (res.success) {
+      Swal.fire({ icon: 'success', title: res.message, timer: 1500, showConfirmButton: false })
+        .then(function () { location.reload(); });
+    } else {
+      Swal.fire({ icon: 'error', text: res.message });
+    }
+  }).fail(function () {
+    Swal.fire({ icon: 'error', text: 'Request failed.' });
+  });
+}
+```
+
+**Button invocation (inline onclick, reads value at click time):**
+```html
+<button type="button" class="btn btn-primary"
+        onclick="saveSection('ChangeUsername', { txtNewUsername: document.getElementById('txtNewUsername').value })">
+  <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+</button>
+```
+
+Routes — add both `/Edit` and `/Manage` to `Constants/Routes.cs` when creating entities that use this pattern.
+
+---
+
+### Self-referencing FK — EF Core Fluent API
+
+For tree structures where a table references itself (e.g. `sponsor_id → members.id`, `binary_parent_id → members.id`), configure each self-referencing navigation property as a separate `.HasOne(...).WithMany()` block. Use `OnDelete(DeleteBehavior.Restrict)` — never `Cascade` on self-referencing FKs (would cascade-delete entire subtrees).
+
+```csharp
+modelBuilder.Entity<Member>(entity =>
+{
+  // ...column mappings...
+
+  entity.HasOne(e => e.Sponsor)
+        .WithMany()
+        .HasForeignKey(e => e.SponsorId)
+        .OnDelete(DeleteBehavior.Restrict);
+
+  entity.HasOne(e => e.BinaryParent)
+        .WithMany()
+        .HasForeignKey(e => e.BinaryParentId)
+        .OnDelete(DeleteBehavior.Restrict);
+});
+```
+
+SQL DDL:
+```sql
+sponsor_id       INT  REFERENCES members(id) ON DELETE RESTRICT,
+binary_parent_id INT  REFERENCES members(id) ON DELETE RESTRICT,
+```
+
+**Loading self-referencing nav props** — use explicit `.Include()`:
+```csharp
+await _db.Members
+         .Include(m => m.Sponsor)
+         .Include(m => m.BinaryParent)
+         .FirstOrDefaultAsync(m => m.Id == id);
+```
+
+Do **not** use filtered `Include/ThenInclude` for self-referencing tree traversal — EF Core silently returns empty `Children`. Load flat and build the tree in memory (BFS or recursion).
+
+---
+
 ## Dependency Injection Rules
 
 All services are registered as **Scoped** unless they hold no per-request state:

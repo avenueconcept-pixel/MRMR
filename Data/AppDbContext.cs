@@ -57,6 +57,10 @@ public class AppDbContext : DbContext
   public DbSet<ProductSectionTranslation>  ProductSectionTranslations  => Set<ProductSectionTranslation>();
   public DbSet<ProductImage>               ProductImages               => Set<ProductImage>();
   public DbSet<ProductPackageItem>         ProductPackageItems         => Set<ProductPackageItem>();
+  public DbSet<Rank>              Ranks              => Set<Rank>();
+  public DbSet<Member>            Members            => Set<Member>();
+  public DbSet<MemberRankHistory> MemberRankHistories => Set<MemberRankHistory>();
+  public DbSet<MemberChangeLog>   MemberChangeLogs   => Set<MemberChangeLog>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -964,6 +968,118 @@ public class AppDbContext : DbContext
             .HasForeignKey(e => e.ItemProductCode)
             .HasPrincipalKey(e => e.ProductCode)
             .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // Rank (stub — full config in ranks phase)
+    modelBuilder.Entity<Rank>(entity =>
+    {
+      entity.ToTable("ranks");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.RankCode).HasColumnName("rank_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.RankName).HasColumnName("rank_name").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.HasIndex(e => e.RankCode).IsUnique();
+    });
+
+    // Member
+    modelBuilder.Entity<Member>(entity =>
+    {
+      entity.ToTable("members");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.IdType).HasColumnName("id_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.IdNo).HasColumnName("id_no").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.PhoneCountryCode).HasColumnName("phone_country_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.ProfileImage).HasColumnName("profile_image").HasMaxLength(200);
+      entity.Property(e => e.AddressLine1).HasColumnName("address_line1").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.AddressLine2).HasColumnName("address_line2").HasMaxLength(200);
+      entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.State).HasColumnName("state").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.Postcode).HasColumnName("postcode").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.BankName).HasColumnName("bank_name").HasMaxLength(100);
+      entity.Property(e => e.BankAccountName).HasColumnName("bank_account_name").HasMaxLength(200);
+      entity.Property(e => e.BankAccountNo).HasColumnName("bank_account_no").HasMaxLength(50);
+      entity.Property(e => e.SponsorId).HasColumnName("sponsor_id");
+      entity.Property(e => e.BinaryParentId).HasColumnName("binary_parent_id");
+      entity.Property(e => e.BinaryPosition).HasColumnName("binary_position").HasMaxLength(5);
+      entity.Property(e => e.IsActivated).HasColumnName("is_activated");
+      entity.Property(e => e.ActivatedAt).HasColumnName("activated_at");
+      entity.Property(e => e.JoinedAt).HasColumnName("joined_at");
+      entity.Property(e => e.CurrentRankCode).HasColumnName("current_rank_code").HasMaxLength(20);
+      entity.Property(e => e.HighestRankCode).HasColumnName("highest_rank_code").HasMaxLength(20);
+      entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(500).IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+
+      entity.HasIndex(e => e.Username).IsUnique();
+
+      entity.HasOne(e => e.Country)
+            .WithMany()
+            .HasForeignKey(e => e.CountryCode)
+            .HasPrincipalKey(e => e.CountryCode)
+            .OnDelete(DeleteBehavior.Restrict);
+
+      entity.HasOne(e => e.Sponsor)
+            .WithMany()
+            .HasForeignKey(e => e.SponsorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+      entity.HasOne(e => e.BinaryParent)
+            .WithMany()
+            .HasForeignKey(e => e.BinaryParentId)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // MemberRankHistory
+    modelBuilder.Entity<MemberRankHistory>(entity =>
+    {
+      entity.ToTable("member_rank_histories");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
+      entity.Property(e => e.RankCode).HasColumnName("rank_code").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Pv).HasColumnName("pv").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.PeriodYear).HasColumnName("period_year");
+      entity.Property(e => e.PeriodMonth).HasColumnName("period_month");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+
+      entity.HasOne(e => e.Member)
+            .WithMany()
+            .HasForeignKey(e => e.MemberId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // MemberChangeLog
+    modelBuilder.Entity<MemberChangeLog>(entity =>
+    {
+      entity.ToTable("member_change_logs");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
+      entity.Property(e => e.ChangeType).HasColumnName("change_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.OldValue).HasColumnName("old_value").IsRequired();
+      entity.Property(e => e.NewValue).HasColumnName("new_value").IsRequired();
+      entity.Property(e => e.ChangedBy).HasColumnName("changed_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.ChangedAt).HasColumnName("changed_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+
+      entity.HasOne(e => e.Member)
+            .WithMany()
+            .HasForeignKey(e => e.MemberId)
+            .OnDelete(DeleteBehavior.Cascade);
     });
 
     // Customer
