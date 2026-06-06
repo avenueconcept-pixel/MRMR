@@ -503,6 +503,32 @@ document.querySelector('form').addEventListener('submit', function () {
 
 When multiple languages are shown as Bootstrap tabs, initialise one Quill instance per language and sync all of them in the submit handler. Use a JS object (`var editors = {}`) keyed by language code.
 
+**Multiple Quill instances across multiple forms on the same page** — when a page has several independent forms each with their own Quill editors (e.g. an "Add" form plus one edit form per existing row), key editors by a unique element ID and scope the sync to the submitting form using `form.contains(hdn)`:
+
+```javascript
+var editors = {};
+
+// Init — one call per editor element
+editors['editorNew_en'] = new Quill('#editorNew_en', { theme: 'snow' });
+editors['editorEdit_42_en'] = new Quill('#editorEdit_42_en', { theme: 'snow' });
+editors['editorEdit_42_en'].clipboard.dangerouslyPasteHTML(existingHtml);
+
+// Single shared submit handler — syncs only editors belonging to the form being submitted
+document.querySelectorAll('form').forEach(function (form) {
+  form.addEventListener('submit', function () {
+    Object.keys(editors).forEach(function (editorKey) {
+      var hdnKey = editorKey.replace('editor', 'hdn');  // naming convention: editor* ↔ hdn*
+      var hdn    = document.getElementById(hdnKey);
+      if (hdn && form.contains(hdn)) {
+        hdn.value = editors[editorKey].root.innerHTML;
+      }
+    });
+  });
+});
+```
+
+Naming convention: hidden input IDs use `hdn` prefix, editor div IDs use `editor` prefix, both followed by the same unique suffix (e.g. `hdnNew_en` / `editorNew_en`, `hdnEdit_42_en` / `editorEdit_42_en`).
+
 ---
 
 ### Date/time range inputs
@@ -716,6 +742,101 @@ public class ThingSortItem
   public int  SortOrder { get; set; }
   public int? ParentId  { get; set; }
   public int  Level     { get; set; }
+}
+```
+
+### SortableJS drag-to-reorder pattern
+
+Use SortableJS (loaded via CDN in VendorScripts) for any draggable list that persists order to the DB. The reorder fires an AJAX JSON POST on drag end — use the `[FromBody]` handler pattern.
+
+```html
+@* Each draggable item must have data-id="@item.Id" *@
+<div id="myList">
+  @foreach (var item in Model.Items)
+  {
+    <div class="card" data-id="@item.Id">
+      <i class="ri ri-drag-move-line" style="cursor:grab;"></i>
+      ...
+    </div>
+  }
+</div>
+```
+
+```javascript
+// SortableJS init — restrict drag handle to the grip icon
+var myList = document.getElementById('myList');
+if (myList) {
+  new Sortable(myList, {
+    handle:    '.ri-drag-move-line',
+    animation: 150,
+    onEnd: function () {
+      var items = Array.from(myList.querySelectorAll('[data-id]')).map(function (el, i) {
+        return { id: parseInt(el.dataset.id), sortOrder: i + 1 };
+      });
+      fetch('?handler=SaveMySort', {
+        method:  'POST',
+        headers: {
+          'Content-Type':             'application/json',
+          'RequestVerificationToken': document.querySelector('#formAjax input[name="__RequestVerificationToken"]').value
+        },
+        body: JSON.stringify(items)
+      });
+    }
+  });
+}
+```
+
+```csharp
+// PageModel handler — [FromBody] receives the JSON array
+public async Task<IActionResult> OnPostSaveMySort Async([FromBody] List<MySortItem> items)
+{
+  try
+  {
+    await _dbHelper.SaveSortOrderAsync(items);
+    return new JsonResult(new { success = true });
+  }
+  catch
+  {
+    return new JsonResult(new { success = false });
+  }
+}
+```
+
+Add the CDN script to `@section VendorScripts` (do not add it more than once per page):
+```html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+```
+
+The sort DTO lives in `Dtos/*Dtos.cs`:
+```csharp
+public class MySortItem { public int Id { get; set; } public int SortOrder { get; set; } }
+```
+
+### Non-`[BindProperty]` read-only page properties alongside BindProperty fields
+
+When a value set in `OnGetAsync` must control view logic (conditional rendering, JS conditionals) but must **not** be overwritten by unrelated POST handlers, declare it as a plain page property — not `[BindProperty]`.
+
+**Why:** `[BindProperty]` properties are repopulated from every POST body. If the form that fires (e.g. `OnPostUploadImageAsync`) doesn't include the field, it arrives as empty/default — breaking conditionals in the view on the `Page()` returned by error paths.
+
+```csharp
+// Correct — plain property: survives all POST handlers unchanged
+public string ProductType { get; set; } = string.Empty;
+
+// Also present for the form's own round-trip
+[BindProperty] public string ddlProductType { get; set; } = string.Empty;
+```
+
+Set both in `OnGetAsync` and in every `ReloadPageAsync` path:
+```csharp
+ProductType    = product.ProductType;   // read-only mirror — drives @if in view
+ddlProductType = product.ProductType;   // BindProperty — round-trips through the Update form
+```
+
+Use the plain property in `.cshtml` conditionals:
+```cshtml
+@if (Model.ProductType == ProductTypeConstants.Package)
+{
+  @* Components card — only visible for package products *@
 }
 ```
 
