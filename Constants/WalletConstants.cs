@@ -29,3 +29,28 @@ public static class PurchaseTxnTypeConstants
   public const string TransferIn  = "transfer_in";
   public const string TransferOut = "transfer_out";
 }
+
+public static class IncentivePeriodStatusConstants
+{
+  public const string Open      = "open";
+  public const string Closed    = "closed";
+  public const string Processed = "processed";
+  public const string Partial   = "partial";
+}
+
+public static class WalletPayoutStatusConstants
+{
+  public const string Pending    = "pending";
+  public const string Processing = "processing";
+  public const string Completed  = "completed";
+  public const string Failed     = "failed";
+}
+
+public static class IncentiveTypeConstants
+{
+  public const string RetailProfit       = "retail_profit";
+  public const string PersonalSalesBonus = "personal_sales_bonus";
+  public const string GroupOverride      = "group_override";
+  public const string RankBonus          = "rank_bonus";
+  public const string Adjustment         = "adjustment";
+}

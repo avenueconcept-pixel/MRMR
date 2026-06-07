@@ -68,6 +68,8 @@ public class AppDbContext : DbContext
   public DbSet<CashWalletTransactionArchive>     CashWalletTransactionArchives     => Set<CashWalletTransactionArchive>();
   public DbSet<PurchaseWalletTransaction>        PurchaseWalletTransactions        => Set<PurchaseWalletTransaction>();
   public DbSet<PurchaseWalletTransactionArchive> PurchaseWalletTransactionArchives => Set<PurchaseWalletTransactionArchive>();
+  public DbSet<IncentivePeriod>                  IncentivePeriods                  => Set<IncentivePeriod>();
+  public DbSet<WalletPayout>                     WalletPayouts                     => Set<WalletPayout>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -1137,6 +1139,8 @@ public class AppDbContext : DbContext
       entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
       entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
       entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
+      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at")
             .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
@@ -1162,6 +1166,8 @@ public class AppDbContext : DbContext
       entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
       entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
       entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
+      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at");
     });
@@ -1182,6 +1188,8 @@ public class AppDbContext : DbContext
       entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
       entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
       entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
+      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at")
             .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
@@ -1207,8 +1215,62 @@ public class AppDbContext : DbContext
       entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
       entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
       entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
+      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+    });
+
+    // IncentivePeriod
+    modelBuilder.Entity<IncentivePeriod>(entity =>
+    {
+      entity.ToTable("incentive_periods");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.ClosedAt).HasColumnName("closed_at");
+      entity.Property(e => e.ProcessedAt).HasColumnName("processed_at");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+
+      entity.HasIndex(e => e.PeriodDate).IsUnique();
+
+      entity.HasMany(e => e.Payouts)
+            .WithOne(p => p.IncentivePeriod)
+            .HasForeignKey(p => p.IncentivePeriodId)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // WalletPayout
+    modelBuilder.Entity<WalletPayout>(entity =>
+    {
+      entity.ToTable("wallet_payouts");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id").IsRequired();
+      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
+      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
+      entity.Property(e => e.IncentiveType).HasColumnName("incentive_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.PvAmount).HasColumnName("pv_amount").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
+      entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.RetryCount).HasColumnName("retry_count");
+      entity.Property(e => e.ErrorMessage).HasColumnName("error_message");
+      entity.Property(e => e.ProcessedAt).HasColumnName("processed_at");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+
+      entity.HasOne(e => e.Member)
+            .WithMany()
+            .HasForeignKey(e => e.MemberId)
+            .OnDelete(DeleteBehavior.Restrict);
     });
 
     // Customer

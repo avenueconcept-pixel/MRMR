@@ -1,0 +1,163 @@
+@page
+@model MyApp.Areas.Admin.Pages.IncentivePeriods.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("IncentivePeriods.Title.Index");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("IncentivePeriods.Title.Index")</h4>
+</div>
+
+@* ── Filters ── *@
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" asp-area="Admin" asp-page="/IncentivePeriods/Index">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">@await T.GetAsync("IncentivePeriods.Status")</label>
+          <select asp-for="FilterStatus" asp-items="@Model.ddlStatus" class="form-select"></select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">
+            <i class="ri ri-search-line me-1"></i>@await T.GetAsync("Btn.Search")
+          </button>
+          <a asp-area="Admin" asp-page="/IncentivePeriods/Index" class="btn btn-outline-secondary ms-1">
+            @await T.GetAsync("Btn.Clear")
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("IncentivePeriods.PeriodDate")</th>
+            <th>@await T.GetAsync("IncentivePeriods.Status")</th>
+            <th class="text-end">@await T.GetAsync("IncentivePeriods.TotalPayouts")</th>
+            <th class="text-end">@await T.GetAsync("IncentivePeriods.CompletedCount")</th>
+            <th class="text-end">@await T.GetAsync("IncentivePeriods.FailedCount")</th>
+            <th class="text-end">@await T.GetAsync("IncentivePeriods.TotalAmountUsd")</th>
+            <th>@await T.GetAsync("IncentivePeriods.ClosedAt")</th>
+            <th>@await T.GetAsync("IncentivePeriods.ProcessedAt")</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var item in Model.Items)
+          {
+            <tr>
+              <td><strong>@item.PeriodDate.ToString("yyyy-MM-dd")</strong></td>
+              <td>
+                @{
+                  string badgeClass = item.Status == "open"      ? "bg-info"    :
+                                      item.Status == "closed"    ? "bg-warning"  :
+                                      item.Status == "processed" ? "bg-success"  :
+                                      item.Status == "partial"   ? "bg-danger"   : "bg-secondary";
+                }
+                <span class="badge @badgeClass">@item.Status</span>
+              </td>
+              <td class="text-end">@item.TotalPayouts</td>
+              <td class="text-end text-success">@item.CompletedCount</td>
+              <td class="text-end @(item.FailedCount > 0 ? "text-danger fw-semibold" : "")">@item.FailedCount</td>
+              <td class="text-end">@item.TotalAmountUsd.ToString("N2")</td>
+              <td>
+                @if (item.ClosedAt.HasValue)
+                {
+                  @item.ClosedAt.Value.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)
+                }
+                else { <span class="text-muted">—</span> }
+              </td>
+              <td>
+                @if (item.ProcessedAt.HasValue)
+                {
+                  @item.ProcessedAt.Value.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)
+                }
+                else { <span class="text-muted">—</span> }
+              </td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/IncentivePeriods/View"
+                         asp-route-periodId="@item.Id">
+                        <i class="ri ri-eye-line me-1"></i>@await T.GetAsync("Btn.View")
+                      </a>
+                    </li>
+                    @if (item.FailedCount > 0)
+                    {
+                      <li>
+                        <button class="dropdown-item text-warning" type="button"
+                                onclick="retryFailed(@item.Id)">
+                          <i class="ri ri-refresh-line me-1"></i>@await T.GetAsync("IncentivePeriods.Btn.RetryFailed")
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (!Model.Items.Any())
+          {
+            <tr><td colspan="9" class="text-center text-muted py-4">—</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @* ── Pagination ── *@
+    @if (Model.TotalPages > 1)
+    {
+      <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+          @for (var p = 1; p <= Model.TotalPages; p++)
+          {
+            <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+              <a class="page-link"
+                 asp-area="Admin" asp-page="/IncentivePeriods/Index"
+                 asp-route-currentPage="@p"
+                 asp-route-filterStatus="@Model.FilterStatus">@p</a>
+            </li>
+          }
+        </ul>
+      </nav>
+    }
+  </div>
+</div>
+
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    retrySuccess: '@Html.Raw(Model.MsgRetrySuccess)',
+    retryError:   '@Html.Raw(Model.MsgRetryError)'
+  };
+
+  function retryFailed(periodId) {
+    $.post('?handler=RetryFailed&periodId=' + periodId, {
+      __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+    }, function (data) {
+      if (data.success) {
+        Swal.fire({ icon: 'success', title: data.message, timer: 1500, showConfirmButton: false })
+          .then(function () { location.reload(); });
+      } else {
+        Swal.fire({ icon: 'error', text: data.message || pageMsg.retryError });
+      }
+    }).fail(function () {
+      Swal.fire({ icon: 'error', text: pageMsg.retryError });
+    });
+  }
+</script>
+}

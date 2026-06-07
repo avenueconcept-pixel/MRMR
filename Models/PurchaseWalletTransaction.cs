@@ -11,10 +11,12 @@ public class PurchaseWalletTransaction
   public decimal  DisplayAmount   { get; set; }
   public string   DisplayCurrency { get; set; } = string.Empty;
   public decimal  ExchangeRate    { get; set; }
-  public string?  ReferenceId     { get; set; }
-  public string?  Remark          { get; set; }
-  public string   CreatedBy       { get; set; } = string.Empty;
-  public DateTime CreatedAt       { get; set; }
+  public string?  ReferenceId       { get; set; }
+  public string?  Remark            { get; set; }
+  public int?     IncentivePeriodId { get; set; }
+  public DateOnly? PeriodDate       { get; set; }
+  public string   CreatedBy         { get; set; } = string.Empty;
+  public DateTime CreatedAt         { get; set; }
 
   public Member? Member { get; set; }
 }

@@ -1,0 +1,201 @@
+@page
+@model MyApp.Areas.Admin.Pages.IncentivePeriods.ViewModel
+@{
+  ViewData["title"] = await T.GetAsync("IncentivePeriods.Title.View");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("IncentivePeriods.Title.View")</h4>
+  <a asp-area="Admin" asp-page="/IncentivePeriods/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Btn.Back")
+  </a>
+</div>
+
+@* ── Period Summary Card ── *@
+@if (Model.Period != null)
+{
+  var p = Model.Period;
+  string badgeClass = p.Status == "open"      ? "bg-info"    :
+                      p.Status == "closed"    ? "bg-warning"  :
+                      p.Status == "processed" ? "bg-success"  :
+                      p.Status == "partial"   ? "bg-danger"   : "bg-secondary";
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-center">
+        <div class="col-md-2">
+          <p class="text-muted small mb-1">@await T.GetAsync("IncentivePeriods.PeriodDate")</p>
+          <strong class="fs-5">@p.PeriodDate.ToString("yyyy-MM-dd")</strong>
+        </div>
+        <div class="col-md-2">
+          <p class="text-muted small mb-1">@await T.GetAsync("IncentivePeriods.Status")</p>
+          <span class="badge @badgeClass fs-6">@p.Status</span>
+        </div>
+        <div class="col-md-1 text-center">
+          <p class="text-muted small mb-1">@await T.GetAsync("IncentivePeriods.TotalPayouts")</p>
+          <strong>@p.TotalPayouts</strong>
+        </div>
+        <div class="col-md-1 text-center text-success">
+          <p class="text-muted small mb-1">@await T.GetAsync("IncentivePeriods.CompletedCount")</p>
+          <strong>@p.CompletedCount</strong>
+        </div>
+        <div class="col-md-1 text-center @(p.FailedCount > 0 ? "text-danger" : "")">
+          <p class="text-muted small mb-1">@await T.GetAsync("IncentivePeriods.FailedCount")</p>
+          <strong>@p.FailedCount</strong>
+        </div>
+        <div class="col-md-2 text-end">
+          <p class="text-muted small mb-1">@await T.GetAsync("IncentivePeriods.TotalAmountUsd")</p>
+          <strong>@p.TotalAmountUsd.ToString("N2")</strong>
+        </div>
+        <div class="col-md-3 text-end">
+          @if (p.FailedCount > 0)
+          {
+            <button class="btn btn-sm btn-warning" onclick="retryFailed(@p.Id)">
+              <i class="ri ri-refresh-line me-1"></i>@await T.GetAsync("IncentivePeriods.Btn.RetryFailed")
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@* ── Filters ── *@
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" asp-area="Admin" asp-page="/IncentivePeriods/View">
+      <input type="hidden" name="PeriodId" value="@Model.PeriodId" />
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">@await T.GetAsync("IncentivePeriods.Status")</label>
+          <select asp-for="FilterStatus" asp-items="@Model.ddlStatus" class="form-select"></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">@await T.GetAsync("WalletPayout.IncentiveType")</label>
+          <select asp-for="FilterType" asp-items="@Model.ddlType" class="form-select"></select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">
+            <i class="ri ri-search-line me-1"></i>@await T.GetAsync("Btn.Search")
+          </button>
+          <a asp-area="Admin" asp-page="/IncentivePeriods/View"
+             asp-route-periodId="@Model.PeriodId"
+             class="btn btn-outline-secondary ms-1">
+            @await T.GetAsync("Btn.Clear")
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+@* ── Payout Rows ── *@
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("Members.Username")</th>
+            <th>@await T.GetAsync("Members.FullName")</th>
+            <th>@await T.GetAsync("WalletPayout.IncentiveType")</th>
+            <th class="text-end">@await T.GetAsync("WalletPayout.PvAmount")</th>
+            <th class="text-end">@await T.GetAsync("WalletPayout.AmountUsd")</th>
+            <th>@await T.GetAsync("Wallets.ReferenceId")</th>
+            <th>@await T.GetAsync("IncentivePeriods.Status")</th>
+            <th class="text-center">@await T.GetAsync("WalletPayout.RetryCount")</th>
+            <th>@await T.GetAsync("WalletPayout.ErrorMessage")</th>
+            <th>@await T.GetAsync("IncentivePeriods.ProcessedAt")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var item in Model.Items)
+          {
+            string statusBadge = item.Status == "pending"    ? "bg-secondary" :
+                                 item.Status == "processing" ? "bg-info"      :
+                                 item.Status == "completed"  ? "bg-success"   :
+                                 item.Status == "failed"     ? "bg-danger"    : "bg-secondary";
+            <tr>
+              <td>@item.MemberUsername</td>
+              <td>@item.MemberFullName</td>
+              <td><span class="badge bg-label-primary">@item.IncentiveType</span></td>
+              <td class="text-end">@item.PvAmount.ToString("N2")</td>
+              <td class="text-end">@item.AmountUsd.ToString("N2")</td>
+              <td><small class="text-muted">@(item.ReferenceId ?? "—")</small></td>
+              <td><span class="badge @statusBadge">@item.Status</span></td>
+              <td class="text-center">@item.RetryCount</td>
+              <td>
+                @if (!string.IsNullOrEmpty(item.ErrorMessage))
+                {
+                  <span class="text-danger small" title="@item.ErrorMessage">
+                    @(item.ErrorMessage.Length > 40 ? item.ErrorMessage[..40] + "…" : item.ErrorMessage)
+                  </span>
+                }
+                else { <span class="text-muted">—</span> }
+              </td>
+              <td>
+                @if (item.ProcessedAt.HasValue)
+                {
+                  @item.ProcessedAt.Value.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)
+                }
+                else { <span class="text-muted">—</span> }
+              </td>
+            </tr>
+          }
+          @if (!Model.Items.Any())
+          {
+            <tr><td colspan="10" class="text-center text-muted py-4">—</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @* ── Pagination ── *@
+    @if (Model.TotalPages > 1)
+    {
+      <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+          @for (var pg = 1; pg <= Model.TotalPages; pg++)
+          {
+            <li class="page-item @(pg == Model.CurrentPage ? "active" : "")">
+              <a class="page-link"
+                 asp-area="Admin" asp-page="/IncentivePeriods/View"
+                 asp-route-periodId="@Model.PeriodId"
+                 asp-route-currentPage="@pg"
+                 asp-route-filterStatus="@Model.FilterStatus"
+                 asp-route-filterType="@Model.FilterType">@pg</a>
+            </li>
+          }
+        </ul>
+      </nav>
+    }
+  </div>
+</div>
+
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    retrySuccess: '@Html.Raw(Model.MsgRetrySuccess)',
+    retryError:   '@Html.Raw(Model.MsgRetryError)'
+  };
+
+  function retryFailed(periodId) {
+    $.post('?handler=RetryFailed&periodId=' + periodId, {
+      __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+    }, function (data) {
+      if (data.success) {
+        Swal.fire({ icon: 'success', title: data.message, timer: 1500, showConfirmButton: false })
+          .then(function () { location.reload(); });
+      } else {
+        Swal.fire({ icon: 'error', text: data.message || pageMsg.retryError });
+      }
+    }).fail(function () {
+      Swal.fire({ icon: 'error', text: pageMsg.retryError });
+    });
+  }
+</script>
+}

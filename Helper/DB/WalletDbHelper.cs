@@ -174,19 +174,21 @@ public class WalletDbHelper : DbHelper
         {
           var archives = oldCash.Select(t => new CashWalletTransactionArchive
           {
-            Id              = t.Id,
-            MemberId        = t.MemberId,
-            TxnType         = t.TxnType,
-            AmountUsd       = t.AmountUsd,
-            Direction       = t.Direction,
-            BalanceAfter    = t.BalanceAfter,
-            DisplayAmount   = t.DisplayAmount,
-            DisplayCurrency = t.DisplayCurrency,
-            ExchangeRate    = t.ExchangeRate,
-            ReferenceId     = t.ReferenceId,
-            Remark          = t.Remark,
-            CreatedBy       = t.CreatedBy,
-            CreatedAt       = t.CreatedAt
+            Id                = t.Id,
+            MemberId          = t.MemberId,
+            TxnType           = t.TxnType,
+            AmountUsd         = t.AmountUsd,
+            Direction         = t.Direction,
+            BalanceAfter      = t.BalanceAfter,
+            DisplayAmount     = t.DisplayAmount,
+            DisplayCurrency   = t.DisplayCurrency,
+            ExchangeRate      = t.ExchangeRate,
+            ReferenceId       = t.ReferenceId,
+            Remark            = t.Remark,
+            IncentivePeriodId = t.IncentivePeriodId,
+            PeriodDate        = t.PeriodDate,
+            CreatedBy         = t.CreatedBy,
+            CreatedAt         = t.CreatedAt
           }).ToList();
           _db.CashWalletTransactionArchives.AddRange(archives);
           _db.CashWalletTransactions.RemoveRange(oldCash);
@@ -199,19 +201,21 @@ public class WalletDbHelper : DbHelper
         {
           var archives = oldPurchase.Select(t => new PurchaseWalletTransactionArchive
           {
-            Id              = t.Id,
-            MemberId        = t.MemberId,
-            TxnType         = t.TxnType,
-            AmountUsd       = t.AmountUsd,
-            Direction       = t.Direction,
-            BalanceAfter    = t.BalanceAfter,
-            DisplayAmount   = t.DisplayAmount,
-            DisplayCurrency = t.DisplayCurrency,
-            ExchangeRate    = t.ExchangeRate,
-            ReferenceId     = t.ReferenceId,
-            Remark          = t.Remark,
-            CreatedBy       = t.CreatedBy,
-            CreatedAt       = t.CreatedAt
+            Id                = t.Id,
+            MemberId          = t.MemberId,
+            TxnType           = t.TxnType,
+            AmountUsd         = t.AmountUsd,
+            Direction         = t.Direction,
+            BalanceAfter      = t.BalanceAfter,
+            DisplayAmount     = t.DisplayAmount,
+            DisplayCurrency   = t.DisplayCurrency,
+            ExchangeRate      = t.ExchangeRate,
+            ReferenceId       = t.ReferenceId,
+            Remark            = t.Remark,
+            IncentivePeriodId = t.IncentivePeriodId,
+            PeriodDate        = t.PeriodDate,
+            CreatedBy         = t.CreatedBy,
+            CreatedAt         = t.CreatedAt
           }).ToList();
           _db.PurchaseWalletTransactionArchives.AddRange(archives);
           _db.PurchaseWalletTransactions.RemoveRange(oldPurchase);
@@ -295,36 +299,40 @@ public class WalletDbHelper : DbHelper
     {
       _db.CashWalletTransactions.Add(new CashWalletTransaction
       {
-        MemberId        = dto.MemberId,
-        TxnType         = dto.TxnType,
-        AmountUsd       = dto.AmountUsd,
-        Direction       = dto.Direction,
-        BalanceAfter    = newBalance,
-        DisplayAmount   = displayAmount,
-        DisplayCurrency = currencyCode,
-        ExchangeRate    = exchangeRate,
-        ReferenceId     = dto.ReferenceId,
-        Remark          = dto.Remark,
-        CreatedBy       = dto.CreatedBy,
-        CreatedAt       = DateTime.UtcNow
+        MemberId          = dto.MemberId,
+        TxnType           = dto.TxnType,
+        AmountUsd         = dto.AmountUsd,
+        Direction         = dto.Direction,
+        BalanceAfter      = newBalance,
+        DisplayAmount     = displayAmount,
+        DisplayCurrency   = currencyCode,
+        ExchangeRate      = exchangeRate,
+        ReferenceId       = dto.ReferenceId,
+        Remark            = dto.Remark,
+        IncentivePeriodId = dto.IncentivePeriodId,
+        PeriodDate        = dto.PeriodDate,
+        CreatedBy         = dto.CreatedBy,
+        CreatedAt         = DateTime.UtcNow
       });
     }
     else
     {
       _db.PurchaseWalletTransactions.Add(new PurchaseWalletTransaction
       {
-        MemberId        = dto.MemberId,
-        TxnType         = dto.TxnType,
-        AmountUsd       = dto.AmountUsd,
-        Direction       = dto.Direction,
-        BalanceAfter    = newBalance,
-        DisplayAmount   = displayAmount,
-        DisplayCurrency = currencyCode,
-        ExchangeRate    = exchangeRate,
-        ReferenceId     = dto.ReferenceId,
-        Remark          = dto.Remark,
-        CreatedBy       = dto.CreatedBy,
-        CreatedAt       = DateTime.UtcNow
+        MemberId          = dto.MemberId,
+        TxnType           = dto.TxnType,
+        AmountUsd         = dto.AmountUsd,
+        Direction         = dto.Direction,
+        BalanceAfter      = newBalance,
+        DisplayAmount     = displayAmount,
+        DisplayCurrency   = currencyCode,
+        ExchangeRate      = exchangeRate,
+        ReferenceId       = dto.ReferenceId,
+        Remark            = dto.Remark,
+        IncentivePeriodId = dto.IncentivePeriodId,
+        PeriodDate        = dto.PeriodDate,
+        CreatedBy         = dto.CreatedBy,
+        CreatedAt         = DateTime.UtcNow
       });
     }
 
