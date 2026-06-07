@@ -20,15 +20,17 @@ public class ManageModel : AdminPageModel
   [BindProperty] public string? ddlNewRankCode    { get; set; }
   [BindProperty] public string  ddlNewStatus      { get; set; } = string.Empty;
 
-  public int      MemberId    { get; set; }
-  public string   Username    { get; set; } = string.Empty;
-  public string   FullName    { get; set; } = string.Empty;
-  public string   Status      { get; set; } = string.Empty;
-  public bool     IsActivated { get; set; }
-  public string?  CurrentRankCode { get; set; }
-  public string?  SponsorUsername { get; set; }
-  public string?  BinaryParentUsername { get; set; }
-  public string?  BinaryPosition { get; set; }
+  public int      MemberId             { get; set; }
+  public string   Username             { get; set; } = string.Empty;
+  public string   FullName             { get; set; } = string.Empty;
+  public string   Status               { get; set; } = string.Empty;
+  public bool     IsActivated          { get; set; }
+  public string?  CurrentRankCode      { get; set; }
+  public int?     SponsorId            { get; set; }
+  public string?  SponsorUsername      { get; set; }
+  public int?     CurrentBinaryParentId { get; set; }
+  public string?  BinaryParentUsername  { get; set; }
+  public string?  BinaryPosition        { get; set; }
 
   public List<MemberChangeLog> ChangeLogs  { get; set; } = new();
   public List<SelectListItem>  ddlRanks    { get; set; } = new();
@@ -138,15 +140,17 @@ public class ManageModel : AdminPageModel
 
   private async Task PopulateAsync(Member member)
   {
-    MemberId            = member.Id;
-    Username            = member.Username;
-    FullName            = member.FullName;
-    Status              = member.Status;
-    IsActivated         = member.IsActivated;
-    CurrentRankCode     = member.CurrentRankCode;
-    SponsorUsername     = member.Sponsor?.Username;
-    BinaryParentUsername = member.BinaryParent?.Username;
-    BinaryPosition      = member.BinaryPosition;
+    MemberId              = member.Id;
+    Username              = member.Username;
+    FullName              = member.FullName;
+    Status                = member.Status;
+    IsActivated           = member.IsActivated;
+    CurrentRankCode       = member.CurrentRankCode;
+    SponsorId             = member.SponsorId;
+    SponsorUsername       = member.Sponsor?.Username;
+    CurrentBinaryParentId = member.BinaryParentId;
+    BinaryParentUsername  = member.BinaryParent?.Username;
+    BinaryPosition        = member.BinaryPosition;
 
     ChangeLogs = await _memberDbHelper.GetChangeLogsAsync(member.Id);
 

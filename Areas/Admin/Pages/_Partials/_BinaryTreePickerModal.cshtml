@@ -1,0 +1,29 @@
+@* Binary Tree Picker Modal — included once in layout, shared by all pages that need binary placement *@
+<div class="modal fade" id="modalBinaryTree" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="d-flex flex-column">
+          <h5 class="modal-title mb-1" id="modalBinaryTreeLabel">Select Binary Position</h5>
+          <nav id="binaryBreadcrumb" aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small" id="binaryBreadcrumbList"></ol>
+          </nav>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center py-3 d-none" id="binaryTreeLoading">
+          <div class="spinner-border text-primary" role="status"></div>
+        </div>
+        <div id="binaryTreeContainer" class="binary-tree-container overflow-auto"></div>
+      </div>
+      <div class="modal-footer">
+        <small class="text-muted me-auto">
+          <i class="ri ri-information-line me-1"></i>
+          Click a filled node to zoom in. Click an empty slot to place here.
+        </small>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>

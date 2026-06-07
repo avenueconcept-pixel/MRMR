@@ -234,20 +234,12 @@
               </div>
             </div>
 
-            <div id="manualPlacementFields" class="col-12 row g-3" style="display:none;">
-              <div class="col-md-6">
-                <label class="form-label">@await T.GetAsync("Members.BinaryParent")</label>
-                <input type="hidden" id="BinaryParentId" name="BinaryParentId" value="@Model.BinaryParentId" />
-                <select id="selectBinaryParent" class="form-select select2-binary" style="width:100%">
-                  <option value="">@await T.GetAsync("Members.SearchPlaceholder")</option>
-                </select>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">@await T.GetAsync("Members.BinaryPosition")</label>
-                <select name="ddlBinaryPosition" id="ddlBinaryPosition" class="form-select">
-                  <option value="left">@await T.GetAsync("Members.Placement.Left")</option>
-                  <option value="right">@await T.GetAsync("Members.Placement.Right")</option>
-                </select>
+            <div id="manualPlacementFields" class="col-12" style="display:none;">
+              <input type="hidden" name="BinaryParentId"    id="hdnBinaryParentId" />
+              <input type="hidden" name="ddlBinaryPosition" id="hdnBinaryPosition" />
+              <div id="binaryPlacementResult" class="mt-2 d-none">
+                <span class="badge bg-primary" id="binaryPlacementLabel"></span>
+                <a href="#" id="btnChangeBinarySlot" class="ms-2 small">Change</a>
               </div>
             </div>
           </div>
@@ -318,30 +310,45 @@
     document.getElementById('SponsorId').value = '';
   });
 
-  // Select2 — Binary Parent
-  $('#selectBinaryParent').select2({
-    placeholder: '@await T.GetAsync("Members.SearchPlaceholder")',
-    allowClear: true,
-    minimumInputLength: 1,
-    ajax: {
-      url: '@searchUrl',
-      dataType: 'json',
-      delay: 300,
-      data: function (params) { return { term: params.term }; },
-      processResults: function (data) { return { results: data }; }
-    }
-  }).on('select2:select', function (e) {
-    document.getElementById('BinaryParentId').value = e.params.data.id;
-  }).on('select2:unselect', function () {
-    document.getElementById('BinaryParentId').value = '';
-  });
-
-  // Binary placement toggle
+  // Binary placement radio toggle — opens tree picker when manual is selected
   document.querySelectorAll('input[name="ddlBinaryPlacement"]').forEach(function (radio) {
     radio.addEventListener('change', function () {
-      document.getElementById('manualPlacementFields').style.display =
-        this.value === 'manual' ? 'flex' : 'none';
+      var manualFields = document.getElementById('manualPlacementFields');
+      if (this.value === 'manual') {
+        manualFields.style.display = 'block';
+        openBinaryPickerForCreate();
+      } else {
+        manualFields.style.display = 'none';
+        document.getElementById('hdnBinaryParentId').value = '';
+        document.getElementById('hdnBinaryPosition').value = '';
+        document.getElementById('binaryPlacementResult').classList.add('d-none');
+      }
     });
+  });
+
+  function openBinaryPickerForCreate() {
+    var sponsorId = parseInt(document.getElementById('SponsorId').value);
+    if (!sponsorId) {
+      Swal.fire({ icon: 'warning', text: '@await T.GetAsync("Members.BinaryPicker.NoSponsor")' });
+      document.querySelector('input[name="ddlBinaryPlacement"][value="auto"]').checked = true;
+      document.getElementById('manualPlacementFields').style.display = 'none';
+      return;
+    }
+    BinaryTreePicker.open({
+      rootId: sponsorId,
+      onSelect: function (parentId, position, parentUsername) {
+        document.getElementById('hdnBinaryParentId').value = parentId;
+        document.getElementById('hdnBinaryPosition').value = position;
+        document.getElementById('binaryPlacementLabel').textContent =
+          'Under: ' + parentUsername + ' (' + position + ')';
+        document.getElementById('binaryPlacementResult').classList.remove('d-none');
+      }
+    });
+  }
+
+  document.getElementById('btnChangeBinarySlot').addEventListener('click', function (e) {
+    e.preventDefault();
+    openBinaryPickerForCreate();
   });
 
   // Profile image crop

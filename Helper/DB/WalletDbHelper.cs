@@ -224,6 +224,243 @@ public class WalletDbHelper : DbHelper
         await _db.SaveChangesAsync();
       });
 
+  public async Task<(List<AdminWalletTxnRowDto> Items, int Total)> GetAllTransactionsAsync(
+      string? filterUsername,
+      string? filterWalletType,
+      string? filterTxnType,
+      string? filterCurrencyCode,
+      DateTime? filterStartUtc,
+      DateTime? filterEndUtc,
+      int page,
+      int pageSize)
+      => await ExecuteAsync(async () =>
+      {
+        var cashQ = _db.CashWalletTransactions
+            .Join(_db.Members, t => t.MemberId, m => m.Id,
+                (t, m) => new { t, m })
+            .Where(x => x.m.Status != StatusConstants.Deleted);
+
+        if (!string.IsNullOrEmpty(filterUsername))
+          cashQ = cashQ.Where(x => x.m.Username.Contains(filterUsername));
+        if (!string.IsNullOrEmpty(filterTxnType))
+          cashQ = cashQ.Where(x => x.t.TxnType == filterTxnType);
+        if (!string.IsNullOrEmpty(filterCurrencyCode))
+          cashQ = cashQ.Where(x => x.t.DisplayCurrency == filterCurrencyCode);
+        if (filterStartUtc.HasValue)
+          cashQ = cashQ.Where(x => x.t.CreatedAt >= filterStartUtc.Value);
+        if (filterEndUtc.HasValue)
+          cashQ = cashQ.Where(x => x.t.CreatedAt <= filterEndUtc.Value);
+
+        var purchaseQ = _db.PurchaseWalletTransactions
+            .Join(_db.Members, t => t.MemberId, m => m.Id,
+                (t, m) => new { t, m })
+            .Where(x => x.m.Status != StatusConstants.Deleted);
+
+        if (!string.IsNullOrEmpty(filterUsername))
+          purchaseQ = purchaseQ.Where(x => x.m.Username.Contains(filterUsername));
+        if (!string.IsNullOrEmpty(filterTxnType))
+          purchaseQ = purchaseQ.Where(x => x.t.TxnType == filterTxnType);
+        if (!string.IsNullOrEmpty(filterCurrencyCode))
+          purchaseQ = purchaseQ.Where(x => x.t.DisplayCurrency == filterCurrencyCode);
+        if (filterStartUtc.HasValue)
+          purchaseQ = purchaseQ.Where(x => x.t.CreatedAt >= filterStartUtc.Value);
+        if (filterEndUtc.HasValue)
+          purchaseQ = purchaseQ.Where(x => x.t.CreatedAt <= filterEndUtc.Value);
+
+        var cashRows = cashQ.Select(x => new AdminWalletTxnRowDto
+        {
+          Id              = x.t.Id,
+          MemberId        = x.m.Id,
+          MemberUsername  = x.m.Username,
+          MemberFullName  = x.m.FullName,
+          WalletType      = WalletTypeConstants.Cash,
+          TxnType         = x.t.TxnType,
+          Direction       = x.t.Direction,
+          AmountUsd       = x.t.AmountUsd,
+          DisplayAmount   = x.t.DisplayAmount,
+          DisplayCurrency = x.t.DisplayCurrency,
+          ExchangeRate    = x.t.ExchangeRate,
+          BalanceAfter    = x.t.BalanceAfter,
+          ReferenceId     = x.t.ReferenceId,
+          Remark          = x.t.Remark,
+          CreatedBy       = x.t.CreatedBy,
+          CreatedAt       = x.t.CreatedAt
+        });
+
+        var purchaseRows = purchaseQ.Select(x => new AdminWalletTxnRowDto
+        {
+          Id              = x.t.Id,
+          MemberId        = x.m.Id,
+          MemberUsername  = x.m.Username,
+          MemberFullName  = x.m.FullName,
+          WalletType      = WalletTypeConstants.Purchase,
+          TxnType         = x.t.TxnType,
+          Direction       = x.t.Direction,
+          AmountUsd       = x.t.AmountUsd,
+          DisplayAmount   = x.t.DisplayAmount,
+          DisplayCurrency = x.t.DisplayCurrency,
+          ExchangeRate    = x.t.ExchangeRate,
+          BalanceAfter    = x.t.BalanceAfter,
+          ReferenceId     = x.t.ReferenceId,
+          Remark          = x.t.Remark,
+          CreatedBy       = x.t.CreatedBy,
+          CreatedAt       = x.t.CreatedAt
+        });
+
+        IQueryable<AdminWalletTxnRowDto> combined;
+        if (filterWalletType == WalletTypeConstants.Cash)
+          combined = cashRows;
+        else if (filterWalletType == WalletTypeConstants.Purchase)
+          combined = purchaseRows;
+        else
+          combined = cashRows.Concat(purchaseRows);
+
+        var total = await combined.CountAsync();
+        var items = await combined
+            .OrderByDescending(r => r.CreatedAt)
+            .ThenByDescending(r => r.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, total);
+      });
+
+  public async Task<(List<AdminWalletTxnRowDto> Items, int Total)> GetAllAdjustmentsAsync(
+      string? filterMemberUsername,
+      string? filterWalletType,
+      string? filterCreatedBy,
+      DateTime? filterStartUtc,
+      DateTime? filterEndUtc,
+      int page,
+      int pageSize)
+      => await ExecuteAsync(async () =>
+      {
+        var cashQ = _db.CashWalletTransactions
+            .Join(_db.Members, t => t.MemberId, m => m.Id,
+                (t, m) => new { t, m })
+            .Where(x => x.m.Status != StatusConstants.Deleted
+                     && x.t.TxnType == CashTxnTypeConstants.Adjustment);
+
+        if (!string.IsNullOrEmpty(filterMemberUsername))
+          cashQ = cashQ.Where(x => x.m.Username.Contains(filterMemberUsername));
+        if (!string.IsNullOrEmpty(filterCreatedBy))
+          cashQ = cashQ.Where(x => x.t.CreatedBy.Contains(filterCreatedBy));
+        if (filterStartUtc.HasValue)
+          cashQ = cashQ.Where(x => x.t.CreatedAt >= filterStartUtc.Value);
+        if (filterEndUtc.HasValue)
+          cashQ = cashQ.Where(x => x.t.CreatedAt <= filterEndUtc.Value);
+
+        var purchaseQ = _db.PurchaseWalletTransactions
+            .Join(_db.Members, t => t.MemberId, m => m.Id,
+                (t, m) => new { t, m })
+            .Where(x => x.m.Status != StatusConstants.Deleted
+                     && x.t.TxnType == PurchaseTxnTypeConstants.Adjustment);
+
+        if (!string.IsNullOrEmpty(filterMemberUsername))
+          purchaseQ = purchaseQ.Where(x => x.m.Username.Contains(filterMemberUsername));
+        if (!string.IsNullOrEmpty(filterCreatedBy))
+          purchaseQ = purchaseQ.Where(x => x.t.CreatedBy.Contains(filterCreatedBy));
+        if (filterStartUtc.HasValue)
+          purchaseQ = purchaseQ.Where(x => x.t.CreatedAt >= filterStartUtc.Value);
+        if (filterEndUtc.HasValue)
+          purchaseQ = purchaseQ.Where(x => x.t.CreatedAt <= filterEndUtc.Value);
+
+        var cashRows = cashQ.Select(x => new AdminWalletTxnRowDto
+        {
+          Id              = x.t.Id,
+          MemberId        = x.m.Id,
+          MemberUsername  = x.m.Username,
+          MemberFullName  = x.m.FullName,
+          WalletType      = WalletTypeConstants.Cash,
+          TxnType         = x.t.TxnType,
+          Direction       = x.t.Direction,
+          AmountUsd       = x.t.AmountUsd,
+          DisplayAmount   = x.t.DisplayAmount,
+          DisplayCurrency = x.t.DisplayCurrency,
+          ExchangeRate    = x.t.ExchangeRate,
+          BalanceAfter    = x.t.BalanceAfter,
+          ReferenceId     = x.t.ReferenceId,
+          Remark          = x.t.Remark,
+          CreatedBy       = x.t.CreatedBy,
+          CreatedAt       = x.t.CreatedAt
+        });
+
+        var purchaseRows = purchaseQ.Select(x => new AdminWalletTxnRowDto
+        {
+          Id              = x.t.Id,
+          MemberId        = x.m.Id,
+          MemberUsername  = x.m.Username,
+          MemberFullName  = x.m.FullName,
+          WalletType      = WalletTypeConstants.Purchase,
+          TxnType         = x.t.TxnType,
+          Direction       = x.t.Direction,
+          AmountUsd       = x.t.AmountUsd,
+          DisplayAmount   = x.t.DisplayAmount,
+          DisplayCurrency = x.t.DisplayCurrency,
+          ExchangeRate    = x.t.ExchangeRate,
+          BalanceAfter    = x.t.BalanceAfter,
+          ReferenceId     = x.t.ReferenceId,
+          Remark          = x.t.Remark,
+          CreatedBy       = x.t.CreatedBy,
+          CreatedAt       = x.t.CreatedAt
+        });
+
+        IQueryable<AdminWalletTxnRowDto> combined;
+        if (filterWalletType == WalletTypeConstants.Cash)
+          combined = cashRows;
+        else if (filterWalletType == WalletTypeConstants.Purchase)
+          combined = purchaseRows;
+        else
+          combined = cashRows.Concat(purchaseRows);
+
+        var total = await combined.CountAsync();
+        var items = await combined
+            .OrderByDescending(r => r.CreatedAt)
+            .ThenByDescending(r => r.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, total);
+      });
+
+  public async Task<List<MemberWalletBalanceRowDto>> GetAllBalancesAsync(
+      string? filterUsername,
+      string? filterCountryCode)
+      => await ExecuteAsync(async () =>
+      {
+        var q = _db.Members
+            .Include(m => m.Country)
+            .Where(m => m.Status != StatusConstants.Deleted)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(filterUsername))
+          q = q.Where(m => m.Username.Contains(filterUsername));
+        if (!string.IsNullOrEmpty(filterCountryCode))
+          q = q.Where(m => m.CountryCode == filterCountryCode);
+
+        var members    = await q.ToListAsync();
+        var memberIds  = members.Select(m => m.Id).ToList();
+        var balances   = await _db.WalletBalances
+            .Where(b => memberIds.Contains(b.MemberId))
+            .ToListAsync();
+
+        return members.Select(m => new MemberWalletBalanceRowDto
+        {
+          MemberId        = m.Id,
+          Username        = m.Username,
+          FullName        = m.FullName,
+          CountryCode     = m.CountryCode,
+          CurrencyCode    = m.Country?.CurrencyCode ?? string.Empty,
+          CashBalance     = balances.FirstOrDefault(b => b.MemberId == m.Id && b.WalletType == WalletTypeConstants.Cash)?.Balance ?? 0,
+          PurchaseBalance = balances.FirstOrDefault(b => b.MemberId == m.Id && b.WalletType == WalletTypeConstants.Purchase)?.Balance ?? 0,
+          UpdatedAt       = balances.Where(b => b.MemberId == m.Id).Max(b => (DateTime?)b.UpdatedAt) ?? DateTime.UtcNow
+        })
+        .OrderByDescending(r => r.CashBalance + r.PurchaseBalance)
+        .ToList();
+      });
+
   private async Task<bool> IsInSponsorFamilyAsync(int fromMemberId, int targetMemberId)
   {
     // Walk upline chain

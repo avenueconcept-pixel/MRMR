@@ -85,17 +85,15 @@
           @{var rowNum = 1;}
           @foreach (var member in Model.Items)
           {
-            @{
-              var statusBadge  = member.Status == StatusConstants.Active ? "bg-success" : "bg-secondary";
-              var statusLabel  = member.Status == StatusConstants.Active
-                  ? await T.GetAsync("status.active")
-                  : await T.GetAsync("status.inactive");
-              var activatedBadge = member.IsActivated ? "bg-success" : "bg-warning text-dark";
-              var activatedLabel = member.IsActivated
-                  ? await T.GetAsync("Members.Filter.Activated")
-                  : await T.GetAsync("Members.Filter.NotActivated");
-              var countryName = member.Country?.Translations.FirstOrDefault()?.CountryName ?? member.CountryCode;
-            }
+            var statusBadge    = member.Status == StatusConstants.Active ? "bg-success" : "bg-secondary";
+            var statusLabel    = member.Status == StatusConstants.Active
+                ? await T.GetAsync("status.active")
+                : await T.GetAsync("status.inactive");
+            var activatedBadge = member.IsActivated ? "bg-success" : "bg-warning text-dark";
+            var activatedLabel = member.IsActivated
+                ? await T.GetAsync("Members.Filter.Activated")
+                : await T.GetAsync("Members.Filter.NotActivated");
+            var countryName    = member.Country?.Translations.FirstOrDefault()?.CountryName ?? member.CountryCode;
             <tr>
               <td>@rowNum</td>
               <td><strong>@member.Username</strong></td>

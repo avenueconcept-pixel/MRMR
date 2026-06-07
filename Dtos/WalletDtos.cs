@@ -65,6 +65,38 @@ public class WalletPayoutRowDto
   public DateTime  CreatedAt      { get; set; }
 }
 
+public class AdminWalletTxnRowDto
+{
+  public long     Id              { get; set; }
+  public int      MemberId        { get; set; }
+  public string   MemberUsername  { get; set; } = string.Empty;
+  public string   MemberFullName  { get; set; } = string.Empty;
+  public string   WalletType      { get; set; } = string.Empty;
+  public string   TxnType         { get; set; } = string.Empty;
+  public string   Direction       { get; set; } = string.Empty;
+  public decimal  AmountUsd       { get; set; }
+  public decimal  DisplayAmount   { get; set; }
+  public string   DisplayCurrency { get; set; } = string.Empty;
+  public decimal  ExchangeRate    { get; set; }
+  public decimal  BalanceAfter    { get; set; }
+  public string?  ReferenceId     { get; set; }
+  public string?  Remark          { get; set; }
+  public string   CreatedBy       { get; set; } = string.Empty;
+  public DateTime CreatedAt       { get; set; }
+}
+
+public class MemberWalletBalanceRowDto
+{
+  public int      MemberId        { get; set; }
+  public string   Username        { get; set; } = string.Empty;
+  public string   FullName        { get; set; } = string.Empty;
+  public string   CountryCode     { get; set; } = string.Empty;
+  public string   CurrencyCode    { get; set; } = string.Empty;
+  public decimal  CashBalance     { get; set; }
+  public decimal  PurchaseBalance { get; set; }
+  public DateTime UpdatedAt       { get; set; }
+}
+
 public class IncentivePeriodSummaryDto
 {
   public int       Id             { get; set; }

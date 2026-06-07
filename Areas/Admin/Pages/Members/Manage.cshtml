@@ -110,32 +110,32 @@
     <h6 class="mb-0">@await T.GetAsync("Members.Manage.ChangeBinary")</h6>
   </div>
   <div class="card-body">
-    <div class="row g-2 align-items-end">
-      <div class="col-md-5">
-        <label class="form-label">@await T.GetAsync("Members.BinaryParent")</label>
-        @if (!string.IsNullOrEmpty(Model.BinaryParentUsername))
+    <input type="hidden" id="hdnNewBinaryParentId" value="@Model.CurrentBinaryParentId" />
+    <input type="hidden" id="hdnNewBinaryPos"      value="@Model.BinaryPosition" />
+
+    <div class="mb-3">
+      <label class="form-label">@await T.GetAsync("Members.BinaryParent")</label>
+      <div id="binaryManageResult" class="mb-2">
+        @if (Model.CurrentBinaryParentId.HasValue)
         {
-          <p class="mb-1 text-muted small">@await T.GetAsync("Current"): @Model.BinaryParentUsername (@Model.BinaryPosition)</p>
+          <span class="badge bg-secondary">@Model.BinaryParentUsername (@Model.BinaryPosition)</span>
         }
-        <input type="hidden" id="hdnNewBinaryParentId" value="" />
-        <select id="selectNewBinaryParent" class="form-select" style="width:100%">
-          <option value="">@await T.GetAsync("Members.SearchPlaceholder")</option>
-        </select>
+        else
+        {
+          <span class="text-muted small">@await T.GetAsync("Members.NoBinaryParent")</span>
+        }
       </div>
-      <div class="col-md-2">
-        <label class="form-label">@await T.GetAsync("Members.BinaryPosition")</label>
-        <select id="ddlNewBinaryPos" class="form-select">
-          <option value="left">Left</option>
-          <option value="right">Right</option>
-        </select>
-      </div>
-      <div class="col-auto">
-        <button type="button" class="btn btn-primary"
-                onclick="saveSection('ChangeBinary', { NewBinaryParentId: document.getElementById('hdnNewBinaryParentId').value || null, ddlNewBinaryPos: document.getElementById('ddlNewBinaryPos').value })">
-          <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
-        </button>
+      <button type="button" id="btnOpenBinaryPicker" class="btn btn-outline-primary btn-sm">
+        <i class="ri ri-node-tree me-1"></i>@await T.GetAsync("Members.Manage.SelectBinarySlot")
+      </button>
+      <div id="binaryManageSelection" class="mt-2 d-none">
+        <span class="badge bg-primary" id="binaryManageLabel"></span>
       </div>
     </div>
+    <button type="button" class="btn btn-primary btn-sm"
+            onclick="saveSection('ChangeBinary', { NewBinaryParentId: document.getElementById('hdnNewBinaryParentId').value || null, ddlNewBinaryPos: document.getElementById('hdnNewBinaryPos').value })">
+      <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+    </button>
   </div>
 </div>
 
@@ -263,22 +263,19 @@
     document.getElementById('hdnNewSponsorId').value = '';
   });
 
-  // Select2 — New Binary Parent
-  $('#selectNewBinaryParent').select2({
-    placeholder: '@await T.GetAsync("Members.SearchPlaceholder")',
-    allowClear: true,
-    minimumInputLength: 1,
-    ajax: {
-      url: '@searchUrl',
-      dataType: 'json',
-      delay: 300,
-      data: function (params) { return { term: params.term }; },
-      processResults: function (data) { return { results: data }; }
-    }
-  }).on('select2:select', function (e) {
-    document.getElementById('hdnNewBinaryParentId').value = e.params.data.id;
-  }).on('select2:unselect', function () {
-    document.getElementById('hdnNewBinaryParentId').value = '';
+  // Binary tree picker — starts from member's sponsor, falls back to member itself
+  document.getElementById('btnOpenBinaryPicker').addEventListener('click', function () {
+    var rootId = @(Model.SponsorId ?? Model.MemberId);
+    BinaryTreePicker.open({
+      rootId: rootId,
+      onSelect: function (parentId, position, parentUsername) {
+        document.getElementById('hdnNewBinaryParentId').value = parentId;
+        document.getElementById('hdnNewBinaryPos').value      = position;
+        document.getElementById('binaryManageLabel').textContent =
+          'Under: ' + parentUsername + ' (' + position + ')';
+        document.getElementById('binaryManageSelection').classList.remove('d-none');
+      }
+    });
   });
 
   // Set current rank/status selects to current values

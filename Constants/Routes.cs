@@ -48,6 +48,9 @@ public class Routes
   public const string AdminExchangeRatesHistory   = "/ExchangeRates/History";
   public const string AdminIncentivePeriods       = "/IncentivePeriods/Index";
   public const string AdminIncentivePeriodsView   = "/IncentivePeriods/View";
+  public const string AdminWalletHistory          = "/Wallets/History";
+  public const string AdminWalletBalances         = "/Wallets/Balances";
+  public const string AdminWalletAdjustments      = "/Wallets/Adjustments";
 
   // Customer
   public const string CustomerLogin = "/Login";

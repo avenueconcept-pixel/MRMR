@@ -305,4 +305,42 @@ public class MemberDbHelper : DbHelper
               .Where(r => r.Status == StatusConstants.Active)
               .OrderBy(r => r.SortOrder)
               .ToListAsync());
+
+  public async Task<BinaryTreeNodeDto?> GetBinaryTreeAsync(int rootId, int depth = 3)
+      => await ExecuteAsync(async () =>
+      {
+        var root = await _db.Members.FindAsync(rootId);
+        if (root == null) return null;
+        return await BuildNodeAsync(root, depth);
+      });
+
+  private async Task<BinaryTreeNodeDto> BuildNodeAsync(Member member, int remainingDepth)
+  {
+    var node = new BinaryTreeNodeDto
+    {
+      Id          = member.Id,
+      Username    = member.Username,
+      FullName    = member.FullName,
+      IsActivated = member.IsActivated,
+      RankCode    = member.CurrentRankCode
+    };
+
+    if (remainingDepth <= 0)
+    {
+      node.HasMoreBelow = await _db.Members.AnyAsync(m => m.BinaryParentId == member.Id);
+      return node;
+    }
+
+    var leftChild = await _db.Members
+        .FirstOrDefaultAsync(m => m.BinaryParentId == member.Id
+                               && m.BinaryPosition == BinaryPositionConstants.Left);
+    var rightChild = await _db.Members
+        .FirstOrDefaultAsync(m => m.BinaryParentId == member.Id
+                               && m.BinaryPosition == BinaryPositionConstants.Right);
+
+    node.Left  = leftChild  != null ? await BuildNodeAsync(leftChild,  remainingDepth - 1) : null;
+    node.Right = rightChild != null ? await BuildNodeAsync(rightChild, remainingDepth - 1) : null;
+
+    return node;
+  }
 }

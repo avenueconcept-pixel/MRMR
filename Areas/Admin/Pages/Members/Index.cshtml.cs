@@ -48,6 +48,14 @@ public class IndexModel : AdminPageModel
     return new JsonResult(results.Select(r => new { id = r.Id, text = $"{r.Username} — {r.FullName}" }));
   }
 
+  public async Task<IActionResult> OnGetBinaryNodeAsync(int rootId)
+  {
+    var tree = await _memberDbHelper.GetBinaryTreeAsync(rootId, 3);
+    if (tree == null)
+      return new JsonResult(new { success = false });
+    return new JsonResult(new { success = true, node = tree });
+  }
+
   private async Task PopulateFiltersAsync(string langCode)
   {
     ddlStatus = new List<SelectListItem>

@@ -68,6 +68,9 @@
   <!-- DataTables -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
 
+  <!-- Binary Tree Picker -->
+  <link rel="stylesheet" href="~/custom/binary-tree.css" />
+
   <!-- Include Scripts for customizer, helper, analytics, config -->
   @await Html.PartialAsync("Layouts/Sections/_ScriptsIncludes" + ViewData["frontVar"])
 </head>
@@ -93,11 +96,17 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
   <script src="~/js/image-crop.js"></script>
 
+  <!-- Binary Tree Picker -->
+  <script src="~/js/binary-tree-picker.js"></script>
+
   <!-- Page Scripts-->
   @RenderSection("PageScripts", required: false)
 
   @* Image crop modal — one instance shared by all upload points on the page *@
   @await Html.PartialAsync("~/Areas/Admin/Pages/_Partials/_ImageCropModal.cshtml")
+
+  @* Binary tree picker modal — one instance shared by all pages that need binary placement *@
+  @await Html.PartialAsync("~/Areas/Admin/Pages/_Partials/_BinaryTreePickerModal.cshtml")
 </body>
 
 </html>
