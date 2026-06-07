@@ -5,8 +5,9 @@ namespace MyApp.Models;
 public class Country
 {
   public string CountryCode { get; set; } = string.Empty;
-  public string CurrencyCode { get; set; } = string.Empty;
-  public string Timezone { get; set; } = string.Empty;
+  public string CurrencyCode   { get; set; } = string.Empty;
+  public string CurrencySymbol { get; set; } = string.Empty;
+  public string Timezone       { get; set; } = string.Empty;
   public string Status { get; set; } = StatusConstants.Active;
   public DateTime CreatedAt { get; set; }
   public string CreatedBy { get; set; } = string.Empty;

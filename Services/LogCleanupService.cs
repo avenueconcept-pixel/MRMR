@@ -68,7 +68,7 @@ public class LogCleanupService : BackgroundService
         }
       }
 
-      // Page access archive — once daily at midnight
+      // Page access + wallet archive — once daily at midnight
       if (DateTime.UtcNow.Date > _lastArchiveRun.Date)
       {
         try
@@ -76,11 +76,15 @@ public class LogCleanupService : BackgroundService
           using var scope       = _serviceProvider.CreateScope();
           var pageAccessHelper  = scope.ServiceProvider.GetRequiredService<MyApp.Helper.DB.PageAccessDbHelper>();
           await pageAccessHelper.ArchiveOldRecordsAsync();
-          _lastArchiveRun       = DateTime.UtcNow;
+
+          var walletDbHelper = scope.ServiceProvider.GetRequiredService<MyApp.Helper.DB.WalletDbHelper>();
+          await walletDbHelper.ArchiveOldTransactionsAsync();
+
+          _lastArchiveRun = DateTime.UtcNow;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-          _logger.LogError(ex, "Page access archive failed");
+          _logger.LogError(ex, "Archive job failed");
         }
       }
 

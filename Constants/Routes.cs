@@ -43,6 +43,9 @@ public class Routes
   public const string AdminMembersCreate        = "/Members/Create";
   public const string AdminMembersEdit          = "/Members/Edit";
   public const string AdminMembersManage        = "/Members/Manage";
+  public const string AdminMembersWallet        = "/Members/Wallet";
+  public const string AdminExchangeRates        = "/ExchangeRates/Index";
+  public const string AdminExchangeRatesHistory = "/ExchangeRates/History";
 
   // Customer
   public const string CustomerLogin = "/Login";

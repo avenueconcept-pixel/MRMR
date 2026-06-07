@@ -73,6 +73,8 @@ builder.Services.AddScoped<AppSettingsDbHelper>();
 builder.Services.AddScoped<AppSettingsService>();
 builder.Services.AddScoped<ProductDbHelper>();
 builder.Services.AddScoped<MemberDbHelper>();
+builder.Services.AddScoped<ExchangeRateDbHelper>();
+builder.Services.AddScoped<WalletDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));

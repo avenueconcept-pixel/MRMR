@@ -62,6 +62,13 @@ public class AppDbContext : DbContext
   public DbSet<MemberRankHistory> MemberRankHistories => Set<MemberRankHistory>();
   public DbSet<MemberChangeLog>   MemberChangeLogs   => Set<MemberChangeLog>();
 
+  public DbSet<ExchangeRate>                     ExchangeRates                     => Set<ExchangeRate>();
+  public DbSet<WalletBalance>                    WalletBalances                    => Set<WalletBalance>();
+  public DbSet<CashWalletTransaction>            CashWalletTransactions            => Set<CashWalletTransaction>();
+  public DbSet<CashWalletTransactionArchive>     CashWalletTransactionArchives     => Set<CashWalletTransactionArchive>();
+  public DbSet<PurchaseWalletTransaction>        PurchaseWalletTransactions        => Set<PurchaseWalletTransaction>();
+  public DbSet<PurchaseWalletTransactionArchive> PurchaseWalletTransactionArchives => Set<PurchaseWalletTransactionArchive>();
+
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
     // LanguageResource
@@ -177,6 +184,7 @@ public class AppDbContext : DbContext
       entity.HasKey(e => e.CountryCode);
       entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
       entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3);
+      entity.Property(e => e.CurrencySymbol).HasColumnName("currency_symbol").HasMaxLength(5);
       entity.Property(e => e.Timezone).HasColumnName("timezone").HasMaxLength(100);
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
       entity.Property(e => e.CreatedAt).HasColumnName("created_at");
@@ -1080,6 +1088,127 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.MemberId)
             .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // ExchangeRate
+    modelBuilder.Entity<ExchangeRate>(entity =>
+    {
+      entity.ToTable("exchange_rates");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.RateToBase).HasColumnName("rate_to_base").HasColumnType("numeric(10,6)");
+      entity.Property(e => e.EffectiveDatetime).HasColumnName("effective_datetime");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+    });
+
+    // WalletBalance
+    modelBuilder.Entity<WalletBalance>(entity =>
+    {
+      entity.ToTable("wallet_balances");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
+      entity.Property(e => e.WalletType).HasColumnName("wallet_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Balance).HasColumnName("balance").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+      entity.HasIndex(e => new { e.MemberId, e.WalletType }).IsUnique();
+      entity.HasOne(e => e.Member)
+            .WithMany()
+            .HasForeignKey(e => e.MemberId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+
+    // CashWalletTransaction
+    modelBuilder.Entity<CashWalletTransaction>(entity =>
+    {
+      entity.ToTable("cash_wallet_transactions");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
+      entity.Property(e => e.TxnType).HasColumnName("txn_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.Direction).HasColumnName("direction").HasMaxLength(5).IsRequired();
+      entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.DisplayAmount).HasColumnName("display_amount").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.DisplayCurrency).HasColumnName("display_currency").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
+      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
+      entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasOne(e => e.Member)
+            .WithMany()
+            .HasForeignKey(e => e.MemberId)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // CashWalletTransactionArchive
+    modelBuilder.Entity<CashWalletTransactionArchive>(entity =>
+    {
+      entity.ToTable("cash_wallet_transactions_archive");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
+      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
+      entity.Property(e => e.TxnType).HasColumnName("txn_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.Direction).HasColumnName("direction").HasMaxLength(5).IsRequired();
+      entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.DisplayAmount).HasColumnName("display_amount").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.DisplayCurrency).HasColumnName("display_currency").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
+      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
+      entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+    });
+
+    // PurchaseWalletTransaction
+    modelBuilder.Entity<PurchaseWalletTransaction>(entity =>
+    {
+      entity.ToTable("purchase_wallet_transactions");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
+      entity.Property(e => e.TxnType).HasColumnName("txn_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.Direction).HasColumnName("direction").HasMaxLength(5).IsRequired();
+      entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.DisplayAmount).HasColumnName("display_amount").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.DisplayCurrency).HasColumnName("display_currency").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
+      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
+      entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasOne(e => e.Member)
+            .WithMany()
+            .HasForeignKey(e => e.MemberId)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // PurchaseWalletTransactionArchive
+    modelBuilder.Entity<PurchaseWalletTransactionArchive>(entity =>
+    {
+      entity.ToTable("purchase_wallet_transactions_archive");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
+      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
+      entity.Property(e => e.TxnType).HasColumnName("txn_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.Direction).HasColumnName("direction").HasMaxLength(5).IsRequired();
+      entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.DisplayAmount).HasColumnName("display_amount").HasColumnType("numeric(10,2)");
+      entity.Property(e => e.DisplayCurrency).HasColumnName("display_currency").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
+      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
+      entity.Property(e => e.Remark).HasColumnName("remark");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
     });
 
     // Customer
