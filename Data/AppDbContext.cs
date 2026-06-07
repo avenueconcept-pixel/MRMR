@@ -1141,9 +1141,12 @@ public class AppDbContext : DbContext
       entity.Property(e => e.Remark).HasColumnName("remark");
       entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
       entity.Property(e => e.PeriodDate).HasColumnName("period_date");
+      entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(36);
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at")
             .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.IdempotencyKey).IsUnique()
+            .HasFilter("idempotency_key IS NOT NULL");
       entity.HasOne(e => e.Member)
             .WithMany()
             .HasForeignKey(e => e.MemberId)
@@ -1168,6 +1171,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.Remark).HasColumnName("remark");
       entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
       entity.Property(e => e.PeriodDate).HasColumnName("period_date");
+      entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(36);
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at");
     });
@@ -1190,9 +1194,12 @@ public class AppDbContext : DbContext
       entity.Property(e => e.Remark).HasColumnName("remark");
       entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
       entity.Property(e => e.PeriodDate).HasColumnName("period_date");
+      entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(36);
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at")
             .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.IdempotencyKey).IsUnique()
+            .HasFilter("idempotency_key IS NOT NULL");
       entity.HasOne(e => e.Member)
             .WithMany()
             .HasForeignKey(e => e.MemberId)
@@ -1217,6 +1224,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.Remark).HasColumnName("remark");
       entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
       entity.Property(e => e.PeriodDate).HasColumnName("period_date");
+      entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(36);
       entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
       entity.Property(e => e.CreatedAt).HasColumnName("created_at");
     });

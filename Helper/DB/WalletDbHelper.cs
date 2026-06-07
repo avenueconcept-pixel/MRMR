@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Constants;
+using Npgsql;
 using MyApp.Data;
 using MyApp.Dtos;
 using MyApp.Models;
@@ -58,19 +59,21 @@ public class WalletDbHelper : DbHelper
 
   public async Task PostAdjustmentAsync(
       int memberId, string walletType, decimal amountUsd,
-      string direction, string remark, string createdBy)
+      string direction, string remark, string createdBy,
+      string? idempotencyKey = null)
       => await ExecuteAsync(async () =>
           await InternalPostAsync(new PostTransactionDto
           {
-            MemberId   = memberId,
-            WalletType = walletType,
-            TxnType    = walletType == WalletTypeConstants.Cash
+            MemberId       = memberId,
+            WalletType     = walletType,
+            TxnType        = walletType == WalletTypeConstants.Cash
                 ? CashTxnTypeConstants.Adjustment
                 : PurchaseTxnTypeConstants.Adjustment,
-            AmountUsd  = amountUsd,
-            Direction  = direction,
-            Remark     = remark,
-            CreatedBy  = createdBy
+            AmountUsd      = amountUsd,
+            Direction      = direction,
+            Remark         = remark,
+            CreatedBy      = createdBy,
+            IdempotencyKey = idempotencyKey
           }));
 
   public async Task PostTransferAsync(
@@ -187,6 +190,7 @@ public class WalletDbHelper : DbHelper
             Remark            = t.Remark,
             IncentivePeriodId = t.IncentivePeriodId,
             PeriodDate        = t.PeriodDate,
+            IdempotencyKey    = t.IdempotencyKey,
             CreatedBy         = t.CreatedBy,
             CreatedAt         = t.CreatedAt
           }).ToList();
@@ -214,6 +218,7 @@ public class WalletDbHelper : DbHelper
             Remark            = t.Remark,
             IncentivePeriodId = t.IncentivePeriodId,
             PeriodDate        = t.PeriodDate,
+            IdempotencyKey    = t.IdempotencyKey,
             CreatedBy         = t.CreatedBy,
             CreatedAt         = t.CreatedAt
           }).ToList();
@@ -548,6 +553,7 @@ public class WalletDbHelper : DbHelper
         Remark            = dto.Remark,
         IncentivePeriodId = dto.IncentivePeriodId,
         PeriodDate        = dto.PeriodDate,
+        IdempotencyKey    = dto.IdempotencyKey,
         CreatedBy         = dto.CreatedBy,
         CreatedAt         = DateTime.UtcNow
       });
@@ -568,11 +574,21 @@ public class WalletDbHelper : DbHelper
         Remark            = dto.Remark,
         IncentivePeriodId = dto.IncentivePeriodId,
         PeriodDate        = dto.PeriodDate,
+        IdempotencyKey    = dto.IdempotencyKey,
         CreatedBy         = dto.CreatedBy,
         CreatedAt         = DateTime.UtcNow
       });
     }
 
-    await _db.SaveChangesAsync();
+    try
+    {
+      await _db.SaveChangesAsync();
+    }
+    catch (DbUpdateException ex)
+        when (ex.InnerException is PostgresException pg && pg.SqlState == "23505"
+              && pg.ConstraintName?.Contains("idempotency") == true)
+    {
+      throw new InvalidOperationException("duplicate_adjustment");
+    }
   }
 }

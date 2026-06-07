@@ -2,10 +2,12 @@
 @model MyApp.Areas.Admin.Pages.Members.WalletModel
 @{
   ViewData["title"] = await T.GetAsync("Menu.Wallets");
-  var memberSearchUrl = Url.Page("/Members/Index", "SearchMembers", new { area = "Admin" });
-  var displayRate = Model.ExchangeRate != 0 ? Model.ExchangeRate : 1m;
-  var cashDisplay     = Model.CashBalance / displayRate;
-  var purchaseDisplay = Model.PurchaseBalance / displayRate;
+  var memberSearchUrl      = Url.Page("/Members/Index", "SearchMembers", new { area = "Admin" });
+  var displayRate          = Model.ExchangeRate != 0 ? Model.ExchangeRate : 1m;
+  var cashDisplay          = Model.CashBalance / displayRate;
+  var purchaseDisplay      = Model.PurchaseBalance / displayRate;
+  var lblInvalidAmount     = await T.GetAsync("Wallet.Error.InvalidAmount");
+  var lblDuplicateAdj      = await T.GetAsync("Wallet.Error.DuplicateAdjustment");
 }
 
 @section VendorStyles {
@@ -112,8 +114,9 @@
                    placeholder="@await T.GetAsync("Wallet.Remark")" maxlength="200" />
           </div>
           <div class="col-auto">
+            <input type="hidden" id="hdnAdjKeyCash" value="" />
             <button type="button" class="btn btn-primary"
-                    onclick="saveAdjustment('cash', 'ddlAdjDirCash', 'txtAdjAmountCash', 'txtAdjRemarkCash')">
+                    onclick="saveAdjustment('cash', 'ddlAdjDirCash', 'txtAdjAmountCash', 'txtAdjRemarkCash', this)">
               <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
             </button>
           </div>
@@ -213,8 +216,9 @@
                    placeholder="@await T.GetAsync("Wallet.Remark")" maxlength="200" />
           </div>
           <div class="col-auto">
+            <input type="hidden" id="hdnAdjKeyPurchase" value="" />
             <button type="button" class="btn btn-primary"
-                    onclick="saveAdjustment('purchase', 'ddlAdjDirPurchase', 'txtAdjAmountPurchase', 'txtAdjRemarkPurchase')">
+                    onclick="saveAdjustment('purchase', 'ddlAdjDirPurchase', 'txtAdjAmountPurchase', 'txtAdjRemarkPurchase', this)">
               <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
             </button>
           </div>
@@ -331,8 +335,10 @@
   var memberId = @Model.MemberId;
   var antiForgeryToken = $('#formAjax input[name="__RequestVerificationToken"]').val();
   var pageMsg = {
-    updateSuccess: '@Html.Raw(Model.MsgUpdateSuccess)',
-    saveError:     '@Html.Raw(Model.MsgSaveError)'
+    updateSuccess:       '@Html.Raw(Model.MsgUpdateSuccess)',
+    saveError:           '@Html.Raw(Model.MsgSaveError)',
+    invalidAmount:       '@Html.Raw(lblInvalidAmount)',
+    duplicateAdjustment: '@Html.Raw(lblDuplicateAdj)'
   };
 
   // Activate correct tab on load
@@ -341,28 +347,47 @@
     $('#tab-' + activeTab + '-link').tab('show');
   });
 
-  function saveAdjustment(walletType, dirId, amountId, remarkId) {
+  // Generate UUIDs on page load — one per wallet type
+  var adjKeys = {
+    cash:     crypto.randomUUID(),
+    purchase: crypto.randomUUID()
+  };
+  document.getElementById('hdnAdjKeyCash').value     = adjKeys.cash;
+  document.getElementById('hdnAdjKeyPurchase').value = adjKeys.purchase;
+
+  function saveAdjustment(walletType, dirId, amountId, remarkId, btnEl) {
     var direction = document.getElementById(dirId).value;
     var amount    = document.getElementById(amountId).value;
     var remark    = document.getElementById(remarkId).value;
+    var keyId     = walletType === 'cash' ? 'hdnAdjKeyCash' : 'hdnAdjKeyPurchase';
+    var key       = document.getElementById(keyId).value;
+
     if (!amount || parseFloat(amount) <= 0) {
-      Swal.fire({ icon: 'warning', text: 'Amount must be greater than zero.' });
+      Swal.fire({ icon: 'warning', text: pageMsg.invalidAmount });
       return;
     }
+
+    btnEl.disabled = true;
+
     $.post('?handler=Adjustment&id=' + memberId, {
-      ddlAdjWalletType: walletType,
-      ddlAdjDirection:  direction,
-      txtAmountUsd:     amount,
-      txtRemark:        remark,
+      ddlAdjWalletType:           walletType,
+      ddlAdjDirection:            direction,
+      txtAmountUsd:               amount,
+      txtRemark:                  remark,
+      txtIdempotencyKey:          key,
       __RequestVerificationToken: antiForgeryToken
     }, function (res) {
+      btnEl.disabled = false;
       if (res.success) {
+        adjKeys[walletType] = crypto.randomUUID();
+        document.getElementById(keyId).value = adjKeys[walletType];
         Swal.fire({ icon: 'success', title: pageMsg.updateSuccess, timer: 1500, showConfirmButton: false })
           .then(function () { location.reload(); });
       } else {
         Swal.fire({ icon: 'error', text: res.message || pageMsg.saveError });
       }
     }).fail(function () {
+      btnEl.disabled = false;
       Swal.fire({ icon: 'error', text: pageMsg.saveError });
     });
   }

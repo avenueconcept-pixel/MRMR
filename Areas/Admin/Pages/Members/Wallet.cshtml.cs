@@ -35,10 +35,11 @@ public class WalletModel : AdminPageModel
   public int                             PurchaseTotalPages   => (int)Math.Ceiling((double)PurchaseTotal / PageSize);
 
   // Adjustment form
-  [BindProperty] public string  ddlAdjWalletType { get; set; } = string.Empty;
-  [BindProperty] public string  ddlAdjDirection  { get; set; } = string.Empty;
-  [BindProperty] public decimal txtAmountUsd     { get; set; }
-  [BindProperty] public string  txtRemark        { get; set; } = string.Empty;
+  [BindProperty] public string  ddlAdjWalletType  { get; set; } = string.Empty;
+  [BindProperty] public string  ddlAdjDirection   { get; set; } = string.Empty;
+  [BindProperty] public decimal txtAmountUsd      { get; set; }
+  [BindProperty] public string  txtRemark         { get; set; } = string.Empty;
+  [BindProperty] public string? txtIdempotencyKey { get; set; }
 
   // Transfer form
   [BindProperty] public int?    ToMemberId        { get; set; }
@@ -92,9 +93,15 @@ public class WalletModel : AdminPageModel
       }
 
       await _walletDbHelper.PostAdjustmentAsync(
-          id, ddlAdjWalletType, txtAmountUsd, ddlAdjDirection, txtRemark.Trim(), CurrentUsername);
+          id, ddlAdjWalletType, txtAmountUsd, ddlAdjDirection,
+          txtRemark.Trim(), CurrentUsername, txtIdempotencyKey);
       var msg = await _translation.GetAsync(MessageConstants.UpdateSuccess);
       return new JsonResult(new { success = true, message = msg });
+    }
+    catch (InvalidOperationException ex) when (ex.Message == "duplicate_adjustment")
+    {
+      var msg = await _translation.GetAsync("Wallet.Error.DuplicateAdjustment");
+      return new JsonResult(new { success = false, message = msg });
     }
     catch
     {

@@ -22,6 +22,7 @@ public class PostTransactionDto
   public string?  Remark            { get; set; }
   public int?     IncentivePeriodId { get; set; }
   public DateOnly? PeriodDate       { get; set; }
+  public string?  IdempotencyKey    { get; set; }
   public string   CreatedBy         { get; set; } = string.Empty;
 }
 
