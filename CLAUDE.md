@@ -380,6 +380,51 @@ await Task.Delay(TimeSpan.FromMinutes(15), stoppingToken); // single sleep at th
 
 All background jobs live in `Services/LogCleanupService.cs` — do not create additional `BackgroundService` classes.
 
+### MsSqlHelper — read-only secondary SQL Server connections
+
+For reading from a secondary MS SQL Server database (e.g. external ERP/payment system), subclass `MsSqlHelper` in `Helper/DB/`. Do **not** use EF Core for these — raw `SqlConnection` only.
+
+```csharp
+// Helper/DB/MyMsSqlHelper.cs
+public class MyMsSqlHelper : MsSqlHelper
+{
+    public MyMsSqlHelper(IConfiguration config, ILoggerFactory loggerFactory)
+        : base(config, loggerFactory, nameof(MyMsSqlHelper)) { }
+
+    public async Task<string?> GetSomethingAsync(string key)
+        => await ExecuteAsync(async () =>
+        {
+            using var conn = await OpenAsync();
+            using var cmd  = new SqlCommand("SELECT value FROM table WHERE key = @key", conn);
+            cmd.Parameters.AddWithValue("@key", key);
+            var result = await cmd.ExecuteScalarAsync();
+            return result as string;
+        });
+}
+```
+
+- Connection string key: `MsSqlConnection` in `appsettings.json` (real credentials in `appsettings.Development.json`)
+- Register as Scoped in `Program.cs`
+- `OpenAsync()` and both `ExecuteAsync` overloads are provided by the base class
+- Placeholder subclass `PaymentStatusMsSqlHelper` exists in `Helper/DB/` — extend it when the Order module is built
+
+### SystemSettingService — typed access to system_settings
+
+`SystemSettingService` (registered Scoped) provides memory-cached, typed getters for the `system_settings` table. Inject it wherever a configurable parameter is needed instead of hitting the DB directly.
+
+```csharp
+// Read a setting
+var maxAmount = await _settingService.GetAsDecimalAsync("Wallet.MaxAdjustmentAmount", 10000);
+var retryLimit = await _settingService.GetAsIntAsync("Wallet.PayoutRetryLimit", 3);
+var isEnabled  = await _settingService.GetAsBoolAsync("Feature.SomeFlag", false);
+var rankCode   = await _settingService.GetAsync("Member.DefaultRankCode");
+
+// After any admin update — clear the 1-hour cache
+_settingService.ClearCache();
+```
+
+Available methods: `GetAsync(key, default)`, `GetAsIntAsync`, `GetAsDecimalAsync`, `GetAsBoolAsync`, `ClearCache()`. Cache TTL is 1 hour. The admin page at `/Admin/SystemSettings` calls `ClearCache()` automatically on every save.
+
 ### File upload — profile images and attachments
 
 Upload paths are declared in `appsettings.json` under `UploadPaths` and read via `IConfiguration["UploadPaths:Key"]`:
@@ -595,6 +640,28 @@ Rules:
 - Actions column is always last and its index is always passed to disable sorting
 - `initDataTable` defaults: `pageLength: 25`, `order: [[0, 'asc']]`
 - For tables that need non-standard options (different order direction, extra `columnDefs`), call `.DataTable({...})` directly — do not override `initDataTable`
+
+**Row button event binding — never use inline `onclick` in DataTable rows:**
+
+DataTables rebuilds the DOM on sort/page/search, so direct `addEventListener` bindings on row elements die. Inline `onclick="fn('@value')"` also breaks when the value contains a single quote. Always use `data-*` attributes + a delegated jQuery handler:
+
+```html
+@* Button — Razor HTML-encodes data-* values automatically *@
+<button class="btn btn-sm btn-outline-primary btn-edit-thing"
+        data-code="@thing.ThingCode"
+        data-name="@thing.ThingName">
+  <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+</button>
+```
+
+```javascript
+// Delegated handler — survives DataTables DOM rebuilds
+$(document).on('click', '.btn-edit-thing', function () {
+  openEditModal($(this).data('code'), $(this).data('name'));
+});
+```
+
+Exception: `onclick` is acceptable when the value is a guaranteed safe identifier with no user content (e.g. `toggleStatus('@tier.TierCode')` where TierCode is admin-entered uppercase alphanumeric). For any value that could contain quotes or special characters, always use `data-*`.
 
 ### Index pages with server-side pre-filters + DataTables
 
@@ -1604,3 +1671,4 @@ public MyMiddleware(RequestDelegate next, PageAccessDbHelper db) { ... }
 - Never use `[Authorize]` directly on a page model — use `AdminPageModel` or `CustomerPageModel` as the base class
 - Never commit real SMTP passwords or connection strings — move secrets to `appsettings.Development.json` or User Secrets
 - Never assume `permissions.menu_id` — the actual column is `module` (varchar), which stores `menus.menu_code`. The EF relationship is `HasForeignKey(p => p.Module).HasPrincipalKey(m => m.MenuCode)`. Adding a `MenuId` (int) property to `Permission` will produce a "column does not exist" runtime error.
+- Never use inline `onclick="fn('@value')"` on DataTable row buttons when the value comes from user data — single quotes break it and DOM rebuilds kill direct bindings. Use `data-*` attributes + `$(document).on('click', '.cls', ...)` instead.
