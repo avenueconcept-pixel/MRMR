@@ -1,0 +1,138 @@
+@page "{rankCode}"
+@model MyApp.Areas.Admin.Pages.Ranks.EditModel
+@{
+  ViewData["title"] = await T.GetAsync("Rank.EditTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("Rank.EditTitle") — <span class="text-muted">@Model.RankCode</span></h4>
+  <a asp-area="Admin" asp-page="/Ranks/Index" class="btn btn-outline-secondary">
+    <i class="ri ri-arrow-left-line me-1"></i> @await T.GetAsync("BackToList")
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" asp-page-handler="Update">
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label">@await T.GetAsync("Rank.RankCode")</label>
+          <input type="text" class="form-control" value="@Model.RankCode" readonly />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ddlStatus">@await T.GetAsync("Status")</label>
+          <select asp-for="ddlStatus" class="form-select" asp-items="@Model.StatusOptions"></select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtRankName">
+            @await T.GetAsync("Rank.RankName") <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="txtRankName" name="txtRankName" class="form-control"
+                 maxlength="100" value="@Model.txtRankName"
+                 placeholder="@await T.GetAsync("Rank.RankNamePlaceholder")" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="txtSortOrder">@await T.GetAsync("Rank.SortOrder")</label>
+          <input type="number" id="txtSortOrder" name="txtSortOrder" class="form-control"
+                 value="@Model.txtSortOrder" min="0" />
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">@await T.GetAsync("SaveChanges")</button>
+        <a asp-area="Admin" asp-page="/Ranks/Index" class="btn btn-outline-secondary">@await T.GetAsync("Cancel")</a>
+        <a href="#" id="btnDelete" class="btn btn-outline-danger ms-auto" data-code="@Model.RankCode">
+          <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+        </a>
+      </div>
+
+    </form>
+
+    <hr class="my-4" />
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("CreatedBy")</label>
+        <p class="mb-0">@Model.CreatedBy</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("CreatedAt")</label>
+        <p class="mb-0">@Model.CreatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("UpdatedBy")</label>
+        <p class="mb-0">@Model.UpdatedBy</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted small">@await T.GetAsync("UpdatedAt")</label>
+        <p class="mb-0">@Model.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var pageMsg = {
+    deleteConfirmTitle: '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+    deleteConfirmText:  '@Html.Raw(Model.MsgDeleteConfirmText)',
+    deleteConfirmBtn:   '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+    cancelBtn:          '@Html.Raw(Model.MsgCancelBtn)',
+    deleteSuccess:      '@Html.Raw(Model.MsgDeleteSuccess)',
+    deleteError:        '@Html.Raw(Model.MsgDeleteError)'
+  };
+
+  document.getElementById('btnDelete').addEventListener('click', function (e) {
+    e.preventDefault();
+    var code = this.getAttribute('data-code');
+    Swal.fire({
+      title: pageMsg.deleteConfirmTitle,
+      text: pageMsg.deleteConfirmText,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: pageMsg.deleteConfirmBtn,
+      cancelButtonText: pageMsg.cancelBtn,
+      confirmButtonColor: '#dc3545'
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.post('?handler=SoftDelete&rankCode=' + encodeURIComponent(code), {
+          __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+        }, function (data) {
+          if (data.success) {
+            Swal.fire({ icon: 'success', title: pageMsg.deleteSuccess, timer: 1500, showConfirmButton: false })
+              .then(function () { window.location.href = '@Url.Page(Routes.AdminRank)'; });
+          } else {
+            Swal.fire({ icon: 'error', text: data.message || pageMsg.deleteError });
+          }
+        }).fail(function () {
+          Swal.fire({ icon: 'error', text: pageMsg.deleteError });
+        });
+      }
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text: @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

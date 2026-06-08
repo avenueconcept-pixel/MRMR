@@ -76,6 +76,7 @@ builder.Services.AddScoped<MemberDbHelper>();
 builder.Services.AddScoped<ExchangeRateDbHelper>();
 builder.Services.AddScoped<WalletDbHelper>();
 builder.Services.AddScoped<WalletPayoutDbHelper>();
+builder.Services.AddScoped<RankDbHelper>();
 builder.Services.AddScoped<SystemSettingDbHelper>();
 builder.Services.AddScoped<SystemSettingService>();
 builder.Services.AddScoped<PaymentStatusMsSqlHelper>();

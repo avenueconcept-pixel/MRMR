@@ -981,7 +981,7 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
     });
 
-    // Rank (stub — full config in ranks phase)
+    // Rank
     modelBuilder.Entity<Rank>(entity =>
     {
       entity.ToTable("ranks");
@@ -991,6 +991,10 @@ public class AppDbContext : DbContext
       entity.Property(e => e.RankName).HasColumnName("rank_name").HasMaxLength(100).IsRequired();
       entity.Property(e => e.SortOrder).HasColumnName("sort_order");
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
       entity.HasIndex(e => e.RankCode).IsUnique();
     });
 
