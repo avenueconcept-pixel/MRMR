@@ -70,6 +70,7 @@ public class AppDbContext : DbContext
   public DbSet<PurchaseWalletTransactionArchive> PurchaseWalletTransactionArchives => Set<PurchaseWalletTransactionArchive>();
   public DbSet<IncentivePeriod>                  IncentivePeriods                  => Set<IncentivePeriod>();
   public DbSet<WalletPayout>                     WalletPayouts                     => Set<WalletPayout>();
+  public DbSet<SystemSetting>                    SystemSettings                    => Set<SystemSetting>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -1279,6 +1280,22 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.MemberId)
             .OnDelete(DeleteBehavior.Restrict);
+    });
+
+    // SystemSetting
+    modelBuilder.Entity<SystemSetting>(entity =>
+    {
+      entity.ToTable("system_settings");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.SettingKey).HasColumnName("setting_key").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.SettingValue).HasColumnName("setting_value").IsRequired();
+      entity.Property(e => e.KeyType).HasColumnName("key_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500).IsRequired();
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
+            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.SettingKey).IsUnique();
     });
 
     // Customer

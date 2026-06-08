@@ -76,6 +76,9 @@ builder.Services.AddScoped<MemberDbHelper>();
 builder.Services.AddScoped<ExchangeRateDbHelper>();
 builder.Services.AddScoped<WalletDbHelper>();
 builder.Services.AddScoped<WalletPayoutDbHelper>();
+builder.Services.AddScoped<SystemSettingDbHelper>();
+builder.Services.AddScoped<SystemSettingService>();
+builder.Services.AddScoped<PaymentStatusMsSqlHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));

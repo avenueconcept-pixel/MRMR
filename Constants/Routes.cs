@@ -51,6 +51,7 @@ public class Routes
   public const string AdminWalletHistory          = "/Wallets/History";
   public const string AdminWalletBalances         = "/Wallets/Balances";
   public const string AdminWalletAdjustments      = "/Wallets/Adjustments";
+  public const string AdminSystemSettings         = "/SystemSettings/Index";
 
   // Customer
   public const string CustomerLogin = "/Login";

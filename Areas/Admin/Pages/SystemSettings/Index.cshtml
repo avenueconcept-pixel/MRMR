@@ -1,0 +1,164 @@
+@page
+@model MyApp.Areas.Admin.Pages.SystemSettings.IndexModel
+@using MyApp.Constants
+@{
+  ViewData["title"] = await T.GetAsync("SystemSettings.Title");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("SystemSettings.Title")</h4>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("SystemSettings.Title")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblSettings" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("SystemSettings.Key")</th>
+            <th>@await T.GetAsync("SystemSettings.KeyType")</th>
+            <th>@await T.GetAsync("SystemSettings.Description")</th>
+            <th>@await T.GetAsync("SystemSettings.Value")</th>
+            <th>@await T.GetAsync("UpdatedBy")</th>
+            <th>@await T.GetAsync("UpdatedAt")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var setting in Model.Items)
+          {
+            var badgeClass = setting.KeyType switch
+            {
+              SystemSettingKeyTypeConstants.Number  => "bg-info",
+              SystemSettingKeyTypeConstants.Boolean => "bg-warning text-dark",
+              SystemSettingKeyTypeConstants.Json    => "bg-secondary",
+              _                                     => "bg-primary"
+            };
+            <tr>
+              <td><code>@setting.SettingKey</code></td>
+              <td><span class="badge @badgeClass">@setting.KeyType</span></td>
+              <td><small class="text-muted">@setting.Description</small></td>
+              <td>@setting.SettingValue</td>
+              <td>@setting.UpdatedBy</td>
+              <td>@setting.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary btn-edit-setting"
+                        data-key="@setting.SettingKey"
+                        data-value="@setting.SettingValue">
+                  <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@* Edit Setting Modal *@
+<div class="modal fade" id="modalEditSetting" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">@await T.GetAsync("SystemSettings.EditValue")</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">@await T.GetAsync("SystemSettings.Key")</label>
+          <p id="modalSettingKey" class="mb-0 text-muted"></p>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">@await T.GetAsync("SystemSettings.Value")</label>
+          <input type="text" id="txtEditValue" class="form-control" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @await T.GetAsync("Btn.Cancel")
+        </button>
+        <button type="button" class="btn btn-primary" id="btnSaveSetting">
+          <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Btn.Save")
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Hidden form supplies antiforgery token for AJAX calls *@
+<form id="formAjax" method="post">
+  @Html.AntiForgeryToken()
+</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var antiForgeryToken = $('#formAjax input[name="__RequestVerificationToken"]').val();
+  var pageMsg = {
+    updateSuccess: '@Html.Raw(Model.MsgUpdateSuccess)',
+    saveError:     '@Html.Raw(Model.MsgSaveError)'
+  };
+  var currentKey = '';
+
+  function editSetting(key, value) {
+    currentKey = key;
+    document.getElementById('modalSettingKey').textContent = key;
+    document.getElementById('txtEditValue').value = value;
+    new bootstrap.Modal(document.getElementById('modalEditSetting')).show();
+  }
+
+  document.getElementById('btnSaveSetting').addEventListener('click', function () {
+    var btn   = this;
+    var value = document.getElementById('txtEditValue').value;
+    btn.disabled = true;
+
+    $.post('?handler=Update', {
+      EditKey:                    currentKey,
+      EditValue:                  value,
+      __RequestVerificationToken: antiForgeryToken
+    }, function (res) {
+      btn.disabled = false;
+      bootstrap.Modal.getInstance(document.getElementById('modalEditSetting')).hide();
+      if (res.success) {
+        Swal.fire({ icon: 'success', title: res.message, timer: 1500, showConfirmButton: false })
+          .then(function () { location.reload(); });
+      } else {
+        Swal.fire({ icon: 'error', text: res.message || pageMsg.saveError });
+      }
+    }).fail(function () {
+      btn.disabled = false;
+      Swal.fire({ icon: 'error', text: pageMsg.saveError });
+    });
+  });
+
+  $(document).on('click', '.btn-edit-setting', function () {
+    editSetting($(this).data('key'), $(this).data('value'));
+  });
+
+  $(document).ready(function () {
+    initDataTable('#tblSettings', 6);
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text:  @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}
