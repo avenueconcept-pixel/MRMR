@@ -1,0 +1,286 @@
+@page
+@model MyApp.Areas.Applicant.Pages.RegisterModel
+@{
+    Layout = "Layouts/_PublicLayout";
+    ViewData["Title"] = await T.GetAsync("Registration.PageTitle");
+
+    var categoryDetailsUrl = Url.Page("/Register", "CategoryDetails", new { area = "Applicant" });
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Registration.PageTitle")</span>
+        <p class="grey-text">@await T.GetAsync("Registration.Subtitle")</p>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "error" ? "red lighten-4" : "green lighten-4")">
+                <span>@Model.AlertMessageContent</span>
+            </div>
+        }
+
+        <form method="post" asp-page-handler="Register" id="frmRegister">
+            @Html.AntiForgeryToken()
+
+            @* ─── Section: Application Type ─── *@
+            <h6 class="mt-4">@await T.GetAsync("Registration.ApplicationType")</h6>
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <select id="ddlApplicationType" name="ddlApplicationType" required>
+                        <option value="" disabled selected>@await T.GetAsync("Select")</option>
+                        @if (Model.ddlApplicationType == "Individual")
+                        {
+                            <option value="Individual" selected>@await T.GetAsync("Registration.Individual")</option>
+                        }
+                        else
+                        {
+                            <option value="Individual">@await T.GetAsync("Registration.Individual")</option>
+                        }
+                        @if (Model.ddlApplicationType == "Corporate")
+                        {
+                            <option value="Corporate" selected>@await T.GetAsync("Registration.Corporate")</option>
+                        }
+                        else
+                        {
+                            <option value="Corporate">@await T.GetAsync("Registration.Corporate")</option>
+                        }
+                    </select>
+                    <label>@await T.GetAsync("Registration.ApplicationType") <span class="red-text">*</span></label>
+                </div>
+
+                <div class="input-field col s12 m6" id="divAwardCategory">
+                    <select id="ddlAwardCategory" name="ddlAwardCategory" required>
+                        <option value="" disabled selected>@await T.GetAsync("Registration.SelectCategoryFirst")</option>
+                    </select>
+                    <label>@await T.GetAsync("Registration.AwardCategory") <span class="red-text">*</span></label>
+                </div>
+            </div>
+
+            @* ─── Payment Summary Panel (hidden until category selected) ─── *@
+            <div id="divPaymentSummary" class="card blue lighten-5" style="display:none;">
+                <div class="card-content">
+                    <span class="card-title blue-text text-darken-2">@await T.GetAsync("Registration.PaymentSummary")</span>
+                    <table class="highlight">
+                        <tbody>
+                            <tr>
+                                <td>@await T.GetAsync("Registration.CategorySelected")</td>
+                                <td id="lblCategoryName" class="right-align"><strong>—</strong></td>
+                            </tr>
+                            <tr>
+                                <td>@await T.GetAsync("Registration.AwardFee")</td>
+                                <td id="lblAwardFee" class="right-align">—</td>
+                            </tr>
+                            <tr class="blue-text text-darken-2">
+                                <td><strong>@await T.GetAsync("Registration.PayNow") (RM 1,000)</strong></td>
+                                <td class="right-align"><strong>RM 1,000.00</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="grey-text">@await T.GetAsync("Registration.PayAfterLogin")</td>
+                                <td id="lblPayAfterLogin" class="right-align grey-text">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="grey-text caption mt-2">@await T.GetAsync("Registration.NominationFeeNote")</p>
+                </div>
+            </div>
+
+            @* ─── Section: Personal Details ─── *@
+            <h6 class="mt-4">@await T.GetAsync("Registration.PersonalDetails")</h6>
+            <div class="row">
+                <div class="input-field col s12 m3">
+                    <select id="ddlTitle" name="ddlTitle" required>
+                        <option value="" disabled selected>@await T.GetAsync("Select")</option>
+                        @foreach (var titleOpt in new[] { "Tan Sri", "Dato Sri", "Dato", "Mr", "Ms", "Dr", "Others" })
+                        {
+                            @if (Model.ddlTitle == titleOpt)
+                            {
+                                <option value="@titleOpt" selected>@titleOpt</option>
+                            }
+                            else
+                            {
+                                <option value="@titleOpt">@titleOpt</option>
+                            }
+                        }
+                    </select>
+                    <label>@await T.GetAsync("Registration.Title") <span class="red-text">*</span></label>
+                </div>
+                <div class="input-field col s12 m9">
+                    <input type="text" id="txtFullName" name="txtFullName" value="@Model.txtFullName" required />
+                    <label for="txtFullName">@await T.GetAsync("Registration.FullName") <span class="red-text">*</span></label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <input type="text" id="txtNric" name="txtNric" value="@Model.txtNric" required />
+                    <label for="txtNric">@await T.GetAsync("Registration.NricPassport") <span class="red-text">*</span></label>
+                </div>
+                <div class="input-field col s12 m6">
+                    <input type="text" id="txtContactNo" name="txtContactNo" value="@Model.txtContactNo" required />
+                    <label for="txtContactNo">@await T.GetAsync("Registration.ContactNo") <span class="red-text">*</span></label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input type="email" id="txtEmail" name="txtEmail" value="@Model.txtEmail" required />
+                    <label for="txtEmail">@await T.GetAsync("Registration.Email") <span class="red-text">*</span></label>
+                </div>
+            </div>
+
+            @* ─── Section: Company Details (shown for Corporate) ─── *@
+            <div id="divCompanySection">
+                <h6 class="mt-4">@await T.GetAsync("Registration.CompanyDetails")</h6>
+                <div class="row">
+                    <div class="input-field col s12 m6">
+                        <input type="text" id="txtCompanyName" name="txtCompanyName" value="@Model.txtCompanyName" />
+                        <label for="txtCompanyName">@await T.GetAsync("Registration.CompanyName") <span class="red-text corporate-required" style="display:none;">*</span></label>
+                    </div>
+                    <div class="input-field col s12 m6">
+                        <input type="text" id="txtSsmRegNo" name="txtSsmRegNo" value="@Model.txtSsmRegNo" />
+                        <label for="txtSsmRegNo">@await T.GetAsync("Registration.SsmRegNo") <span class="red-text corporate-required" style="display:none;">*</span></label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <textarea id="txtCompanyAddress" name="txtCompanyAddress" class="materialize-textarea">@Model.txtCompanyAddress</textarea>
+                        <label for="txtCompanyAddress">@await T.GetAsync("Registration.CompanyAddress")</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s12 m6">
+                        <input type="text" id="txtWebsite" name="txtWebsite" value="@Model.txtWebsite" />
+                        <label for="txtWebsite">@await T.GetAsync("Registration.Website")</label>
+                    </div>
+                    <div class="input-field col s12 m6" id="divIndustry">
+                        <select id="ddlIndustry" name="ddlIndustry">
+                            <option value="" disabled selected>@await T.GetAsync("Select")</option>
+                            @foreach (var ind in Enum.GetNames<MyApp.Constants.MRMR.Industry>())
+                            {
+                                @if (Model.ddlIndustry == ind)
+                                {
+                                    <option value="@ind" selected>@ind.Replace("_", " ")</option>
+                                }
+                                else
+                                {
+                                    <option value="@ind">@ind.Replace("_", " ")</option>
+                                }
+                            }
+                        </select>
+                        <label>@await T.GetAsync("Registration.Industry") <span class="red-text corporate-required" style="display:none;">*</span></label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <textarea id="txtBusinessNature" name="txtBusinessNature" class="materialize-textarea">@Model.txtBusinessNature</textarea>
+                        <label for="txtBusinessNature">@await T.GetAsync("Registration.BusinessNature")</label>
+                    </div>
+                </div>
+            </div>
+
+            @* ─── Section: Payment Method ─── *@
+            <h6 class="mt-4">@await T.GetAsync("Registration.PaymentMethod")</h6>
+            <div class="row">
+                <div class="col s12">
+                    <label>
+                        <input type="radio" name="ddlPaymentMethod" value="Axaipay" @(Model.ddlPaymentMethod == "Axaipay" ? "checked" : "") required />
+                        <span>@await T.GetAsync("Registration.Axaipay")</span>
+                    </label>
+                </div>
+                <div class="col s12 mt-2">
+                    <label>
+                        <input type="radio" name="ddlPaymentMethod" value="ManualBankTransfer" @(Model.ddlPaymentMethod == "ManualBankTransfer" ? "checked" : "") />
+                        <span>@await T.GetAsync("Registration.ManualBankTransfer")</span>
+                    </label>
+                </div>
+            </div>
+
+            @* ─── Section: Declaration ─── *@
+            <h6 class="mt-4">@await T.GetAsync("Registration.Declaration")</h6>
+            <div class="row">
+                <div class="col s12">
+                    <label>
+                        <input type="checkbox" id="chkDeclInfoAccurate" name="chkDeclInfoAccurate" value="true" @(Model.chkDeclInfoAccurate ? "checked" : "") required />
+                        <span>@await T.GetAsync("Registration.DeclInfoAccurate")</span>
+                    </label>
+                </div>
+                <div class="col s12 mt-2">
+                    <label>
+                        <input type="checkbox" id="chkDeclFeeNonrefundable" name="chkDeclFeeNonrefundable" value="true" @(Model.chkDeclFeeNonrefundable ? "checked" : "") required />
+                        <span>@await T.GetAsync("Registration.DeclFeeNonrefundable")</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col s12">
+                    <button type="submit" class="btn blue darken-3 waves-effect waves-light">
+                        <i class="ri ri-arrow-right-line me-1"></i>@await T.GetAsync("Registration.SubmitBtn")
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+    var individualCategories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.IndividualCategories.Select(c => new { id = c.Id, name = c.Name, price = c.Price })));
+    var corporateCategories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.CorporateCategories.Select(c => new { id = c.Id, name = c.Name, price = c.Price })));
+    var categoryDetailsUrl = '@categoryDetailsUrl';
+    var selectPlaceholder = '@await T.GetAsync("Select")';
+
+    $(document).ready(function () {
+        M.FormSelect.init(document.querySelectorAll('select'));
+        M.updateTextFields();
+
+        $('#ddlApplicationType').on('change', function () {
+            updateCategoryDropdown($(this).val());
+            toggleCompanySection($(this).val());
+        });
+
+        $('#ddlAwardCategory').on('change', function () {
+            showPaymentSummary($(this).val());
+        });
+
+        var selectedType = '@Model.ddlApplicationType';
+        if (selectedType) {
+            updateCategoryDropdown(selectedType);
+            toggleCompanySection(selectedType);
+        }
+    });
+
+    function updateCategoryDropdown(type) {
+        var categories = type === 'Corporate' ? corporateCategories : individualCategories;
+        var $select = $('#ddlAwardCategory');
+        $select.empty();
+        $select.append('<option value="" disabled selected>' + selectPlaceholder + '</option>');
+        $.each(categories, function (i, cat) {
+            $select.append('<option value="' + cat.id + '">' + cat.name + '</option>');
+        });
+        M.FormSelect.init($select[0]);
+        $('#divPaymentSummary').hide();
+    }
+
+    function toggleCompanySection(type) {
+        if (type === 'Corporate') {
+            $('.corporate-required').show();
+            $('#txtCompanyName, #txtSsmRegNo, #ddlIndustry').prop('required', true);
+        } else {
+            $('.corporate-required').hide();
+            $('#txtCompanyName, #txtSsmRegNo, #ddlIndustry').prop('required', false);
+        }
+    }
+
+    function showPaymentSummary(categoryId) {
+        if (!categoryId) { $('#divPaymentSummary').hide(); return; }
+        $.get(categoryDetailsUrl + '&id=' + categoryId, function (res) {
+            if (!res.success) return;
+            $('#lblCategoryName').text(res.name);
+            $('#lblAwardFee').text(res.priceDisplay);
+            $('#lblPayAfterLogin').text(res.priceDisplay);
+            $('#divPaymentSummary').show();
+        });
+    }
+</script>
+}

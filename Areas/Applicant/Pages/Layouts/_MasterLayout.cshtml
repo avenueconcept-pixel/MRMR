@@ -1,0 +1,59 @@
+@inject IHttpContextAccessor HttpContextAccessor
+@inject MyApp.Services.AppSettingsService _brandingSvc
+
+@{
+    string title       = ViewData["Title"] as string ?? "MRMR2026";
+    string appName     = "MRMR2026 RISE Platform";
+    string brandLogo   = await _brandingSvc.GetAsync("global", "logo_path");
+    string faviconPath = await _brandingSvc.GetAsync("global", "favicon_path");
+    string iconSrc     = !string.IsNullOrEmpty(faviconPath) ? faviconPath : brandLogo;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title | @appName</title>
+
+    @* Favicon *@
+    @if (!string.IsNullOrEmpty(iconSrc))
+    {
+        <link rel="icon" type="image/png" href="/uploads/branding/@iconSrc" />
+    }
+    else
+    {
+        <link rel="icon" type="image/x-icon" href="~/img/favicon/favicon.ico" />
+    }
+
+    @* Materialize CSS *@
+    <link rel="stylesheet" href="~/vendor/libs/materialize/materialize.dist.css" />
+
+    @* Remix Icons *@
+    <link rel="stylesheet" href="~/vendor/fonts/remixicon/remixicon.css" />
+
+    @* SweetAlert2 *@
+    <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+
+    @* Custom applicant styles *@
+    <link rel="stylesheet" href="~/custom/applicant.css" />
+
+    @RenderSection("VendorStyles", required: false)
+    @RenderSection("PageStyles", required: false)
+</head>
+<body>
+
+    @RenderBody()
+
+    @* jQuery *@
+    <script src="~/vendor/libs/jquery/jquery.dist.js"></script>
+
+    @* Materialize JS *@
+    <script src="~/vendor/libs/materialize/materialize.dist.js"></script>
+
+    @* SweetAlert2 *@
+    <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+
+    @RenderSection("VendorScripts", required: false)
+    @RenderSection("PageScripts", required: false)
+</body>
+</html>

@@ -1,0 +1,29 @@
+@{
+    Layout = "Layouts/_MasterLayout";
+}
+
+@await Html.PartialAsync("Layouts/Sections/_Navbar")
+
+<main class="applicant-portal-main">
+    <div class="container">
+        @RenderBody()
+    </div>
+</main>
+
+@await Html.PartialAsync("Layouts/Sections/Footer/_Footer")
+
+@section VendorStyles {
+    @RenderSection("VendorStyles", required: false)
+}
+
+@section PageStyles {
+    @RenderSection("PageStyles", required: false)
+}
+
+@section VendorScripts {
+    @RenderSection("VendorScripts", required: false)
+}
+
+@section PageScripts {
+    @RenderSection("PageScripts", required: false)
+}

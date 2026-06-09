@@ -1,0 +1,36 @@
+@{
+    Layout = "Layouts/_MasterLayout";
+}
+
+@* Public pages — centered card layout, no navbar/sidebar *@
+<div class="applicant-public-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col s12 m8 l6">
+                @* Logo *@
+                <div class="center-align py-4">
+                    <img src="~/img/mrmr-logo.png" alt="MRMR2026" height="60" onerror="this.style.display='none'" />
+                    <h5 class="mt-2">MRMR2026 RISE Platform</h5>
+                </div>
+
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+</div>
+
+@section VendorStyles {
+    @RenderSection("VendorStyles", required: false)
+}
+
+@section PageStyles {
+    @RenderSection("PageStyles", required: false)
+}
+
+@section VendorScripts {
+    @RenderSection("VendorScripts", required: false)
+}
+
+@section PageScripts {
+    @RenderSection("PageScripts", required: false)
+}

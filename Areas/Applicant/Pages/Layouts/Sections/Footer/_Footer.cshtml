@@ -1,13 +1,7 @@
-@inject MyApp.Services.AppSettingsService _customerFooterSvc
-@{
-  var customerFooter = await _customerFooterSvc.GetAsync("customer", "footer_text");
-}
-
-@if (!string.IsNullOrEmpty(customerFooter))
-{
-  <footer class="content-footer footer bg-footer-theme">
-    <div class="container py-3 footer-custom-text">
-      @Html.Raw(customerFooter)
+<footer class="applicant-footer">
+    <div class="container center-align">
+        <p class="grey-text text-darken-1 small">
+            &copy; @DateTime.Now.Year Persatuan Usahawan Maju Malaysia (PUMM). All rights reserved.
+        </p>
     </div>
-  </footer>
-}
+</footer>

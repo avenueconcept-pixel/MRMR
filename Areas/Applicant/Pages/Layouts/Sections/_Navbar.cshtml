@@ -1,0 +1,44 @@
+@inject MyApp.Services.TranslationService T
+
+@{
+    var username = User.FindFirst(MyApp.Constants.CookieConstants.SessionKeys.Username)?.Value ?? string.Empty;
+    var fullName = User.FindFirst(MyApp.Constants.CookieConstants.SessionKeys.FullName)?.Value ?? string.Empty;
+    var appId    = User.FindFirst("ApplicationId")?.Value ?? string.Empty;
+}
+
+<nav class="applicant-navbar" role="navigation">
+    <div class="nav-wrapper container">
+        <a href="#" class="brand-logo">
+            <span class="hide-on-med-and-down">MRMR2026 RISE Platform</span>
+            <span class="hide-on-large-only">MRMR2026</span>
+        </a>
+
+        <ul class="right hide-on-med-and-down">
+            @if (!string.IsNullOrEmpty(appId))
+            {
+                <li><a class="nav-app-id">@appId</a></li>
+            }
+            <li>
+                <a class="dropdown-trigger" href="#!" data-target="userDropdown">
+                    <i class="ri ri-user-line me-1"></i>
+                    @fullName
+                    <i class="ri ri-arrow-down-s-line"></i>
+                </a>
+            </li>
+        </ul>
+
+        <ul id="userDropdown" class="dropdown-content">
+            <li>
+                <a asp-area="Applicant" asp-page="/Account/ChangePassword">
+                    <i class="ri ri-lock-password-line me-1"></i>@await T.GetAsync("ChangePassword")
+                </a>
+            </li>
+            <li class="divider"></li>
+            <li>
+                <a asp-area="Applicant" asp-page="/Account/Logout">
+                    <i class="ri ri-logout-box-line me-1"></i>@await T.GetAsync("Logout")
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
