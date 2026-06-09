@@ -537,6 +537,9 @@ public class AppDbContext : DbContext
       entity.Property(e => e.Industry).HasColumnName("industry").HasMaxLength(50);
       entity.Property(e => e.BusinessNature).HasColumnName("business_nature");
       entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
+      entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(25);
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
+      entity.Property(e => e.PreferredLang).HasColumnName("preferred_lang").HasMaxLength(10);
       entity.Property(e => e.IsFirstLogin).HasColumnName("is_first_login").HasDefaultValue(true);
       entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(false);
       entity.Property(e => e.DeclInfoAccurate).HasColumnName("decl_info_accurate").HasDefaultValue(false);
@@ -545,6 +548,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.HasIndex(e => e.Email).IsUnique();
       entity.HasIndex(e => e.NricPassport).IsUnique();
+      entity.HasIndex(e => e.Username).IsUnique();
     });
 
     modelBuilder.Entity<Application>(entity =>

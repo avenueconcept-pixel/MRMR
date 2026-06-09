@@ -15,6 +15,9 @@ public class Registrant
     public string? Industry { get; set; }
     public string? BusinessNature { get; set; }
     public string? PasswordHash { get; set; }
+    public string? Username { get; set; }
+    public string Status { get; set; } = "inactive";
+    public string? PreferredLang { get; set; }
     public bool IsFirstLogin { get; set; } = true;
     public bool IsActive { get; set; } = false;
     public bool DeclInfoAccurate { get; set; } = false;

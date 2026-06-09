@@ -60,8 +60,10 @@ public class Routes
   public const string ApplicantRegister               = "/Register";
   public const string ApplicantPaymentSelect          = "/Payment/Select";
   public const string ApplicantPaymentManual          = "/Payment/Manual";
-  public const string ApplicantPaymentAxaipayCallback = "/Payment/AxaipayCallback";
-  public const string ApplicantPaymentPending         = "/Payment/Pending";
+  public const string ApplicantPaymentAxaipayCallback  = "/Payment/AxaipayCallback";
+  public const string ApplicantPaymentPending          = "/Payment/Pending";
+  public const string ApplicantPaymentConfirmation     = "/Payment/Confirmation";
+  public const string ApplicantLogout                  = "/Account/Logout";
 
   // MRMR Admin
   public const string AdminMrmrApplications = "/MRMR/Applications/Index";

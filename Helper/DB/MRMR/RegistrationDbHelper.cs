@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyApp.Constants;
 using MyApp.Constants.MRMR;
 using MyApp.Data;
 using MyApp.Dtos;
@@ -159,6 +160,21 @@ public class RegistrationDbHelper : DbHelper
                 await _db.SaveChangesAsync();
             }
         });
+
+    public async Task<Registrant?> GetRegistrantByUsernameAsync(string usernameOrEmail)
+        => await ExecuteAsync(async () =>
+            await _db.Registrants
+                .FirstOrDefaultAsync(r =>
+                    (r.Username == usernameOrEmail || r.Email == usernameOrEmail)
+                    && r.Status == StatusConstants.Active));
+
+    public async Task<Application?> GetActiveApplicationAsync(int registrantId)
+        => await ExecuteAsync(async () =>
+            await _db.Applications
+                .Include(a => a.AwardCategory)
+                .FirstOrDefaultAsync(a =>
+                    a.RegistrantId == registrantId
+                    && a.Status != nameof(ApplicationStatus.Withdrawn)));
 
     public async Task SaveSlipUploadAsync(int paymentId, string filePath)
         => await ExecuteAsync(async () =>

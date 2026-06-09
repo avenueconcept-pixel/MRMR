@@ -1,0 +1,27 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Payment.ConfirmationModel
+@{
+    Layout = "Layouts/_PublicLayout";
+    ViewData["Title"] = await T.GetAsync("Confirmation.Title");
+}
+
+<div class="card applicant-card center-align">
+    <div class="card-content">
+        <i class="ri ri-checkbox-circle-line green-text" style="font-size: 4rem;"></i>
+        <h5 class="green-text mt-2">@await T.GetAsync("Confirmation.Title")</h5>
+        <p>@await T.GetAsync("Confirmation.Message")</p>
+        <p class="grey-text">@await T.GetAsync("Confirmation.EmailNote")</p>
+
+        <div class="divider my-4"></div>
+
+        <a asp-area="Applicant" asp-page="/Login" class="btn blue darken-3 waves-effect waves-light">
+            <i class="ri ri-login-box-line"></i> @await T.GetAsync("Confirmation.LoginNow")
+        </a>
+
+        <div class="mt-3">
+            <a asp-area="Applicant" asp-page="/Register" class="blue-text">
+                @await T.GetAsync("Confirmation.RegisterAnother")
+            </a>
+        </div>
+    </div>
+</div>
