@@ -22,7 +22,14 @@ public class LoginModel : BasePageModel
     [BindProperty] public string Username { get; set; } = string.Empty;
     [BindProperty] public string Password { get; set; } = string.Empty;
 
-    public void OnGet() { }
+    public async Task OnGetAsync()
+    {
+        if (TempData["PasswordChanged"] as string == "1")
+        {
+            AlertMessageContent = await _translation.GetAsync("Login.PasswordChangedSuccess");
+            AlertMessageType    = "success";
+        }
+    }
 
     public async Task<IActionResult> OnPostLoginAsync()
     {
@@ -59,6 +66,8 @@ public class LoginModel : BasePageModel
             new(CookieConstants.SessionKeys.LoginLanguage, registrant.PreferredLang ?? "en"),
         };
 
+        claims.Add(new("IsFirstLogin", registrant.IsFirstLogin.ToString()));
+
         if (application != null)
             claims.Add(new("ApplicationId", application.ApplicationId));
 
@@ -67,6 +76,9 @@ public class LoginModel : BasePageModel
 
         await HttpContext.SignInAsync(AuthSchemeConstants.Applicant, principal,
             new AuthenticationProperties { IsPersistent = true });
+
+        if (registrant.IsFirstLogin)
+            return RedirectToPage("/Account/ChangePassword", new { area = "Applicant" });
 
         return RedirectToPage("/Dashboard", new { area = "Applicant" });
     }

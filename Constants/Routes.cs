@@ -66,6 +66,7 @@ public class Routes
   public const string ApplicantLogout                  = "/Account/Logout";
   public const string ApplicantForgotPassword          = "/Account/ForgotPassword";
   public const string ApplicantResetPassword           = "/Account/ResetPassword";
+  public const string ApplicantChangePassword          = "/Account/ChangePassword";
 
   // MRMR Admin
   public const string AdminMrmrApplications = "/MRMR/Applications/Index";

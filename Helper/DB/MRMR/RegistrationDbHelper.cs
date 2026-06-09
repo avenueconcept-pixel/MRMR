@@ -161,6 +161,30 @@ public class RegistrationDbHelper : DbHelper
             }
         });
 
+    public async Task<Registrant?> GetRegistrantByDbIdAsync(int id)
+        => await ExecuteAsync(async () =>
+            await _db.Registrants.FindAsync(id));
+
+    public async Task ClearFirstLoginAsync(int registrantId)
+        => await ExecuteAsync(async () =>
+        {
+            var r = await _db.Registrants.FindAsync(registrantId);
+            if (r == null) return;
+            r.IsFirstLogin = false;
+            r.UpdatedAt    = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task UpdatePasswordAsync(int registrantId, string newPasswordHash)
+        => await ExecuteAsync(async () =>
+        {
+            var r = await _db.Registrants.FindAsync(registrantId);
+            if (r == null) return;
+            r.PasswordHash = newPasswordHash;
+            r.UpdatedAt    = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
+
     public async Task<Registrant?> GetRegistrantByEmailAsync(string email)
         => await ExecuteAsync(async () =>
             await _db.Registrants
