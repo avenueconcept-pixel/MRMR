@@ -67,6 +67,8 @@ public class Routes
   public const string ApplicantForgotPassword          = "/Account/ForgotPassword";
   public const string ApplicantResetPassword           = "/Account/ResetPassword";
   public const string ApplicantChangePassword          = "/Account/ChangePassword";
+  public const string ApplicantPaymentInvoice          = "/Payment/Invoice";
+  public const string ApplicantPaymentReUpload         = "/Payment/ReUpload";
 
   // MRMR Admin
   public const string AdminMrmrApplications = "/MRMR/Applications/Index";

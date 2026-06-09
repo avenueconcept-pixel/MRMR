@@ -205,6 +205,42 @@
         @* Card footer *@
         <div class="card-action grey lighten-5">
             <span class="grey-text"><small>@await T.GetAsync("Dashboard.Registered"): @app.CreatedAt.ToString("dd MMM yyyy")</small></span>
+
+            @* Invoice links for verified payments *@
+            @if (nomPay != null && nomPay.Status == nameof(MyApp.Constants.MRMR.PaymentStatus.Verified))
+            {
+                <a asp-area="Applicant" asp-page="/Payment/Invoice"
+                   asp-route-paymentId="@nomPay.Id"
+                   class="btn-flat blue-text right">
+                    <i class="ri ri-receipt-line"></i> @await T.GetAsync("Dashboard.NomInvoice")
+                </a>
+            }
+            @if (awdPay != null && awdPay.Status == nameof(MyApp.Constants.MRMR.PaymentStatus.Verified))
+            {
+                <a asp-area="Applicant" asp-page="/Payment/Invoice"
+                   asp-route-paymentId="@awdPay.Id"
+                   class="btn-flat teal-text right">
+                    <i class="ri ri-receipt-line"></i> @await T.GetAsync("Dashboard.AwardInvoice")
+                </a>
+            }
+
+            @* Re-upload links for rejected payments *@
+            @if (nomPay != null && nomPay.Status == nameof(MyApp.Constants.MRMR.PaymentStatus.Rejected))
+            {
+                <a asp-area="Applicant" asp-page="/Payment/ReUpload"
+                   asp-route-paymentId="@nomPay.Id"
+                   class="btn-flat red-text right">
+                    <i class="ri ri-upload-cloud-line"></i> @await T.GetAsync("Dashboard.ReUploadNomSlip")
+                </a>
+            }
+            @if (awdPay != null && awdPay.Status == nameof(MyApp.Constants.MRMR.PaymentStatus.Rejected))
+            {
+                <a asp-area="Applicant" asp-page="/Payment/ReUpload"
+                   asp-route-paymentId="@awdPay.Id"
+                   class="btn-flat red-text right">
+                    <i class="ri ri-upload-cloud-line"></i> @await T.GetAsync("Dashboard.ReUploadAwardSlip")
+                </a>
+            }
         </div>
     </div>
 }

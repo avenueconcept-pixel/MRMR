@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Helper;
 using MyApp.Helper.DB.MRMR;
+using MyApp.Constants.MRMR;
+using MyApp.Services;
 
 namespace MyApp.Areas.Applicant.Pages.Payment;
 
@@ -9,14 +11,16 @@ public class AxaipayCallbackModel : BasePageModel
 {
     private readonly RegistrationDbHelper          _dbHelper;
     private readonly IConfiguration                _config;
+    private readonly EmailService                  _emailService;
     private readonly ILogger<AxaipayCallbackModel> _logger;
 
     public AxaipayCallbackModel(RegistrationDbHelper dbHelper, IConfiguration config,
-        ILogger<AxaipayCallbackModel> logger)
+        EmailService emailService, ILogger<AxaipayCallbackModel> logger)
     {
-        _dbHelper = dbHelper;
-        _config   = config;
-        _logger   = logger;
+        _dbHelper     = dbHelper;
+        _config       = config;
+        _emailService = emailService;
+        _logger       = logger;
     }
 
     public IActionResult OnGet() => Page();
@@ -53,10 +57,29 @@ public class AxaipayCallbackModel : BasePageModel
                 return new OkResult();
             }
 
-            var payment = await _dbHelper.GetPaymentAsync(app.Id, nameof(MyApp.Constants.MRMR.PaymentType.NominationFee));
+            var payment = await _dbHelper.GetPaymentAsync(app.Id, nameof(PaymentType.NominationFee));
             if (payment == null) return new OkResult();
 
             await _dbHelper.UpdatePaymentAxaipayAsync(payment.Id, refNo, payload);
+
+            if (payment.PaymentType == nameof(PaymentType.NominationFee))
+            {
+                await _dbHelper.CreateAwardFeePaymentAsync(payment.ApplicationId);
+
+                var appWithRegistrant = await _dbHelper.GetApplicationByDbIdAsync(payment.ApplicationId);
+                if (appWithRegistrant?.Registrant != null)
+                {
+                    var reg  = appWithRegistrant.Registrant;
+                    var lang = reg.PreferredLang ?? "en";
+                    await _emailService.SendApplicantCredentialsAsync(
+                        reg.Email,
+                        reg.FullName,
+                        reg.Username ?? reg.Email,
+                        reg.TempPassword ?? string.Empty,
+                        lang);
+                }
+            }
+
             return new OkResult();
         }
         catch (Exception ex)

@@ -24,6 +24,7 @@ public class Registrant
     public bool DeclFeeNonrefundable { get; set; } = false;
     public string? ResetToken { get; set; }
     public DateTime? ResetTokenExpiresAt { get; set; }
+    public string? TempPassword { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

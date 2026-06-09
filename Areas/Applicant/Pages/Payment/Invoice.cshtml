@@ -1,0 +1,100 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Payment.InvoiceModel
+@{
+    Layout = "Layouts/_PortalLayout";
+    ViewData["Title"] = await T.GetAsync("Payment.InvoiceTitle");
+}
+
+@if (Model.Payment != null)
+{
+    var pay = Model.Payment;
+    var app = pay.Application;
+
+    <div class="row mt-4">
+        <div class="col s12 m8 offset-m2">
+
+            @* Invoice card *@
+            <div class="card applicant-card">
+                <div class="card-content">
+
+                    @* Header *@
+                    <div class="row valign-wrapper mb-3">
+                        <div class="col s8">
+                            <span class="card-title mb-0">@await T.GetAsync("Payment.InvoiceTitle")</span>
+                            @if (!string.IsNullOrEmpty(pay.InvoiceNo))
+                            {
+                                <p class="grey-text mt-0"><small>#@pay.InvoiceNo</small></p>
+                            }
+                        </div>
+                        <div class="col s4 right-align">
+                            <span class="badge-status green lighten-4 green-text">@await T.GetAsync("Payment.Status.Verified")</span>
+                        </div>
+                    </div>
+
+                    <div class="divider mb-3"></div>
+
+                    @* Applicant details *@
+                    @if (app?.Registrant != null)
+                    {
+                        <h6 class="grey-text">@await T.GetAsync("Payment.BillTo")</h6>
+                        <p class="mb-1"><strong>@app.Registrant.FullName</strong></p>
+                        <p class="mb-1 grey-text">@app.Registrant.Email</p>
+                        <p class="mb-3 grey-text">@app.Registrant.ContactNo</p>
+                    }
+
+                    @* Payment details table *@
+                    <table class="striped">
+                        <tbody>
+                            <tr>
+                                <td class="grey-text">@await T.GetAsync("Payment.Reference")</td>
+                                <td><strong>@app?.ApplicationId</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="grey-text">@await T.GetAsync("Payment.Category")</td>
+                                <td>@app?.AwardCategory?.Name</td>
+                            </tr>
+                            <tr>
+                                <td class="grey-text">@await T.GetAsync("Payment.Type")</td>
+                                <td>@pay.PaymentType</td>
+                            </tr>
+                            <tr>
+                                <td class="grey-text">@await T.GetAsync("Payment.Method")</td>
+                                <td>@pay.Method</td>
+                            </tr>
+                            @if (!string.IsNullOrEmpty(pay.AxaipayRefNo))
+                            {
+                                <tr>
+                                    <td class="grey-text">@await T.GetAsync("Payment.TransactionRef")</td>
+                                    <td>@pay.AxaipayRefNo</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td class="grey-text">@await T.GetAsync("Payment.VerifiedAt")</td>
+                                <td>@pay.VerifiedAt?.ToString("dd MMM yyyy HH:mm")</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="divider my-3"></div>
+
+                    @* Amount *@
+                    <div class="right-align">
+                        <p class="mb-0 grey-text">@await T.GetAsync("Payment.TotalAmount")</p>
+                        <h5 class="mt-0 green-text text-darken-2"><strong>RM @pay.Amount.ToString("N2")</strong></h5>
+                    </div>
+
+                </div>
+
+                <div class="card-action">
+                    <a asp-area="Applicant" asp-page="/Dashboard" class="btn-flat blue-text">
+                        <i class="ri ri-arrow-left-line"></i> @await T.GetAsync("Common.BackToDashboard")
+                    </a>
+                    <a href="#" onclick="window.print()" class="btn-flat grey-text right">
+                        <i class="ri ri-printer-line"></i> @await T.GetAsync("Common.Print")
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}

@@ -20,33 +20,35 @@ public class SelectModel : BasePageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        var appDbId = TempData["RegisteredApplicationId"] as int?;
-        var method  = TempData["RegisteredPaymentMethod"]  as string;
+        Models.MRMR.Payment?     payment     = null;
+        Models.MRMR.Application? application = null;
 
-        if (PaymentId.HasValue && (appDbId == null || string.IsNullOrEmpty(method)))
+        if (PaymentId.HasValue)
         {
-            var dbPayment = await _dbHelper.GetPaymentByIdAsync(PaymentId.Value);
-            if (dbPayment == null) return RedirectToPage("/Dashboard", new { area = "Applicant" });
+            // Path A: Dashboard — paymentId in query string
+            payment = await _dbHelper.GetPaymentFullAsync(PaymentId.Value);
+            if (payment == null) return RedirectToPage("/Dashboard", new { area = "Applicant" });
+            application = payment.Application;
+        }
+        else
+        {
+            // Path B: Post-registration — from TempData
+            var appDbId = TempData["RegisteredApplicationId"] as int?;
+            var method  = TempData["RegisteredPaymentMethod"]  as string;
+            if (appDbId == null || string.IsNullOrEmpty(method))
+                return RedirectToPage("/Register", new { area = "Applicant" });
 
-            var application2 = await _dbHelper.GetApplicationByDbIdAsync(dbPayment.ApplicationId);
-            if (application2 == null) return RedirectToPage("/Dashboard", new { area = "Applicant" });
+            application = await _dbHelper.GetApplicationByDbIdAsync(appDbId.Value);
+            if (application == null) return RedirectToPage("/Register", new { area = "Applicant" });
 
-            appDbId = application2.Id;
-            method  = dbPayment.Method;
+            payment = await _dbHelper.GetPaymentAsync(appDbId.Value, nameof(PaymentType.NominationFee));
+            if (payment == null) return RedirectToPage("/Register", new { area = "Applicant" });
         }
 
-        if (appDbId == null || string.IsNullOrEmpty(method))
-            return RedirectToPage("/Register", new { area = "Applicant" });
+        var paymentMethod = payment.Method;
+        var amount        = payment.Amount;
 
-        var application = await _dbHelper.GetApplicationByDbIdAsync(appDbId.Value);
-        if (application == null)
-            return RedirectToPage("/Register", new { area = "Applicant" });
-
-        var payment = await _dbHelper.GetPaymentAsync(appDbId.Value, nameof(PaymentType.NominationFee));
-        if (payment == null)
-            return RedirectToPage("/Register", new { area = "Applicant" });
-
-        if (method == nameof(PaymentMethod.Axaipay))
+        if (paymentMethod == nameof(PaymentMethod.Axaipay))
         {
             var gatewayUrl  = _config["Axaipay:GatewayUrl"]!;
             var merchantId  = _config["Axaipay:MerchantId"]!;
@@ -58,29 +60,28 @@ public class SelectModel : BasePageModel
             {
                 ["merchant_id"]    = merchantId,
                 ["order_id"]       = application.ApplicationId,
-                ["amount"]         = payment.Amount.ToString("F2"),
+                ["amount"]         = amount.ToString("F2"),
                 ["currency"]       = PaymentConstants.Currency,
-                ["customer_name"]  = application.Registrant.FullName,
-                ["customer_email"] = application.Registrant.Email,
+                ["customer_name"]  = application.Registrant?.FullName ?? string.Empty,
+                ["customer_email"] = application.Registrant?.Email    ?? string.Empty,
                 ["callback_url"]   = callbackUrl,
                 ["return_url"]     = returnUrl,
-                ["description"]    = $"MRMR2026 Nomination Fee - {application.ApplicationId}"
+                ["description"]    = $"MRMR2026 {payment.PaymentType} - {application.ApplicationId}"
             };
 
-            var signatureInput = $"{application.ApplicationId}{payment.Amount:F2}{secretKey}";
+            var signatureInput = $"{application.ApplicationId}{amount:F2}{secretKey}";
             queryParams["signature"] = ComputeHmacSha256(signatureInput, secretKey);
 
             var redirectUrl = gatewayUrl + "?" + string.Join("&",
                 queryParams.Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value ?? "")}"));
 
-            TempData["AxaipayPaymentId"] = payment.Id;
             return Redirect(redirectUrl);
         }
         else
         {
             TempData["ManualPaymentId"]     = payment.Id;
             TempData["ManualApplicationId"] = application.ApplicationId;
-            TempData["ManualAmount"]        = payment.Amount;
+            TempData["ManualAmount"]        = amount;
             return RedirectToPage("/Payment/Manual", new { area = "Applicant" });
         }
     }
@@ -89,7 +90,7 @@ public class SelectModel : BasePageModel
     {
         using var hmac = new System.Security.Cryptography.HMACSHA256(
             System.Text.Encoding.UTF8.GetBytes(key));
-        var hash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(data));
-        return Convert.ToHexString(hash).ToLower();
+        return Convert.ToHexString(
+            hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(data))).ToLower();
     }
 }

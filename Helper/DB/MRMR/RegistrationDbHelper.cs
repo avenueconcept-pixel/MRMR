@@ -11,11 +11,13 @@ namespace MyApp.Helper.DB.MRMR;
 public class RegistrationDbHelper : DbHelper
 {
     private readonly ApplicationIdGeneratorService _idGen;
+    private readonly InvoiceService _invoiceService;
 
     public RegistrationDbHelper(AppDbContext db, AuditHelper audit, ILoggerFactory loggerFactory,
-        ApplicationIdGeneratorService idGen) : base(db, audit, loggerFactory)
+        ApplicationIdGeneratorService idGen, InvoiceService invoiceService) : base(db, audit, loggerFactory)
     {
-        _idGen = idGen;
+        _idGen          = idGen;
+        _invoiceService = invoiceService;
     }
 
     public async Task<List<CategorySummaryDto>> GetActiveCategoriesAsync(string? categoryType = null)
@@ -159,6 +161,86 @@ public class RegistrationDbHelper : DbHelper
                 app.UpdatedAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
             }
+        });
+
+    public async Task CreateAwardFeePaymentAsync(int applicationDbId)
+        => await ExecuteAsync(async () =>
+        {
+            var exists = await _db.Payments.AnyAsync(p =>
+                p.ApplicationId == applicationDbId
+                && p.PaymentType == nameof(PaymentType.AwardFee));
+            if (exists) return;
+
+            var app = await _db.Applications
+                .Include(a => a.AwardCategory)
+                .FirstOrDefaultAsync(a => a.Id == applicationDbId);
+            if (app == null) return;
+
+            var amount    = app.AwardCategory?.Price ?? 0;
+            var invoiceNo = await _invoiceService.GenerateInvoiceNoAsync();
+
+            var payment = new Payment
+            {
+                ApplicationId = applicationDbId,
+                PaymentType   = nameof(PaymentType.AwardFee),
+                Method        = nameof(PaymentMethod.ManualBankTransfer),
+                Amount        = amount,
+                Status        = nameof(PaymentStatus.Pending),
+                InvoiceNo     = invoiceNo,
+                CreatedAt     = DateTime.UtcNow,
+                UpdatedAt     = DateTime.UtcNow
+            };
+            _db.Payments.Add(payment);
+            await _db.SaveChangesAsync();
+
+            _db.PaymentAuditLogs.Add(new PaymentAuditLog
+            {
+                PaymentId   = payment.Id,
+                Action      = "AwardFeeCreated",
+                PerformedAt = DateTime.UtcNow,
+                Remarks     = "Auto-created on NominationFeeVerified"
+            });
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task<Payment?> GetPaymentFullAsync(int paymentId)
+        => await ExecuteAsync(async () =>
+            await _db.Payments
+                .Include(p => p.Application)
+                    .ThenInclude(a => a.Registrant)
+                .Include(p => p.Application)
+                    .ThenInclude(a => a.AwardCategory)
+                .FirstOrDefaultAsync(p => p.Id == paymentId));
+
+    public async Task ReUploadSlipAsync(int paymentId, string filePath)
+        => await ExecuteAsync(async () =>
+        {
+            var payment = await _db.Payments.FindAsync(paymentId);
+            if (payment == null) return;
+            payment.SlipFilePath   = filePath;
+            payment.SlipUploadedAt = DateTime.UtcNow;
+            payment.Status         = nameof(PaymentStatus.PendingVerification);
+            payment.UpdatedAt      = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            var app = await _db.Applications.FindAsync(payment.ApplicationId);
+            if (app != null)
+            {
+                app.Status = payment.PaymentType == nameof(PaymentType.NominationFee)
+                    ? nameof(ApplicationStatus.NominationFeePending)
+                    : nameof(ApplicationStatus.AwardFeePending);
+                app.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
+            _db.PaymentAuditLogs.Add(new PaymentAuditLog
+            {
+                PaymentId   = paymentId,
+                Action      = "SlipReUploaded",
+                PerformedAt = DateTime.UtcNow,
+                Remarks     = "Applicant re-uploaded slip after rejection"
+            });
+            await _db.SaveChangesAsync();
         });
 
     public async Task<List<Application>> GetApplicationsAsync(int registrantId)

@@ -548,6 +548,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.Property(e => e.ResetToken).HasColumnName("reset_token").HasMaxLength(100);
       entity.Property(e => e.ResetTokenExpiresAt).HasColumnName("reset_token_expires_at");
+      entity.Property(e => e.TempPassword).HasColumnName("temp_password").HasMaxLength(100);
       entity.HasIndex(e => e.Email).IsUnique();
       entity.HasIndex(e => e.NricPassport).IsUnique();
       entity.HasIndex(e => e.Username).IsUnique();

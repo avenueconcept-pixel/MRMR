@@ -75,11 +75,14 @@ public class RegisterModel : BasePageModel
             return Page();
         }
 
+        var tempPassword = GenerateTempPassword();
+        var nric         = txtNric.Trim();
+
         var registrant = new Registrant
         {
             Title                = ddlTitle,
             FullName             = txtFullName.Trim(),
-            NricPassport         = txtNric.Trim(),
+            NricPassport         = nric,
             ContactNo            = txtContactNo.Trim(),
             Email                = txtEmail.Trim().ToLower(),
             CompanyName          = txtCompanyName?.Trim(),
@@ -90,6 +93,10 @@ public class RegisterModel : BasePageModel
             BusinessNature       = txtBusinessNature?.Trim(),
             DeclInfoAccurate     = chkDeclInfoAccurate,
             DeclFeeNonrefundable = chkDeclFeeNonrefundable,
+            Username             = nric.Length > 25 ? nric[..25] : nric,
+            PasswordHash         = BCrypt.Net.BCrypt.HashPassword(tempPassword),
+            TempPassword         = tempPassword,
+            Status               = "inactive",
             IsFirstLogin         = true,
             IsActive             = false
         };
@@ -135,6 +142,13 @@ public class RegisterModel : BasePageModel
             price        = category.Price,
             priceDisplay = $"RM {category.Price:N2}"
         });
+    }
+
+    private static string GenerateTempPassword()
+    {
+        const string chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        var rng = System.Security.Cryptography.RandomNumberGenerator.GetBytes(10);
+        return new string(rng.Select(b => chars[b % chars.Length]).ToArray());
     }
 
     private async Task LoadPageDataAsync()

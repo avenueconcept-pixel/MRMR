@@ -1,0 +1,77 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Payment.ReUploadModel
+@{
+    Layout = "Layouts/_PortalLayout";
+    ViewData["Title"] = await T.GetAsync("Payment.ReUploadTitle");
+}
+
+<div class="row mt-4">
+    <div class="col s12 m8 offset-m2">
+        <div class="card applicant-card">
+            <div class="card-content">
+                <span class="card-title">@await T.GetAsync("Payment.ReUploadTitle")</span>
+
+                @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+                {
+                    <div class="card-panel red lighten-4"><span>@Model.AlertMessageContent</span></div>
+                }
+
+                @if (Model.Payment != null)
+                {
+                    @* Rejection reason *@
+                    @if (!string.IsNullOrEmpty(Model.Payment.AdminRemarks))
+                    {
+                        <div class="card-panel orange lighten-5 orange-text text-darken-3">
+                            <strong>@await T.GetAsync("Payment.RejectionReason"):</strong>
+                            <p class="mb-0">@Model.Payment.AdminRemarks</p>
+                        </div>
+                    }
+
+                    @* Payment summary *@
+                    <div class="card blue-grey lighten-5 mb-3">
+                        <div class="card-content">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="grey-text">@await T.GetAsync("Payment.Type")</td>
+                                        <td><strong>@Model.Payment.PaymentType</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="grey-text">@await T.GetAsync("Payment.Amount")</td>
+                                        <td><strong class="red-text">RM @Model.Payment.Amount.ToString("N2")</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="grey-text">@await T.GetAsync("Payment.Reference")</td>
+                                        <td><strong>@Model.Payment.Application?.ApplicationId</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    @* Re-upload form *@
+                    <h6>@await T.GetAsync("Payment.UploadNewSlip")</h6>
+                    <form method="post" asp-page-handler="Upload" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <div class="file-field input-field">
+                            <div class="btn blue darken-3">
+                                <span>@await T.GetAsync("Payment.ChooseFile")</span>
+                                <input type="file" id="fileSlip" name="fileSlip" accept=".jpg,.jpeg,.png,.pdf" required />
+                            </div>
+                            <div class="file-path-wrapper">
+                                <input class="file-path validate" type="text" placeholder="@await T.GetAsync("Payment.SlipPlaceholder")" />
+                            </div>
+                        </div>
+                        <p class="grey-text caption">@await T.GetAsync("Payment.SlipNote")</p>
+                        <button type="submit" class="btn green darken-2 waves-effect waves-light mt-2">
+                            <i class="ri ri-upload-line"></i> @await T.GetAsync("Payment.SubmitSlip")
+                        </button>
+                        <a asp-area="Applicant" asp-page="/Dashboard" class="btn-flat grey-text mt-2 ms-2">
+                            @await T.GetAsync("Common.Cancel")
+                        </a>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
