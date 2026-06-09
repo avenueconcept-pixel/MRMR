@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Models;
+using MyApp.Models.MRMR;
 
 namespace MyApp.Data;
 
@@ -16,16 +17,10 @@ public class AppDbContext : DbContext
   public DbSet<AppLog> AppLogs => Set<AppLog>();
   public DbSet<Country> Countries => Set<Country>();
   public DbSet<CountryTranslation> CountryTranslations => Set<CountryTranslation>();
-  public DbSet<Department> Departments => Set<Department>();
   public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
   public DbSet<PaymentMethodTranslation> PaymentMethodTranslations => Set<PaymentMethodTranslation>();
-  public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
-  public DbSet<ProductCategoryTranslation> ProductCategoryTranslations => Set<ProductCategoryTranslation>();
   public DbSet<State>            States            => Set<State>();
   public DbSet<StateTranslation> StateTranslations => Set<StateTranslation>();
-  public DbSet<Region>           Regions           => Set<Region>();
-  public DbSet<RegionCountry>    RegionCountries   => Set<RegionCountry>();
-  public DbSet<Location>         Locations         => Set<Location>();
   public DbSet<Role>             Roles             => Set<Role>();
   public DbSet<RoleMenu>         RoleMenus         => Set<RoleMenu>();
   public DbSet<RolePermission>   RolePermissions   => Set<RolePermission>();
@@ -33,11 +28,6 @@ public class AppDbContext : DbContext
   public DbSet<Permission>       Permissions       => Set<Permission>();
   public DbSet<Bank>             Banks             => Set<Bank>();
   public DbSet<BankTranslation>  BankTranslations  => Set<BankTranslation>();
-  public DbSet<UnitOfMeasure>    UnitsOfMeasure    => Set<UnitOfMeasure>();
-  public DbSet<UomTranslation>   UomTranslations   => Set<UomTranslation>();
-  public DbSet<PriceTier>        PriceTiers        => Set<PriceTier>();
-  public DbSet<ProductSectionType>            ProductSectionTypes            => Set<ProductSectionType>();
-  public DbSet<ProductSectionTypeTranslation> ProductSectionTypeTranslations => Set<ProductSectionTypeTranslation>();
   public DbSet<Announcement>            Announcements            => Set<Announcement>();
   public DbSet<AnnouncementTranslation> AnnouncementTranslations => Set<AnnouncementTranslation>();
   public DbSet<AnnouncementAttachment>  AnnouncementAttachments  => Set<AnnouncementAttachment>();
@@ -46,31 +36,24 @@ public class AppDbContext : DbContext
   public DbSet<MaintenanceScheduleSystem>  MaintenanceScheduleSystems  => Set<MaintenanceScheduleSystem>();
   public DbSet<MaintenanceScheduleMessage> MaintenanceScheduleMessages => Set<MaintenanceScheduleMessage>();
   public DbSet<AppSetting>                 AppSettings                 => Set<AppSetting>();
-  public DbSet<Product>                    Products                    => Set<Product>();
-  public DbSet<ProductTranslation>         ProductTranslations         => Set<ProductTranslation>();
-  public DbSet<ProductCategoryMap>         ProductCategoryMaps         => Set<ProductCategoryMap>();
-  public DbSet<ProductCountry>             ProductCountries            => Set<ProductCountry>();
-  public DbSet<ProductPriceTier>           ProductPriceTiers           => Set<ProductPriceTier>();
-  public DbSet<ProductPriceSchedule>       ProductPriceSchedules       => Set<ProductPriceSchedule>();
-  public DbSet<ProductPriceHistory>        ProductPriceHistories       => Set<ProductPriceHistory>();
-  public DbSet<ProductSection>             ProductSections             => Set<ProductSection>();
-  public DbSet<ProductSectionTranslation>  ProductSectionTranslations  => Set<ProductSectionTranslation>();
-  public DbSet<ProductImage>               ProductImages               => Set<ProductImage>();
-  public DbSet<ProductPackageItem>         ProductPackageItems         => Set<ProductPackageItem>();
-  public DbSet<Rank>              Ranks              => Set<Rank>();
-  public DbSet<Member>            Members            => Set<Member>();
-  public DbSet<MemberRankHistory> MemberRankHistories => Set<MemberRankHistory>();
-  public DbSet<MemberChangeLog>   MemberChangeLogs   => Set<MemberChangeLog>();
 
-  public DbSet<ExchangeRate>                     ExchangeRates                     => Set<ExchangeRate>();
-  public DbSet<WalletBalance>                    WalletBalances                    => Set<WalletBalance>();
-  public DbSet<CashWalletTransaction>            CashWalletTransactions            => Set<CashWalletTransaction>();
-  public DbSet<CashWalletTransactionArchive>     CashWalletTransactionArchives     => Set<CashWalletTransactionArchive>();
-  public DbSet<PurchaseWalletTransaction>        PurchaseWalletTransactions        => Set<PurchaseWalletTransaction>();
-  public DbSet<PurchaseWalletTransactionArchive> PurchaseWalletTransactionArchives => Set<PurchaseWalletTransactionArchive>();
-  public DbSet<IncentivePeriod>                  IncentivePeriods                  => Set<IncentivePeriod>();
-  public DbSet<WalletPayout>                     WalletPayouts                     => Set<WalletPayout>();
-  public DbSet<SystemSetting>                    SystemSettings                    => Set<SystemSetting>();
+  // MRMR2026
+  public DbSet<Registrant>              Registrants              => Set<Registrant>();
+  public DbSet<Application>             Applications             => Set<Application>();
+  public DbSet<Payment>                 Payments                 => Set<Payment>();
+  public DbSet<PaymentAuditLog>         PaymentAuditLogs         => Set<PaymentAuditLog>();
+  public DbSet<AwardCategory>           AwardCategories          => Set<AwardCategory>();
+  public DbSet<AwardCriterion>          AwardCriteria            => Set<AwardCriterion>();
+  public DbSet<JudgeCategoryAssignment> JudgeCategoryAssignments => Set<JudgeCategoryAssignment>();
+  public DbSet<ApplicationSubmission>   ApplicationSubmissions   => Set<ApplicationSubmission>();
+  public DbSet<SubmissionSectionA>      SubmissionSectionsA      => Set<SubmissionSectionA>();
+  public DbSet<SubmissionSectionB>      SubmissionSectionsB      => Set<SubmissionSectionB>();
+  public DbSet<SubmissionSectionJsonb>  SubmissionSectionsJsonb  => Set<SubmissionSectionJsonb>();
+  public DbSet<ApplicationDocument>     ApplicationDocuments     => Set<ApplicationDocument>();
+  public DbSet<JudgeEvaluation>         JudgeEvaluations         => Set<JudgeEvaluation>();
+  public DbSet<JudgeScore>              JudgeScores              => Set<JudgeScore>();
+  public DbSet<ApplicationRanking>      ApplicationRankings      => Set<ApplicationRanking>();
+  public DbSet<SystemSetting>           SystemSettings           => Set<SystemSetting>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -208,20 +191,6 @@ public class AppDbContext : DbContext
       entity.HasOne(e => e.Country).WithMany(c => c.Translations).HasForeignKey(e => e.CountryCode);
     });
 
-    // Department
-    modelBuilder.Entity<Department>(entity =>
-    {
-      entity.ToTable("departments");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.DeptName).HasColumnName("dept_name").HasMaxLength(150).IsRequired();
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
-    });
-
     // PaymentMethod
     modelBuilder.Entity<PaymentMethod>(entity =>
     {
@@ -245,31 +214,6 @@ public class AppDbContext : DbContext
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.PaymentName).HasColumnName("payment_name").HasMaxLength(150).IsRequired();
       entity.HasOne(e => e.PaymentMethod).WithMany(p => p.Translations).HasForeignKey(e => e.PaymentCode);
-    });
-
-    // ProductCategory
-    modelBuilder.Entity<ProductCategory>(entity =>
-    {
-      entity.ToTable("product_categories");
-      entity.HasKey(e => e.CategoryCode);
-      entity.Property(e => e.CategoryCode).HasColumnName("category_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
-      entity.HasMany(e => e.Translations).WithOne(t => t.ProductCategory).HasForeignKey(t => t.CategoryCode).OnDelete(DeleteBehavior.Cascade);
-    });
-
-    // ProductCategoryTranslation
-    modelBuilder.Entity<ProductCategoryTranslation>(entity =>
-    {
-      entity.ToTable("product_category_translations");
-      entity.HasKey(e => new { e.CategoryCode, e.LanguageCode });
-      entity.Property(e => e.CategoryCode).HasColumnName("category_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.CategoryName).HasColumnName("category_name").HasMaxLength(150).IsRequired();
-      entity.HasOne(e => e.ProductCategory).WithMany(p => p.Translations).HasForeignKey(e => e.CategoryCode);
     });
 
     // State
@@ -306,60 +250,6 @@ public class AppDbContext : DbContext
       entity.Property(e => e.StateId).HasColumnName("state_id");
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.StateName).HasColumnName("state_name").HasMaxLength(200).IsRequired();
-    });
-
-    // Region
-    modelBuilder.Entity<Region>(entity =>
-    {
-      entity.ToTable("regions");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.RegionCode).HasColumnName("region_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.RegionName).HasColumnName("region_name").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
-      entity.HasIndex(e => e.RegionCode).IsUnique();
-      entity.HasMany(e => e.RegionCountries)
-            .WithOne(rc => rc.Region)
-            .HasForeignKey(rc => rc.RegionId)
-            .OnDelete(DeleteBehavior.Cascade);
-    });
-
-    // RegionCountry
-    modelBuilder.Entity<RegionCountry>(entity =>
-    {
-      entity.ToTable("region_countries");
-      entity.HasKey(e => new { e.RegionId, e.CountryCode });
-      entity.Property(e => e.RegionId).HasColumnName("region_id");
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
-      entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode);
-    });
-
-    // Location
-    modelBuilder.Entity<Location>(entity =>
-    {
-      entity.ToTable("locations");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.LocationCode).HasColumnName("location_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.LocationName).HasColumnName("location_name").HasMaxLength(150).IsRequired();
-      entity.Property(e => e.LocationType).HasColumnName("location_type").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
-      entity.Property(e => e.StateId).HasColumnName("state_id");
-      entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100);
-      entity.Property(e => e.Postcode).HasColumnName("postcode").HasMaxLength(20);
-      entity.Property(e => e.Address).HasColumnName("address").HasMaxLength(500);
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
-      entity.HasIndex(e => e.LocationCode).IsUnique();
-      entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode);
-      entity.HasOne(e => e.State).WithMany().HasForeignKey(e => e.StateId).OnDelete(DeleteBehavior.SetNull);
     });
 
     // Role
@@ -482,84 +372,6 @@ public class AppDbContext : DbContext
       entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
       entity.Property(e => e.BankName).HasColumnName("bank_name").HasMaxLength(200).IsRequired();
       entity.Property(e => e.ShortName).HasColumnName("short_name").HasMaxLength(100).IsRequired();
-    });
-
-    // UnitOfMeasure
-    modelBuilder.Entity<UnitOfMeasure>(entity =>
-    {
-      entity.ToTable("units_of_measure");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.UomCode).HasColumnName("uom_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.UomName).HasColumnName("uom_name").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.HasMany(e => e.Translations)
-            .WithOne(t => t.UnitOfMeasure)
-            .HasForeignKey(t => t.UomCode)
-            .HasPrincipalKey(e => e.UomCode)
-            .OnDelete(DeleteBehavior.Cascade);
-    });
-
-    // UomTranslation
-    modelBuilder.Entity<UomTranslation>(entity =>
-    {
-      entity.ToTable("uom_translations");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.UomCode).HasColumnName("uom_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.UomName).HasColumnName("uom_name").HasMaxLength(100).IsRequired();
-    });
-
-    // PriceTier
-    modelBuilder.Entity<PriceTier>(entity =>
-    {
-      entity.ToTable("price_tiers");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.TierName).HasColumnName("tier_name").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-    });
-
-    // ProductSectionType
-    modelBuilder.Entity<ProductSectionType>(entity =>
-    {
-      entity.ToTable("product_section_types");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.HasMany(e => e.Translations)
-            .WithOne(t => t.ProductSectionType)
-            .HasForeignKey(t => t.SectionCode)
-            .HasPrincipalKey(e => e.SectionCode)
-            .OnDelete(DeleteBehavior.Cascade);
-    });
-
-    // ProductSectionTypeTranslation
-    modelBuilder.Entity<ProductSectionTypeTranslation>(entity =>
-    {
-      entity.ToTable("product_section_type_translations");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.SectionName).HasColumnName("section_name").HasMaxLength(200).IsRequired();
     });
 
     // Announcement
@@ -707,583 +519,317 @@ public class AppDbContext : DbContext
       entity.HasIndex(e => new { e.SystemCode, e.SettingKey }).IsUnique();
     });
 
-    // Product
-    modelBuilder.Entity<Product>(entity =>
+    // MRMR2026
+    modelBuilder.Entity<Registrant>(entity =>
     {
-      entity.ToTable("products");
+      entity.ToTable("registrants");
       entity.HasKey(e => e.Id);
       entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.ProductType).HasColumnName("product_type").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.ProductNature).HasColumnName("product_nature").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.UomCode).HasColumnName("uom_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.Pv).HasColumnName("pv").HasPrecision(10, 2);
-      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.HasIndex(e => e.ProductCode).IsUnique();
-
-      entity.HasOne(e => e.UnitOfMeasure)
-            .WithMany()
-            .HasForeignKey(e => e.UomCode)
-            .HasPrincipalKey(e => e.UomCode)
-            .OnDelete(DeleteBehavior.Restrict);
-
-      entity.HasMany(e => e.Translations)
-            .WithOne(t => t.Product)
-            .HasForeignKey(t => t.ProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-
-      entity.HasMany(e => e.CategoryMaps)
-            .WithOne(c => c.Product)
-            .HasForeignKey(c => c.ProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-
-      entity.HasMany(e => e.Countries)
-            .WithOne(c => c.Product)
-            .HasForeignKey(c => c.ProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-
-      entity.HasMany(e => e.PriceTiers)
-            .WithOne(p => p.Product)
-            .HasForeignKey(p => p.ProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-
-      entity.HasMany(e => e.Sections)
-            .WithOne(s => s.Product)
-            .HasForeignKey(s => s.ProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-
-      entity.HasMany(e => e.Images)
-            .WithOne(i => i.Product)
-            .HasForeignKey(i => i.ProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-
-      entity.HasMany(e => e.PackageItems)
-            .WithOne(p => p.PackageProduct)
-            .HasForeignKey(p => p.PackageProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-    });
-
-    // ProductTranslation
-    modelBuilder.Entity<ProductTranslation>(entity =>
-    {
-      entity.ToTable("product_translations");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.ProductName).HasColumnName("product_name").HasMaxLength(200).IsRequired();
-      entity.Property(e => e.ShortDescription).HasColumnName("short_description").IsRequired();
-      entity.HasIndex(e => new { e.ProductCode, e.LanguageCode }).IsUnique();
-    });
-
-    // ProductCategoryMap
-    modelBuilder.Entity<ProductCategoryMap>(entity =>
-    {
-      entity.ToTable("product_category_map");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.CategoryCode).HasColumnName("category_code").HasMaxLength(20).IsRequired();
-      entity.HasIndex(e => new { e.ProductCode, e.CategoryCode }).IsUnique();
-
-      entity.HasOne(e => e.ProductCategory)
-            .WithMany()
-            .HasForeignKey(e => e.CategoryCode)
-            .HasPrincipalKey(e => e.CategoryCode)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // ProductCountry
-    modelBuilder.Entity<ProductCountry>(entity =>
-    {
-      entity.ToTable("product_countries");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
-      entity.Property(e => e.IsEnabled).HasColumnName("is_enabled");
-      entity.Property(e => e.StockStatus).HasColumnName("stock_status").HasMaxLength(20).IsRequired();
-      entity.HasIndex(e => new { e.ProductCode, e.CountryCode }).IsUnique();
-
-      entity.HasOne(e => e.Country)
-            .WithMany()
-            .HasForeignKey(e => e.CountryCode)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // ProductPriceTier
-    modelBuilder.Entity<ProductPriceTier>(entity =>
-    {
-      entity.ToTable("product_price_tiers");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
-      entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.VariantCode).HasColumnName("variant_code").HasMaxLength(50);
-      entity.Property(e => e.Price).HasColumnName("price").HasPrecision(10, 2);
-
-      entity.HasOne(e => e.Country)
-            .WithMany()
-            .HasForeignKey(e => e.CountryCode)
-            .OnDelete(DeleteBehavior.Restrict);
-
-      entity.HasOne(e => e.PriceTier)
-            .WithMany()
-            .HasForeignKey(e => e.TierCode)
-            .HasPrincipalKey(e => e.TierCode)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // ProductPriceSchedule
-    modelBuilder.Entity<ProductPriceSchedule>(entity =>
-    {
-      entity.ToTable("product_price_schedules");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
-      entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.ScheduleType).HasColumnName("schedule_type").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.ValidFrom).HasColumnName("valid_from");
-      entity.Property(e => e.ValidTo).HasColumnName("valid_to");
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-
-      entity.HasOne(e => e.Product)
-            .WithMany()
-            .HasForeignKey(e => e.ProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-
-      entity.HasOne(e => e.Country)
-            .WithMany()
-            .HasForeignKey(e => e.CountryCode)
-            .OnDelete(DeleteBehavior.Restrict);
-
-      entity.HasOne(e => e.PriceTier)
-            .WithMany()
-            .HasForeignKey(e => e.TierCode)
-            .HasPrincipalKey(e => e.TierCode)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // ProductPriceHistory
-    modelBuilder.Entity<ProductPriceHistory>(entity =>
-    {
-      entity.ToTable("product_price_history");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
-      entity.Property(e => e.TierCode).HasColumnName("tier_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.ChangeType).HasColumnName("change_type").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.ChangedFrom).HasColumnName("changed_from").HasPrecision(10, 2);
-      entity.Property(e => e.ChangedTo).HasColumnName("changed_to").HasPrecision(10, 2);
-      entity.Property(e => e.ChangedBy).HasColumnName("changed_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-    });
-
-    // ProductSection
-    modelBuilder.Entity<ProductSection>(entity =>
-    {
-      entity.ToTable("product_sections");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
-      entity.HasIndex(e => new { e.ProductCode, e.SectionCode }).IsUnique();
-
-      entity.HasOne(e => e.ProductSectionType)
-            .WithMany()
-            .HasForeignKey(e => e.SectionCode)
-            .HasPrincipalKey(e => e.SectionCode)
-            .OnDelete(DeleteBehavior.Restrict);
-
-      entity.HasMany(e => e.Translations)
-            .WithOne(t => t.ProductSection)
-            .HasForeignKey(t => t.ProductSectionId)
-            .OnDelete(DeleteBehavior.Cascade);
-    });
-
-    // ProductSectionTranslation
-    modelBuilder.Entity<ProductSectionTranslation>(entity =>
-    {
-      entity.ToTable("product_section_translations");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductSectionId).HasColumnName("product_section_id");
-      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.Content).HasColumnName("content").IsRequired();
-      entity.HasIndex(e => new { e.ProductSectionId, e.LanguageCode }).IsUnique();
-    });
-
-    // ProductImage
-    modelBuilder.Entity<ProductImage>(entity =>
-    {
-      entity.ToTable("product_images");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.LanguageCode).HasColumnName("language_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.ImageFilename).HasColumnName("image_filename").HasMaxLength(200).IsRequired();
-      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
-      entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-
-      entity.HasOne(e => e.Product)
-            .WithMany(p => p.Images)
-            .HasForeignKey(e => e.ProductCode)
-            .HasPrincipalKey(p => p.ProductCode)
-            .OnDelete(DeleteBehavior.Cascade);
-
-      entity.HasOne(e => e.Country)
-            .WithMany()
-            .HasForeignKey(e => e.CountryCode)
-            .HasPrincipalKey(c => c.CountryCode)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // ProductPackageItem
-    modelBuilder.Entity<ProductPackageItem>(entity =>
-    {
-      entity.ToTable("product_package_items");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.PackageProductCode).HasColumnName("package_product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.ItemProductCode).HasColumnName("item_product_code").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.Quantity).HasColumnName("quantity");
-      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
-      entity.HasIndex(e => new { e.PackageProductCode, e.ItemProductCode }).IsUnique();
-
-      entity.HasOne(e => e.ItemProduct)
-            .WithMany()
-            .HasForeignKey(e => e.ItemProductCode)
-            .HasPrincipalKey(e => e.ProductCode)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // Rank
-    modelBuilder.Entity<Rank>(entity =>
-    {
-      entity.ToTable("ranks");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.RankCode).HasColumnName("rank_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.RankName).HasColumnName("rank_name").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.SortOrder).HasColumnName("sort_order");
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20);
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100);
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-      entity.HasIndex(e => e.RankCode).IsUnique();
-    });
-
-    // Member
-    modelBuilder.Entity<Member>(entity =>
-    {
-      entity.ToTable("members");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(20).IsRequired();
       entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(200).IsRequired();
-      entity.Property(e => e.IdType).HasColumnName("id_type").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.IdNo).HasColumnName("id_no").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(200).IsRequired();
-      entity.Property(e => e.PhoneCountryCode).HasColumnName("phone_country_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.ProfileImage).HasColumnName("profile_image").HasMaxLength(200);
-      entity.Property(e => e.AddressLine1).HasColumnName("address_line1").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.NricPassport).HasColumnName("nric_passport").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.ContactNo).HasColumnName("contact_no").HasMaxLength(30).IsRequired();
+      entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(150).IsRequired();
+      entity.Property(e => e.CompanyName).HasColumnName("company_name").HasMaxLength(200);
+      entity.Property(e => e.SsmRegNo).HasColumnName("ssm_reg_no").HasMaxLength(50);
+      entity.Property(e => e.CompanyAddress).HasColumnName("company_address");
+      entity.Property(e => e.Website).HasColumnName("website").HasMaxLength(200);
+      entity.Property(e => e.Industry).HasColumnName("industry").HasMaxLength(50);
+      entity.Property(e => e.BusinessNature).HasColumnName("business_nature");
+      entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
+      entity.Property(e => e.IsFirstLogin).HasColumnName("is_first_login").HasDefaultValue(true);
+      entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(false);
+      entity.Property(e => e.DeclInfoAccurate).HasColumnName("decl_info_accurate").HasDefaultValue(false);
+      entity.Property(e => e.DeclFeeNonrefundable).HasColumnName("decl_fee_nonrefundable").HasDefaultValue(false);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.Email).IsUnique();
+      entity.HasIndex(e => e.NricPassport).IsUnique();
+    });
+
+    modelBuilder.Entity<Application>(entity =>
+    {
+      entity.ToTable("applications");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").HasMaxLength(25).IsRequired();
+      entity.Property(e => e.RegistrantId).HasColumnName("registrant_id").IsRequired();
+      entity.Property(e => e.ApplicationType).HasColumnName("application_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.AwardCategoryId).HasColumnName("award_category_id").IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
+      entity.Property(e => e.PaymentMethod).HasColumnName("payment_method").HasMaxLength(25).IsRequired();
+      entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(25);
+      entity.Property(e => e.IsFinalSubmitted).HasColumnName("is_final_submitted").HasDefaultValue(false);
+      entity.Property(e => e.SubmittedAt).HasColumnName("submitted_at");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.ApplicationId).IsUnique();
+      entity.HasIndex(e => new { e.RegistrantId, e.ApplicationType }).IsUnique();
+      entity.HasOne(e => e.Registrant).WithMany(r => r.Applications).HasForeignKey(e => e.RegistrantId).OnDelete(DeleteBehavior.Restrict);
+      entity.HasOne(e => e.AwardCategory).WithMany(c => c.Applications).HasForeignKey(e => e.AwardCategoryId).OnDelete(DeleteBehavior.Restrict);
+    });
+
+    modelBuilder.Entity<Payment>(entity =>
+    {
+      entity.ToTable("payments");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.PaymentType).HasColumnName("payment_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(12, 2).IsRequired();
+      entity.Property(e => e.Method).HasColumnName("method").HasMaxLength(25).IsRequired();
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.SlipFilePath).HasColumnName("slip_file_path");
+      entity.Property(e => e.SlipUploadedAt).HasColumnName("slip_uploaded_at");
+      entity.Property(e => e.AxaipayRefNo).HasColumnName("axaipay_ref_no").HasMaxLength(100);
+      entity.Property(e => e.AxaipayPayload).HasColumnName("axaipay_payload").HasColumnType("jsonb");
+      entity.Property(e => e.VerifiedBy).HasColumnName("verified_by");
+      entity.Property(e => e.VerifiedAt).HasColumnName("verified_at");
+      entity.Property(e => e.AdminRemarks).HasColumnName("admin_remarks");
+      entity.Property(e => e.InvoiceNo).HasColumnName("invoice_no").HasMaxLength(30);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => new { e.ApplicationId, e.PaymentType }).IsUnique();
+      entity.HasIndex(e => e.Status);
+      entity.HasOne(e => e.Application).WithMany(a => a.Payments).HasForeignKey(e => e.ApplicationId).OnDelete(DeleteBehavior.Restrict);
+    });
+
+    modelBuilder.Entity<PaymentAuditLog>(entity =>
+    {
+      entity.ToTable("payment_audit_logs");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.PaymentId).HasColumnName("payment_id").IsRequired();
+      entity.Property(e => e.Action).HasColumnName("action").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.PerformedBy).HasColumnName("performed_by");
+      entity.Property(e => e.PerformedAt).HasColumnName("performed_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.Remarks).HasColumnName("remarks");
+      entity.Property(e => e.Snapshot).HasColumnName("snapshot").HasColumnType("jsonb");
+      entity.HasIndex(e => e.PaymentId);
+      entity.HasOne(e => e.Payment).WithMany(p => p.AuditLogs).HasForeignKey(e => e.PaymentId).OnDelete(DeleteBehavior.Restrict);
+    });
+
+    modelBuilder.Entity<AwardCategory>(entity =>
+    {
+      entity.ToTable("award_categories");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.CategoryType).HasColumnName("category_type").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.Price).HasColumnName("price").HasPrecision(12, 2).IsRequired();
+      entity.Property(e => e.MaxRecipients).HasColumnName("max_recipients").HasDefaultValue((short)1);
+      entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(false);
+      entity.Property(e => e.DisplayOrder).HasColumnName("display_order").HasDefaultValue((short)0);
+      entity.Property(e => e.Description).HasColumnName("description");
+      entity.Property(e => e.CriteriaLocked).HasColumnName("criteria_locked").HasDefaultValue(false);
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+    });
+
+    modelBuilder.Entity<AwardCriterion>(entity =>
+    {
+      entity.ToTable("award_criteria");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.AwardCategoryId).HasColumnName("award_category_id").IsRequired();
+      entity.Property(e => e.CriterionName).HasColumnName("criterion_name").HasMaxLength(200).IsRequired();
+      entity.Property(e => e.Weight).HasColumnName("weight").HasPrecision(5, 2).IsRequired();
+      entity.Property(e => e.DisplayOrder).HasColumnName("display_order").HasDefaultValue((short)0);
+      entity.Property(e => e.Description).HasColumnName("description");
+      entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.AwardCategoryId);
+      entity.HasOne(e => e.AwardCategory).WithMany(c => c.Criteria).HasForeignKey(e => e.AwardCategoryId).OnDelete(DeleteBehavior.Cascade);
+    });
+
+    modelBuilder.Entity<JudgeCategoryAssignment>(entity =>
+    {
+      entity.ToTable("judge_category_assignments");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.JudgeId).HasColumnName("judge_id").IsRequired();
+      entity.Property(e => e.AwardCategoryId).HasColumnName("award_category_id").IsRequired();
+      entity.Property(e => e.AssignedBy).HasColumnName("assigned_by").IsRequired();
+      entity.Property(e => e.AssignedAt).HasColumnName("assigned_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+      entity.HasIndex(e => new { e.JudgeId, e.AwardCategoryId }).IsUnique();
+      entity.HasIndex(e => e.AwardCategoryId);
+      entity.HasOne(e => e.AwardCategory).WithMany(c => c.JudgeAssignments).HasForeignKey(e => e.AwardCategoryId).OnDelete(DeleteBehavior.Restrict);
+    });
+
+    modelBuilder.Entity<ApplicationSubmission>(entity =>
+    {
+      entity.ToTable("application_submissions");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.SectionAComplete).HasColumnName("section_a_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionBComplete).HasColumnName("section_b_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionCComplete).HasColumnName("section_c_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionDComplete).HasColumnName("section_d_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionEComplete).HasColumnName("section_e_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionFComplete).HasColumnName("section_f_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionGComplete).HasColumnName("section_g_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionHComplete).HasColumnName("section_h_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionIComplete).HasColumnName("section_i_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionJComplete).HasColumnName("section_j_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionKComplete).HasColumnName("section_k_complete").HasDefaultValue(false);
+      entity.Property(e => e.SectionLComplete).HasColumnName("section_l_complete").HasDefaultValue(false);
+      entity.Property(e => e.IsFinalSubmitted).HasColumnName("is_final_submitted").HasDefaultValue(false);
+      entity.Property(e => e.LastSavedAt).HasColumnName("last_saved_at");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.ApplicationId).IsUnique();
+      entity.HasOne(e => e.Application).WithOne(a => a.Submission).HasForeignKey<ApplicationSubmission>(e => e.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+    });
+
+    modelBuilder.Entity<SubmissionSectionA>(entity =>
+    {
+      entity.ToTable("submission_section_a");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(20);
+      entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(200);
+      entity.Property(e => e.NricPassport).HasColumnName("nric_passport").HasMaxLength(50);
+      entity.Property(e => e.ContactNo).HasColumnName("contact_no").HasMaxLength(30);
+      entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(150);
+      entity.Property(e => e.AddressLine1).HasColumnName("address_line1").HasMaxLength(200);
       entity.Property(e => e.AddressLine2).HasColumnName("address_line2").HasMaxLength(200);
-      entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.State).HasColumnName("state").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.Postcode).HasColumnName("postcode").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.BankName).HasColumnName("bank_name").HasMaxLength(100);
-      entity.Property(e => e.BankAccountName).HasColumnName("bank_account_name").HasMaxLength(200);
-      entity.Property(e => e.BankAccountNo).HasColumnName("bank_account_no").HasMaxLength(50);
-      entity.Property(e => e.SponsorId).HasColumnName("sponsor_id");
-      entity.Property(e => e.BinaryParentId).HasColumnName("binary_parent_id");
-      entity.Property(e => e.BinaryPosition).HasColumnName("binary_position").HasMaxLength(5);
-      entity.Property(e => e.IsActivated).HasColumnName("is_activated");
-      entity.Property(e => e.ActivatedAt).HasColumnName("activated_at");
-      entity.Property(e => e.JoinedAt).HasColumnName("joined_at");
-      entity.Property(e => e.CurrentRankCode).HasColumnName("current_rank_code").HasMaxLength(20);
-      entity.Property(e => e.HighestRankCode).HasColumnName("highest_rank_code").HasMaxLength(20);
-      entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(500).IsRequired();
+      entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100);
+      entity.Property(e => e.State).HasColumnName("state").HasMaxLength(100);
+      entity.Property(e => e.Postcode).HasColumnName("postcode").HasMaxLength(10);
+      entity.Property(e => e.Country).HasColumnName("country").HasMaxLength(100);
+      entity.Property(e => e.MembershipNo).HasColumnName("membership_no").HasMaxLength(50);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.ApplicationId).IsUnique();
+      entity.HasOne(e => e.Application).WithOne(a => a.SectionA).HasForeignKey<SubmissionSectionA>(e => e.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+    });
+
+    modelBuilder.Entity<SubmissionSectionB>(entity =>
+    {
+      entity.ToTable("submission_section_b");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.CompanyName).HasColumnName("company_name").HasMaxLength(200);
+      entity.Property(e => e.SsmRegNo).HasColumnName("ssm_reg_no").HasMaxLength(50);
+      entity.Property(e => e.IncorporationDate).HasColumnName("incorporation_date");
+      entity.Property(e => e.ContactNo).HasColumnName("contact_no").HasMaxLength(30);
+      entity.Property(e => e.AddressLine1).HasColumnName("address_line1").HasMaxLength(200);
+      entity.Property(e => e.AddressLine2).HasColumnName("address_line2").HasMaxLength(200);
+      entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100);
+      entity.Property(e => e.State).HasColumnName("state").HasMaxLength(100);
+      entity.Property(e => e.Postcode).HasColumnName("postcode").HasMaxLength(10);
+      entity.Property(e => e.Country).HasColumnName("country").HasMaxLength(100);
+      entity.Property(e => e.Website).HasColumnName("website").HasMaxLength(200);
+      entity.Property(e => e.Industry).HasColumnName("industry").HasMaxLength(50);
+      entity.Property(e => e.BusinessNature).HasColumnName("business_nature");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.ApplicationId).IsUnique();
+      entity.HasOne(e => e.Application).WithOne(a => a.SectionB).HasForeignKey<SubmissionSectionB>(e => e.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+    });
+
+    modelBuilder.Entity<SubmissionSectionJsonb>(entity =>
+    {
+      entity.ToTable("submission_sections_jsonb");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.SectionCode).HasColumnName("section_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.SectionData).HasColumnName("section_data").HasColumnType("jsonb");
+      entity.Property(e => e.IsComplete).HasColumnName("is_complete").HasDefaultValue(false);
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => new { e.ApplicationId, e.SectionCode }).IsUnique();
+      entity.HasOne(e => e.Application).WithMany(a => a.SectionJsonbs).HasForeignKey(e => e.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+    });
+
+    modelBuilder.Entity<ApplicationDocument>(entity =>
+    {
+      entity.ToTable("application_documents");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.DocumentType).HasColumnName("document_type").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.OriginalFilename).HasColumnName("original_filename").HasMaxLength(255).IsRequired();
+      entity.Property(e => e.FilePath).HasColumnName("file_path").IsRequired();
+      entity.Property(e => e.FileSizeBytes).HasColumnName("file_size_bytes");
+      entity.Property(e => e.MimeType).HasColumnName("mime_type").HasMaxLength(100);
+      entity.Property(e => e.IsRequired).HasColumnName("is_required").HasDefaultValue(false);
+      entity.Property(e => e.VerificationStatus).HasColumnName("verification_status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.AdminRemarks).HasColumnName("admin_remarks");
+      entity.Property(e => e.VerifiedBy).HasColumnName("verified_by");
+      entity.Property(e => e.VerifiedAt).HasColumnName("verified_at");
+      entity.Property(e => e.UploadedAt).HasColumnName("uploaded_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.ApplicationId);
+      entity.HasIndex(e => e.VerificationStatus);
+      entity.HasOne(e => e.Application).WithMany(a => a.Documents).HasForeignKey(e => e.ApplicationId).OnDelete(DeleteBehavior.Restrict);
+    });
+
+    modelBuilder.Entity<JudgeEvaluation>(entity =>
+    {
+      entity.ToTable("judge_evaluations");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.JudgeId).HasColumnName("judge_id").IsRequired();
       entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-
-      entity.HasIndex(e => e.Username).IsUnique();
-
-      entity.HasOne(e => e.Country)
-            .WithMany()
-            .HasForeignKey(e => e.CountryCode)
-            .HasPrincipalKey(e => e.CountryCode)
-            .OnDelete(DeleteBehavior.Restrict);
-
-      entity.HasOne(e => e.Sponsor)
-            .WithMany()
-            .HasForeignKey(e => e.SponsorId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-      entity.HasOne(e => e.BinaryParent)
-            .WithMany()
-            .HasForeignKey(e => e.BinaryParentId)
-            .OnDelete(DeleteBehavior.Restrict);
+      entity.Property(e => e.OverallComment).HasColumnName("overall_comment");
+      entity.Property(e => e.Recommendation).HasColumnName("recommendation").HasMaxLength(20);
+      entity.Property(e => e.SubmittedAt).HasColumnName("submitted_at");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => new { e.ApplicationId, e.JudgeId }).IsUnique();
+      entity.HasIndex(e => e.Status);
+      entity.HasOne(e => e.Application).WithMany(a => a.Evaluations).HasForeignKey(e => e.ApplicationId).OnDelete(DeleteBehavior.Restrict);
     });
 
-    // MemberRankHistory
-    modelBuilder.Entity<MemberRankHistory>(entity =>
+    modelBuilder.Entity<JudgeScore>(entity =>
     {
-      entity.ToTable("member_rank_histories");
+      entity.ToTable("judge_scores");
       entity.HasKey(e => e.Id);
       entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
-      entity.Property(e => e.RankCode).HasColumnName("rank_code").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.Pv).HasColumnName("pv").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.PeriodYear).HasColumnName("period_year");
-      entity.Property(e => e.PeriodMonth).HasColumnName("period_month");
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-
-      entity.HasOne(e => e.Member)
-            .WithMany()
-            .HasForeignKey(e => e.MemberId)
-            .OnDelete(DeleteBehavior.Cascade);
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.JudgeId).HasColumnName("judge_id").IsRequired();
+      entity.Property(e => e.AwardCriterionId).HasColumnName("award_criterion_id").IsRequired();
+      entity.Property(e => e.Score).HasColumnName("score").HasPrecision(5, 2).IsRequired();
+      entity.Property(e => e.WeightedScore).HasColumnName("weighted_score").HasPrecision(8, 4);
+      entity.Property(e => e.Comment).HasColumnName("comment");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => new { e.ApplicationId, e.JudgeId, e.AwardCriterionId }).IsUnique();
+      entity.HasOne(e => e.Application).WithMany().HasForeignKey(e => e.ApplicationId).OnDelete(DeleteBehavior.Restrict);
+      entity.HasOne(e => e.AwardCriterion).WithMany(c => c.JudgeScores).HasForeignKey(e => e.AwardCriterionId).OnDelete(DeleteBehavior.Restrict);
     });
 
-    // MemberChangeLog
-    modelBuilder.Entity<MemberChangeLog>(entity =>
+    modelBuilder.Entity<ApplicationRanking>(entity =>
     {
-      entity.ToTable("member_change_logs");
+      entity.ToTable("application_rankings");
       entity.HasKey(e => e.Id);
       entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
-      entity.Property(e => e.ChangeType).HasColumnName("change_type").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.OldValue).HasColumnName("old_value").IsRequired();
-      entity.Property(e => e.NewValue).HasColumnName("new_value").IsRequired();
-      entity.Property(e => e.ChangedBy).HasColumnName("changed_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.ChangedAt).HasColumnName("changed_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-
-      entity.HasOne(e => e.Member)
-            .WithMany()
-            .HasForeignKey(e => e.MemberId)
-            .OnDelete(DeleteBehavior.Cascade);
-    });
-
-    // ExchangeRate
-    modelBuilder.Entity<ExchangeRate>(entity =>
-    {
-      entity.ToTable("exchange_rates");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.RateToBase).HasColumnName("rate_to_base").HasColumnType("numeric(10,6)");
-      entity.Property(e => e.EffectiveDatetime).HasColumnName("effective_datetime");
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-    });
-
-    // WalletBalance
-    modelBuilder.Entity<WalletBalance>(entity =>
-    {
-      entity.ToTable("wallet_balances");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
-      entity.Property(e => e.WalletType).HasColumnName("wallet_type").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.Balance).HasColumnName("balance").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-      entity.HasIndex(e => new { e.MemberId, e.WalletType }).IsUnique();
-      entity.HasOne(e => e.Member)
-            .WithMany()
-            .HasForeignKey(e => e.MemberId)
-            .OnDelete(DeleteBehavior.Cascade);
-    });
-
-    // CashWalletTransaction
-    modelBuilder.Entity<CashWalletTransaction>(entity =>
-    {
-      entity.ToTable("cash_wallet_transactions");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
-      entity.Property(e => e.TxnType).HasColumnName("txn_type").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.Direction).HasColumnName("direction").HasMaxLength(5).IsRequired();
-      entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.DisplayAmount).HasColumnName("display_amount").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.DisplayCurrency).HasColumnName("display_currency").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
-      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
-      entity.Property(e => e.Remark).HasColumnName("remark");
-      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
-      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
-      entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(36);
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.HasIndex(e => e.IdempotencyKey).IsUnique()
-            .HasFilter("idempotency_key IS NOT NULL");
-      entity.HasOne(e => e.Member)
-            .WithMany()
-            .HasForeignKey(e => e.MemberId)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // CashWalletTransactionArchive
-    modelBuilder.Entity<CashWalletTransactionArchive>(entity =>
-    {
-      entity.ToTable("cash_wallet_transactions_archive");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
-      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
-      entity.Property(e => e.TxnType).HasColumnName("txn_type").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.Direction).HasColumnName("direction").HasMaxLength(5).IsRequired();
-      entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.DisplayAmount).HasColumnName("display_amount").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.DisplayCurrency).HasColumnName("display_currency").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
-      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
-      entity.Property(e => e.Remark).HasColumnName("remark");
-      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
-      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
-      entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(36);
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-    });
-
-    // PurchaseWalletTransaction
-    modelBuilder.Entity<PurchaseWalletTransaction>(entity =>
-    {
-      entity.ToTable("purchase_wallet_transactions");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
-      entity.Property(e => e.TxnType).HasColumnName("txn_type").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.Direction).HasColumnName("direction").HasMaxLength(5).IsRequired();
-      entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.DisplayAmount).HasColumnName("display_amount").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.DisplayCurrency).HasColumnName("display_currency").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
-      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
-      entity.Property(e => e.Remark).HasColumnName("remark");
-      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
-      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
-      entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(36);
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.HasIndex(e => e.IdempotencyKey).IsUnique()
-            .HasFilter("idempotency_key IS NOT NULL");
-      entity.HasOne(e => e.Member)
-            .WithMany()
-            .HasForeignKey(e => e.MemberId)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // PurchaseWalletTransactionArchive
-    modelBuilder.Entity<PurchaseWalletTransactionArchive>(entity =>
-    {
-      entity.ToTable("purchase_wallet_transactions_archive");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
-      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
-      entity.Property(e => e.TxnType).HasColumnName("txn_type").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.Direction).HasColumnName("direction").HasMaxLength(5).IsRequired();
-      entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.DisplayAmount).HasColumnName("display_amount").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.DisplayCurrency).HasColumnName("display_currency").HasMaxLength(10).IsRequired();
-      entity.Property(e => e.ExchangeRate).HasColumnName("exchange_rate").HasColumnType("numeric(10,6)");
-      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
-      entity.Property(e => e.Remark).HasColumnName("remark");
-      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id");
-      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
-      entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(36);
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-    });
-
-    // IncentivePeriod
-    modelBuilder.Entity<IncentivePeriod>(entity =>
-    {
-      entity.ToTable("incentive_periods");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.ClosedAt).HasColumnName("closed_at");
-      entity.Property(e => e.ProcessedAt).HasColumnName("processed_at");
-      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
-      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-
-      entity.HasIndex(e => e.PeriodDate).IsUnique();
-
-      entity.HasMany(e => e.Payouts)
-            .WithOne(p => p.IncentivePeriod)
-            .HasForeignKey(p => p.IncentivePeriodId)
-            .OnDelete(DeleteBehavior.Restrict);
-    });
-
-    // WalletPayout
-    modelBuilder.Entity<WalletPayout>(entity =>
-    {
-      entity.ToTable("wallet_payouts");
-      entity.HasKey(e => e.Id);
-      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
-      entity.Property(e => e.IncentivePeriodId).HasColumnName("incentive_period_id").IsRequired();
-      entity.Property(e => e.PeriodDate).HasColumnName("period_date");
-      entity.Property(e => e.MemberId).HasColumnName("member_id").IsRequired();
-      entity.Property(e => e.IncentiveType).HasColumnName("incentive_type").HasMaxLength(50).IsRequired();
-      entity.Property(e => e.PvAmount).HasColumnName("pv_amount").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.AmountUsd).HasColumnName("amount_usd").HasColumnType("numeric(10,2)");
-      entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(100);
-      entity.Property(e => e.Remark).HasColumnName("remark");
-      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-      entity.Property(e => e.RetryCount).HasColumnName("retry_count");
-      entity.Property(e => e.ErrorMessage).HasColumnName("error_message");
-      entity.Property(e => e.ProcessedAt).HasColumnName("processed_at");
-      entity.Property(e => e.CreatedAt).HasColumnName("created_at")
-            .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
-
-      entity.HasOne(e => e.Member)
-            .WithMany()
-            .HasForeignKey(e => e.MemberId)
-            .OnDelete(DeleteBehavior.Restrict);
+      entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+      entity.Property(e => e.AwardCategoryId).HasColumnName("award_category_id").IsRequired();
+      entity.Property(e => e.FinalScore).HasColumnName("final_score").HasPrecision(8, 4).IsRequired();
+      entity.Property(e => e.RankPosition).HasColumnName("rank_position").IsRequired();
+      entity.Property(e => e.IsRecommended).HasColumnName("is_recommended").HasDefaultValue(false);
+      entity.Property(e => e.IsApprovedWinner).HasColumnName("is_approved_winner").HasDefaultValue(false);
+      entity.Property(e => e.CommitteeRemarks).HasColumnName("committee_remarks");
+      entity.Property(e => e.ApprovedBy).HasColumnName("approved_by");
+      entity.Property(e => e.ApprovedAt).HasColumnName("approved_at");
+      entity.Property(e => e.RankedAt).HasColumnName("ranked_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.HasIndex(e => e.ApplicationId).IsUnique();
+      entity.HasIndex(e => e.AwardCategoryId);
+      entity.HasOne(e => e.Application).WithOne(a => a.Ranking).HasForeignKey<ApplicationRanking>(e => e.ApplicationId).OnDelete(DeleteBehavior.Restrict);
+      entity.HasOne(e => e.AwardCategory).WithMany().HasForeignKey(e => e.AwardCategoryId).OnDelete(DeleteBehavior.Restrict);
     });
 
     // SystemSetting

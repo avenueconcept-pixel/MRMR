@@ -12,9 +12,7 @@ public class CreateModel : AdminPageModel
 {
   private readonly AdminUserDbHelper   _adminUserDbHelper;
   private readonly RoleDbHelper        _roleDbHelper;
-  private readonly DepartmentDbHelper  _deptDbHelper;
   private readonly CountryDbHelper     _countryDbHelper;
-  private readonly RegionDbHelper      _regionDbHelper;
   private readonly TranslationService  _translation;
   private readonly IWebHostEnvironment _env;
   private readonly IConfiguration      _config;
@@ -35,26 +33,20 @@ public class CreateModel : AdminPageModel
   [BindProperty] public IFormFile? fileProfileImage        { get; set; }
 
   public List<SelectListItem> RoleOptions    { get; set; } = new();
-  public List<SelectListItem> DeptOptions    { get; set; } = new();
   public List<SelectListItem> CountryOptions { get; set; } = new();
-  public List<SelectListItem> RegionOptions  { get; set; } = new();
   public List<SelectListItem> StatusOptions  { get; set; } = new();
 
   public CreateModel(
       AdminUserDbHelper   adminUserDbHelper,
       RoleDbHelper        roleDbHelper,
-      DepartmentDbHelper  deptDbHelper,
       CountryDbHelper     countryDbHelper,
-      RegionDbHelper      regionDbHelper,
       TranslationService  translation,
       IWebHostEnvironment env,
       IConfiguration      config)
   {
     _adminUserDbHelper = adminUserDbHelper;
     _roleDbHelper      = roleDbHelper;
-    _deptDbHelper      = deptDbHelper;
     _countryDbHelper   = countryDbHelper;
-    _regionDbHelper    = regionDbHelper;
     _translation       = translation;
     _env               = env;
     _config            = config;
@@ -104,9 +96,9 @@ public class CreateModel : AdminPageModel
       FullName               = txtFullName.Trim(),
       Email                  = txtEmail.Trim(),
       RoleId                 = ddlRoleId,
-      DeptId                 = ddlDeptId,
+      DeptId                 = null,
       CountryCode            = ddlCountryCode,
-      RegionId               = ddlRegionId,
+      RegionId               = null,
       MobileCountryCode      = string.IsNullOrWhiteSpace(txtMobileCountryCode) ? null : txtMobileCountryCode.Trim(),
       MobileNo               = string.IsNullOrWhiteSpace(txtMobileNo) ? null : txtMobileNo.Trim(),
       IsForceChangePassword  = chkIsForceChangePassword,
@@ -126,15 +118,10 @@ public class CreateModel : AdminPageModel
 
   private async Task PopulateDropdownsAsync()
   {
-    var langCode = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
-    var roles    = await _roleDbHelper.GetAllActiveAsync();
-    var depts    = await _deptDbHelper.GetAllActiveAsync();
-    var regions  = await _regionDbHelper.GetAllActiveAsync();
-
+    var langCode   = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    var roles      = await _roleDbHelper.GetAllActiveAsync();
     RoleOptions    = roles.Select(r => new SelectListItem { Value = r.Id.ToString(), Text = r.RoleName }).ToList();
-    DeptOptions    = depts.Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.DeptName }).ToList();
     CountryOptions = await SelectListHelper.GetCountryOptions(_countryDbHelper, langCode);
-    RegionOptions  = regions.Select(r => new SelectListItem { Value = r.Id.ToString(), Text = r.RegionName }).ToList();
     StatusOptions  = await SelectListHelper.GetStatusOptions(_translation);
   }
 

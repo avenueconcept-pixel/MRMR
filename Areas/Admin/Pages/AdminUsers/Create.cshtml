@@ -97,22 +97,10 @@
           </div>
         </div>
         <div class="col-md-6">
-          <label class="form-label" for="ddlDeptId">@await T.GetAsync("Department")</label>
-          <select asp-for="ddlDeptId" class="form-select" asp-items="@Model.DeptOptions">
-            <option value="">— @await T.GetAsync("SelectDepartment") —</option>
-          </select>
-        </div>
-        <div class="col-md-6">
           <label class="form-label" for="ddlCountryCode">
             @await T.GetAsync("Country") <span class="text-danger">*</span>
           </label>
           <select asp-for="ddlCountryCode" class="form-select" asp-items="@Model.CountryOptions"></select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="ddlRegionId">@await T.GetAsync("Region")</label>
-          <select asp-for="ddlRegionId" class="form-select" asp-items="@Model.RegionOptions">
-            <option value="">— @await T.GetAsync("SelectRegion") —</option>
-          </select>
         </div>
         <div class="col-md-3">
           <label class="form-label" for="txtMobileCountryCode">@await T.GetAsync("AdminUser.MobileCountryCode")</label>

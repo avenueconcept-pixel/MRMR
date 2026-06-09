@@ -12,9 +12,7 @@ public class EditModel : AdminPageModel
 {
   private readonly AdminUserDbHelper   _adminUserDbHelper;
   private readonly RoleDbHelper        _roleDbHelper;
-  private readonly DepartmentDbHelper  _deptDbHelper;
   private readonly CountryDbHelper     _countryDbHelper;
-  private readonly RegionDbHelper      _regionDbHelper;
   private readonly TranslationService  _translation;
   private readonly IWebHostEnvironment _env;
   private readonly IConfiguration      _config;
@@ -22,9 +20,7 @@ public class EditModel : AdminPageModel
   [BindProperty] public string    txtFullName              { get; set; } = string.Empty;
   [BindProperty] public string    txtEmail                 { get; set; } = string.Empty;
   [BindProperty] public int       ddlRoleId                { get; set; }
-  [BindProperty] public int?      ddlDeptId                { get; set; }
   [BindProperty] public string    ddlCountryCode           { get; set; } = "MY";
-  [BindProperty] public int?      ddlRegionId              { get; set; }
   [BindProperty] public string    txtMobileCountryCode     { get; set; } = string.Empty;
   [BindProperty] public string    txtMobileNo              { get; set; } = string.Empty;
   [BindProperty] public bool      chkIsForceChangePassword { get; set; }
@@ -42,9 +38,7 @@ public class EditModel : AdminPageModel
   public string    LastLoginLang { get; set; } = string.Empty;
 
   public List<SelectListItem> RoleOptions    { get; set; } = new();
-  public List<SelectListItem> DeptOptions    { get; set; } = new();
   public List<SelectListItem> CountryOptions { get; set; } = new();
-  public List<SelectListItem> RegionOptions  { get; set; } = new();
   public List<SelectListItem> StatusOptions  { get; set; } = new();
 
   public string MsgDeleteConfirmTitle { get; set; } = string.Empty;
@@ -58,18 +52,14 @@ public class EditModel : AdminPageModel
   public EditModel(
       AdminUserDbHelper   adminUserDbHelper,
       RoleDbHelper        roleDbHelper,
-      DepartmentDbHelper  deptDbHelper,
       CountryDbHelper     countryDbHelper,
-      RegionDbHelper      regionDbHelper,
       TranslationService  translation,
       IWebHostEnvironment env,
       IConfiguration      config)
   {
     _adminUserDbHelper = adminUserDbHelper;
     _roleDbHelper      = roleDbHelper;
-    _deptDbHelper      = deptDbHelper;
     _countryDbHelper   = countryDbHelper;
-    _regionDbHelper    = regionDbHelper;
     _translation       = translation;
     _env               = env;
     _config            = config;
@@ -93,9 +83,7 @@ public class EditModel : AdminPageModel
     txtFullName              = user.FullName;
     txtEmail                 = user.Email;
     ddlRoleId                = user.RoleId;
-    ddlDeptId                = user.DeptId;
     ddlCountryCode           = user.CountryCode;
-    ddlRegionId              = user.RegionId;
     txtMobileCountryCode     = user.MobileCountryCode ?? string.Empty;
     txtMobileNo              = user.MobileNo          ?? string.Empty;
     chkIsForceChangePassword = user.IsForceChangePassword;
@@ -162,9 +150,9 @@ public class EditModel : AdminPageModel
       FullName               = txtFullName.Trim(),
       Email                  = txtEmail.Trim(),
       RoleId                 = ddlRoleId,
-      DeptId                 = ddlDeptId,
+      DeptId                 = existing.DeptId,
       CountryCode            = ddlCountryCode,
-      RegionId               = ddlRegionId,
+      RegionId               = existing.RegionId,
       MobileCountryCode      = string.IsNullOrWhiteSpace(txtMobileCountryCode) ? null : txtMobileCountryCode.Trim(),
       MobileNo               = string.IsNullOrWhiteSpace(txtMobileNo) ? null : txtMobileNo.Trim(),
       IsForceChangePassword  = chkIsForceChangePassword,
@@ -198,15 +186,10 @@ public class EditModel : AdminPageModel
 
   private async Task PopulateDropdownsAsync()
   {
-    var langCode = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
-    var roles    = await _roleDbHelper.GetAllActiveAsync();
-    var depts    = await _deptDbHelper.GetAllActiveAsync();
-    var regions  = await _regionDbHelper.GetAllActiveAsync();
-
+    var langCode   = string.IsNullOrEmpty(CurrentLangCode) ? "en" : CurrentLangCode;
+    var roles      = await _roleDbHelper.GetAllActiveAsync();
     RoleOptions    = roles.Select(r => new SelectListItem { Value = r.Id.ToString(), Text = r.RoleName }).ToList();
-    DeptOptions    = depts.Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.DeptName }).ToList();
     CountryOptions = await SelectListHelper.GetCountryOptions(_countryDbHelper, langCode);
-    RegionOptions  = regions.Select(r => new SelectListItem { Value = r.Id.ToString(), Text = r.RegionName }).ToList();
     StatusOptions  = await SelectListHelper.GetStatusOptions(_translation);
   }
 
