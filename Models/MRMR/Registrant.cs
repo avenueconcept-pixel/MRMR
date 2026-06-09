@@ -22,6 +22,8 @@ public class Registrant
     public bool IsActive { get; set; } = false;
     public bool DeclInfoAccurate { get; set; } = false;
     public bool DeclFeeNonrefundable { get; set; } = false;
+    public string? ResetToken { get; set; }
+    public DateTime? ResetTokenExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

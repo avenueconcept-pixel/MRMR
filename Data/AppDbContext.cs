@@ -546,6 +546,8 @@ public class AppDbContext : DbContext
       entity.Property(e => e.DeclFeeNonrefundable).HasColumnName("decl_fee_nonrefundable").HasDefaultValue(false);
       entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.ResetToken).HasColumnName("reset_token").HasMaxLength(100);
+      entity.Property(e => e.ResetTokenExpiresAt).HasColumnName("reset_token_expires_at");
       entity.HasIndex(e => e.Email).IsUnique();
       entity.HasIndex(e => e.NricPassport).IsUnique();
       entity.HasIndex(e => e.Username).IsUnique();

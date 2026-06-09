@@ -161,6 +161,42 @@ public class RegistrationDbHelper : DbHelper
             }
         });
 
+    public async Task<Registrant?> GetRegistrantByEmailAsync(string email)
+        => await ExecuteAsync(async () =>
+            await _db.Registrants
+                .FirstOrDefaultAsync(r => r.Email == email && r.Status == StatusConstants.Active));
+
+    public async Task SetResetTokenAsync(int registrantId, string token, DateTime expiresAt)
+        => await ExecuteAsync(async () =>
+        {
+            var r = await _db.Registrants.FindAsync(registrantId);
+            if (r == null) return;
+            r.ResetToken          = token;
+            r.ResetTokenExpiresAt = expiresAt;
+            r.UpdatedAt           = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task<Registrant?> GetRegistrantByResetTokenAsync(string token)
+        => await ExecuteAsync(async () =>
+            await _db.Registrants
+                .FirstOrDefaultAsync(r =>
+                    r.ResetToken == token
+                    && r.ResetTokenExpiresAt > DateTime.UtcNow
+                    && r.Status == StatusConstants.Active));
+
+    public async Task ResetPasswordAsync(int registrantId, string newPasswordHash)
+        => await ExecuteAsync(async () =>
+        {
+            var r = await _db.Registrants.FindAsync(registrantId);
+            if (r == null) return;
+            r.PasswordHash        = newPasswordHash;
+            r.ResetToken          = null;
+            r.ResetTokenExpiresAt = null;
+            r.UpdatedAt           = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
+
     public async Task<Registrant?> GetRegistrantByUsernameAsync(string usernameOrEmail)
         => await ExecuteAsync(async () =>
             await _db.Registrants

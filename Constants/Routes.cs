@@ -64,6 +64,8 @@ public class Routes
   public const string ApplicantPaymentPending          = "/Payment/Pending";
   public const string ApplicantPaymentConfirmation     = "/Payment/Confirmation";
   public const string ApplicantLogout                  = "/Account/Logout";
+  public const string ApplicantForgotPassword          = "/Account/ForgotPassword";
+  public const string ApplicantResetPassword           = "/Account/ResetPassword";
 
   // MRMR Admin
   public const string AdminMrmrApplications = "/MRMR/Applications/Index";
