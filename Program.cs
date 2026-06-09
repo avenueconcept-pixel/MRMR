@@ -68,6 +68,11 @@ builder.Services.AddScoped<SystemSettingDbHelper>();
 builder.Services.AddScoped<SystemSettingService>();
 builder.Services.AddScoped<PaymentStatusMsSqlHelper>();
 
+// MRMR2026 Services
+builder.Services.AddScoped<MyApp.Services.MRMR.FileUploadService>();
+builder.Services.AddScoped<MyApp.Services.MRMR.ApplicationIdGeneratorService>();
+builder.Services.AddScoped<MyApp.Services.MRMR.InvoiceService>();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
 
