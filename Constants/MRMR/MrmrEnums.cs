@@ -13,10 +13,14 @@ public enum ApplicationStatus
     NominationFeeVerified,    // Nomination fee approved — credentials emailed
     AwardFeePending,          // Awaiting award fee payment
     AwardFeeVerified,         // Award fee approved — submission unlocked
-    Submitted,                // Final submission submitted
-    UnderReview,              // Admin/judge review in progress
+    SubmissionInProgress,     // Applicant has started but not submitted
+    SubmissionCompleted,      // Final submission submitted
+    UnderEvaluation,          // Admin/judge evaluation in progress
+    Approved,                 // Selected as award recipient
+    Submitted,                // Legacy alias — use SubmissionCompleted
+    UnderReview,              // Legacy alias — use UnderEvaluation
     Shortlisted,              // Shortlisted by committee
-    AwardRecipient,           // Final winner
+    AwardRecipient,           // Legacy alias — use Approved
     Rejected,                 // Rejected at any stage
     Withdrawn                 // Applicant withdrew
 }

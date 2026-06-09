@@ -161,6 +161,24 @@ public class RegistrationDbHelper : DbHelper
             }
         });
 
+    public async Task<List<Application>> GetApplicationsAsync(int registrantId)
+        => await ExecuteAsync(async () =>
+            await _db.Applications
+                .Include(a => a.AwardCategory)
+                .Where(a => a.RegistrantId == registrantId && a.Status != nameof(ApplicationStatus.Withdrawn))
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync()) ?? new();
+
+    public async Task<List<Payment>> GetPaymentsAsync(int applicationDbId)
+        => await ExecuteAsync(async () =>
+            await _db.Payments
+                .Where(p => p.ApplicationId == applicationDbId)
+                .ToListAsync()) ?? new();
+
+    public async Task<Payment?> GetPaymentByIdAsync(int paymentId)
+        => await ExecuteAsync(async () =>
+            await _db.Payments.FindAsync(paymentId));
+
     public async Task<Registrant?> GetRegistrantByDbIdAsync(int id)
         => await ExecuteAsync(async () =>
             await _db.Registrants.FindAsync(id));

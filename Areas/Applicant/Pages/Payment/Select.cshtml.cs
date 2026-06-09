@@ -16,10 +16,24 @@ public class SelectModel : BasePageModel
         _config   = config;
     }
 
+    [BindProperty(SupportsGet = true)] public int? PaymentId { get; set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
         var appDbId = TempData["RegisteredApplicationId"] as int?;
         var method  = TempData["RegisteredPaymentMethod"]  as string;
+
+        if (PaymentId.HasValue && (appDbId == null || string.IsNullOrEmpty(method)))
+        {
+            var dbPayment = await _dbHelper.GetPaymentByIdAsync(PaymentId.Value);
+            if (dbPayment == null) return RedirectToPage("/Dashboard", new { area = "Applicant" });
+
+            var application2 = await _dbHelper.GetApplicationByDbIdAsync(dbPayment.ApplicationId);
+            if (application2 == null) return RedirectToPage("/Dashboard", new { area = "Applicant" });
+
+            appDbId = application2.Id;
+            method  = dbPayment.Method;
+        }
 
         if (appDbId == null || string.IsNullOrEmpty(method))
             return RedirectToPage("/Register", new { area = "Applicant" });
@@ -32,7 +46,7 @@ public class SelectModel : BasePageModel
         if (payment == null)
             return RedirectToPage("/Register", new { area = "Applicant" });
 
-        if (method == "Axaipay")
+        if (method == nameof(PaymentMethod.Axaipay))
         {
             var gatewayUrl  = _config["Axaipay:GatewayUrl"]!;
             var merchantId  = _config["Axaipay:MerchantId"]!;

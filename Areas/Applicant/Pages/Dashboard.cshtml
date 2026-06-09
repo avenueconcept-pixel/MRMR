@@ -5,32 +5,223 @@
     ViewData["Title"] = await T.GetAsync("Dashboard.Title");
 }
 
+@* Welcome header *@
 <div class="row mt-4">
     <div class="col s12">
-        <h5>@await T.GetAsync("Dashboard.Welcome"), @User.FindFirst(MyApp.Constants.CookieConstants.SessionKeys.FullName)?.Value!</h5>
+        <h5>@await T.GetAsync("Dashboard.Welcome"), @Model.FullName!</h5>
+        <p class="grey-text">@await T.GetAsync("Dashboard.Subtitle")</p>
     </div>
 </div>
 
-@if (Model.CurrentApplication != null)
+@* Register new application button *@
+<div class="row">
+    <div class="col s12 right-align">
+        <a asp-area="Applicant" asp-page="/Register" class="btn blue darken-3 waves-effect waves-light">
+            <i class="ri ri-add-line"></i> @await T.GetAsync("Dashboard.NewApplication")
+        </a>
+    </div>
+</div>
+
+@if (!Model.Applications.Any())
 {
-    <div class="row">
-        <div class="col s12 m6">
-            <div class="card applicant-card">
-                <div class="card-content">
-                    <span class="card-title">@await T.GetAsync("Dashboard.ApplicationStatus")</span>
-                    <p><strong>@await T.GetAsync("Dashboard.ApplicationId"):</strong> @Model.CurrentApplication.ApplicationId</p>
-                    <p><strong>@await T.GetAsync("Dashboard.Category"):</strong> @Model.CurrentApplication.AwardCategory?.Name</p>
-                    <p><strong>@await T.GetAsync("Dashboard.Status"):</strong>
-                        <span class="badge-status blue lighten-4 blue-text">@Model.CurrentApplication.Status</span>
+    <div class="card-panel blue lighten-5 center-align">
+        <i class="ri ri-file-list-3-line blue-text" style="font-size:3rem;"></i>
+        <p>@await T.GetAsync("Dashboard.NoApplication")</p>
+        <a asp-area="Applicant" asp-page="/Register" class="btn blue darken-3 mt-2">
+            @await T.GetAsync("Dashboard.RegisterNow")
+        </a>
+    </div>
+}
+
+@foreach (var dto in Model.Applications)
+{
+    var app    = dto.Application;
+    var nomPay = dto.NominationPayment;
+    var awdPay = dto.AwardPayment;
+
+    <div class="card applicant-card mb-4">
+        <div class="card-content">
+
+            @* Application header *@
+            <div class="row valign-wrapper mb-0">
+                <div class="col s12 m8">
+                    <span class="card-title mb-0">@app.ApplicationId</span>
+                    <p class="grey-text mt-0">
+                        @app.AwardCategory?.Name
+                        &nbsp;·&nbsp;
+                        <em>@app.ApplicationType</em>
                     </p>
                 </div>
+                <div class="col s12 m4 right-align">
+                    <span class="badge-status @StatusBadgeClass(app.Status)">@app.Status</span>
+                </div>
             </div>
+
+            <div class="divider mb-3"></div>
+
+            @* ── STATE 1: Registered → Pay Nomination Fee ── *@
+            @if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.Registered))
+            {
+                <div class="center-align py-3">
+                    <i class="ri ri-bank-card-line orange-text" style="font-size:3rem;"></i>
+                    <h6 class="mt-2">@await T.GetAsync("Dashboard.State.PayNomination")</h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.PayNominationDesc")</p>
+                    @if (nomPay != null)
+                    {
+                        <p><strong>RM @nomPay.Amount.ToString("N2")</strong></p>
+                        <a asp-area="Applicant" asp-page="/Payment/Select"
+                           asp-route-paymentId="@nomPay.Id"
+                           class="btn orange darken-2 waves-effect waves-light">
+                            <i class="ri ri-secure-payment-line"></i> @await T.GetAsync("Dashboard.State.PayNow")
+                        </a>
+                    }
+                </div>
+            }
+
+            @* ── STATE 2: NominationFeePending ── *@
+            else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.NominationFeePending))
+            {
+                <div class="center-align py-3">
+                    <i class="ri ri-time-line amber-text" style="font-size:3rem;"></i>
+                    <h6 class="mt-2">@await T.GetAsync("Dashboard.State.NomPending")</h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.NomPendingDesc")</p>
+                    @if (nomPay?.SlipUploadedAt != null)
+                    {
+                        <p class="grey-text"><small>@await T.GetAsync("Dashboard.State.SlipUploaded"): @nomPay.SlipUploadedAt?.ToString("dd MMM yyyy HH:mm")</small></p>
+                    }
+                </div>
+            }
+
+            @* ── STATE 3: NominationFeeVerified → Pay Award Fee ── *@
+            else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.NominationFeeVerified))
+            {
+                <div class="center-align py-3">
+                    <i class="ri ri-trophy-line blue-text" style="font-size:3rem;"></i>
+                    <h6 class="mt-2">@await T.GetAsync("Dashboard.State.PayAwardFee")</h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.PayAwardFeeDesc")</p>
+                    @if (awdPay != null)
+                    {
+                        <p><strong>RM @awdPay.Amount.ToString("N2")</strong></p>
+                        <a asp-area="Applicant" asp-page="/Payment/Select"
+                           asp-route-paymentId="@awdPay.Id"
+                           class="btn blue darken-3 waves-effect waves-light">
+                            <i class="ri ri-secure-payment-line"></i> @await T.GetAsync("Dashboard.State.PayNow")
+                        </a>
+                    }
+                </div>
+            }
+
+            @* ── STATE 4: AwardFeePending ── *@
+            else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.AwardFeePending))
+            {
+                <div class="center-align py-3">
+                    <i class="ri ri-time-line amber-text" style="font-size:3rem;"></i>
+                    <h6 class="mt-2">@await T.GetAsync("Dashboard.State.AwardPending")</h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.AwardPendingDesc")</p>
+                </div>
+            }
+
+            @* ── STATE 5 & 6: AwardFeeVerified / SubmissionInProgress → Start/Continue Submission ── *@
+            else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.AwardFeeVerified)
+                  || app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.SubmissionInProgress))
+            {
+                var isNew = app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.AwardFeeVerified);
+                <div class="center-align py-3">
+                    <i class="ri ri-edit-line green-text" style="font-size:3rem;"></i>
+                    <h6 class="mt-2">
+                        @if (isNew)
+                        {
+                            @await T.GetAsync("Dashboard.State.StartSubmission")
+                        }
+                        else
+                        {
+                            @await T.GetAsync("Dashboard.State.ContinueSubmission")
+                        }
+                    </h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.SubmissionDesc")</p>
+                    <a asp-area="Applicant" asp-page="/Submission/SectionA"
+                       asp-route-applicationId="@app.ApplicationId"
+                       class="btn green darken-2 waves-effect waves-light">
+                        <i class="ri ri-file-edit-line"></i>
+                        @if (isNew)
+                        {
+                            @await T.GetAsync("Dashboard.State.StartNow")
+                        }
+                        else
+                        {
+                            @await T.GetAsync("Dashboard.State.ContinueNow")
+                        }
+                    </a>
+                </div>
+            }
+
+            @* ── STATE 7: SubmissionCompleted ── *@
+            else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.SubmissionCompleted))
+            {
+                <div class="center-align py-3">
+                    <i class="ri ri-checkbox-circle-line teal-text" style="font-size:3rem;"></i>
+                    <h6 class="mt-2">@await T.GetAsync("Dashboard.State.Submitted")</h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.SubmittedDesc")</p>
+                    <a asp-area="Applicant" asp-page="/Submission/Summary"
+                       asp-route-applicationId="@app.ApplicationId"
+                       class="btn-flat teal-text">
+                        @await T.GetAsync("Dashboard.State.ViewSubmission")
+                    </a>
+                </div>
+            }
+
+            @* ── STATE 8: UnderEvaluation ── *@
+            else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.UnderEvaluation))
+            {
+                <div class="center-align py-3">
+                    <i class="ri ri-search-eye-line purple-text" style="font-size:3rem;"></i>
+                    <h6 class="mt-2">@await T.GetAsync("Dashboard.State.UnderEvaluation")</h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.UnderEvaluationDesc")</p>
+                </div>
+            }
+
+            @* ── STATE 9: Approved ── *@
+            else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.Approved))
+            {
+                <div class="center-align py-3">
+                    <i class="ri ri-trophy-fill yellow-text text-darken-2" style="font-size:3rem;"></i>
+                    <h6 class="mt-2 green-text">@await T.GetAsync("Dashboard.State.Approved")</h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.ApprovedDesc")</p>
+                </div>
+            }
+
+            @* ── STATE 10: Rejected ── *@
+            else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.Rejected))
+            {
+                <div class="center-align py-3">
+                    <i class="ri ri-close-circle-line red-text" style="font-size:3rem;"></i>
+                    <h6 class="mt-2 grey-text">@await T.GetAsync("Dashboard.State.Rejected")</h6>
+                    <p class="grey-text">@await T.GetAsync("Dashboard.State.RejectedDesc")</p>
+                </div>
+            }
+
+        </div>
+
+        @* Card footer *@
+        <div class="card-action grey lighten-5">
+            <span class="grey-text"><small>@await T.GetAsync("Dashboard.Registered"): @app.CreatedAt.ToString("dd MMM yyyy")</small></span>
         </div>
     </div>
 }
-else
-{
-    <div class="card-panel blue lighten-5">
-        <p>@await T.GetAsync("Dashboard.NoApplication")</p>
-    </div>
+
+@functions {
+    private string StatusBadgeClass(string status) => status switch
+    {
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.Registered)            => "blue lighten-4 blue-text",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.NominationFeePending)  => "amber lighten-4 amber-text text-darken-3",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.NominationFeeVerified) => "light-blue lighten-4 light-blue-text text-darken-2",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.AwardFeePending)       => "amber lighten-4 amber-text text-darken-3",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.AwardFeeVerified)      => "green lighten-4 green-text",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.SubmissionInProgress)  => "green lighten-4 green-text",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.SubmissionCompleted)   => "teal lighten-4 teal-text",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.UnderEvaluation)       => "purple lighten-4 purple-text",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.Approved)              => "green darken-1 white-text",
+        nameof(MyApp.Constants.MRMR.ApplicationStatus.Rejected)              => "red lighten-4 red-text",
+        _ => "grey lighten-3 grey-text"
+    };
 }
