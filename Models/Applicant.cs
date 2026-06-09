@@ -1,7 +1,7 @@
 
 namespace MyApp.Models;
 
-public class Customer
+public class Applicant
 {
   public int Id { get; set; }
   public string FullName { get; set; } = string.Empty;

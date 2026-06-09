@@ -9,7 +9,7 @@ public class AppDbContext : DbContext
 
   public DbSet<LanguageResource> LanguageResources => Set<LanguageResource>();
   public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
-  public DbSet<Customer> Customers => Set<Customer>();
+  public DbSet<Applicant> Applicants => Set<Applicant>();
   public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
   public DbSet<Language> Languages => Set<Language>();
   public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
@@ -1302,8 +1302,8 @@ public class AppDbContext : DbContext
       entity.HasIndex(e => e.SettingKey).IsUnique();
     });
 
-    // Customer
-    modelBuilder.Entity<Customer>(entity =>
+    // Applicant
+    modelBuilder.Entity<Applicant>(entity =>
     {
       entity.ToTable("customers");
       entity.HasKey(e => e.Id);

@@ -40,7 +40,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TranslationService>();
 
 builder.Services.AddScoped<AdminDbHelper>();
-builder.Services.AddScoped<CustomerDbHelper>();
+builder.Services.AddScoped<ApplicantDbHelper>();
 builder.Services.AddScoped<EmailTemplateDbHelper>();
 builder.Services.AddScoped<LanguageDbHelper>();
 builder.Services.AddScoped<PasswordResetTokenDbHelper>();
@@ -97,9 +97,9 @@ builder.Services.AddAuthentication()
       options.ExpireTimeSpan = TimeSpan.FromDays(30);
       options.SlidingExpiration = true;
     })
-    .AddCookie(AuthSchemeConstants.Customer, options =>
+    .AddCookie(AuthSchemeConstants.Applicant, options =>
     {
-      options.LoginPath = "/Customer/Login";
+      options.LoginPath = "/Applicant/Login";
       options.ExpireTimeSpan = TimeSpan.FromDays(30);
       options.SlidingExpiration = true;
     });

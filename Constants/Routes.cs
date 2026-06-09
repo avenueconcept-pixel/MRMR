@@ -54,11 +54,18 @@ public class Routes
   public const string AdminSystemSettings         = "/SystemSettings/Index";
   public const string AdminRank                   = "/Ranks/Index";
 
-  // Customer
-  public const string CustomerLogin = "/Login";
-  public const string CustomerDashboard = "/Dashboard";
-  public const string CustomerOrders = "/Orders";
-  public const string CustomerRegister = "/Register";
+  // Applicant
+  public const string ApplicantLogin     = "/Login";
+  public const string ApplicantDashboard = "/Dashboard";
+  public const string ApplicantRegister  = "/Register";
+
+  // MRMR Admin
+  public const string AdminMrmrApplications = "/MRMR/Applications/Index";
+  public const string AdminMrmrPayments     = "/MRMR/Payments/Index";
+  public const string AdminMrmrDocuments    = "/MRMR/Documents/Index";
+  public const string AdminMrmrCategories   = "/MRMR/Categories/Index";
+  public const string AdminMrmrJudges       = "/MRMR/Judges/Index";
+  public const string AdminMrmrReports      = "/MRMR/Reports/Index";
 
   // Shared
   public const string SetLanguage = "/Account/SetLanguage";

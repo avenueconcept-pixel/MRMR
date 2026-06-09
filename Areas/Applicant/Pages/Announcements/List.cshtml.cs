@@ -3,9 +3,9 @@ using MyApp.Helper;
 using MyApp.Helper.DB;
 using MyApp.Models;
 
-namespace MyApp.Areas.Customer.Pages.Announcements;
+namespace MyApp.Areas.Applicant.Pages.Announcements;
 
-public class ListModel : CustomerPageModel
+public class ListModel : ApplicantPageModel
 {
   private readonly AnnouncementDbHelper _dbHelper;
 

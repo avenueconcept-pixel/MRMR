@@ -37,11 +37,11 @@ public class MaintenanceMiddleware
       loginPage     = "/Admin/Login";
       signOutScheme = AuthSchemeConstants.Admin;
     }
-    else if (path.StartsWith("/Customer", StringComparison.OrdinalIgnoreCase))
+    else if (path.StartsWith("/Applicant", StringComparison.OrdinalIgnoreCase))
     {
       systemCode    = AppConstants.SystemTypeCustomer;
-      loginPage     = "/Customer/Login";
-      signOutScheme = AuthSchemeConstants.Customer;
+      loginPage     = "/Applicant/Login";
+      signOutScheme = AuthSchemeConstants.Applicant;
     }
     else
     {
