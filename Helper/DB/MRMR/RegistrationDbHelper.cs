@@ -114,4 +114,78 @@ public class RegistrationDbHelper : DbHelper
 
             return (RegistrationResult.Success, (int?)application.Id);
         });
+
+    public async Task<Payment?> GetPaymentAsync(int applicationDbId, string paymentType)
+        => await ExecuteAsync(async () =>
+            await _db.Payments
+                .FirstOrDefaultAsync(p => p.ApplicationId == applicationDbId && p.PaymentType == paymentType));
+
+    public async Task<Application?> GetApplicationByDbIdAsync(int id)
+        => await ExecuteAsync(async () =>
+            await _db.Applications.Include(a => a.Registrant).FirstOrDefaultAsync(a => a.Id == id));
+
+    public async Task<Application?> GetApplicationByApplicationIdAsync(string applicationId)
+        => await ExecuteAsync(async () =>
+            await _db.Applications.Include(a => a.Registrant)
+                .FirstOrDefaultAsync(a => a.ApplicationId == applicationId));
+
+    public async Task UpdatePaymentAxaipayAsync(int paymentId, string refNo, string payload)
+        => await ExecuteAsync(async () =>
+        {
+            var payment = await _db.Payments.FindAsync(paymentId);
+            if (payment == null) return;
+            payment.AxaipayRefNo   = refNo;
+            payment.AxaipayPayload = payload;
+            payment.Status         = nameof(PaymentStatus.Verified);
+            payment.VerifiedAt     = DateTime.UtcNow;
+            payment.UpdatedAt      = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            _db.PaymentAuditLogs.Add(new PaymentAuditLog
+            {
+                PaymentId   = paymentId,
+                Action      = "AxaipayCallback",
+                PerformedAt = DateTime.UtcNow,
+                Remarks     = $"Axaipay ref: {refNo}",
+                Snapshot    = payload
+            });
+            await _db.SaveChangesAsync();
+
+            var app = await _db.Applications.FindAsync(payment.ApplicationId);
+            if (app != null)
+            {
+                app.Status    = nameof(ApplicationStatus.NominationFeeVerified);
+                app.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+        });
+
+    public async Task SaveSlipUploadAsync(int paymentId, string filePath)
+        => await ExecuteAsync(async () =>
+        {
+            var payment = await _db.Payments.FindAsync(paymentId);
+            if (payment == null) return;
+            payment.SlipFilePath   = filePath;
+            payment.SlipUploadedAt = DateTime.UtcNow;
+            payment.Status         = nameof(PaymentStatus.PendingVerification);
+            payment.UpdatedAt      = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            var app = await _db.Applications.FindAsync(payment.ApplicationId);
+            if (app != null)
+            {
+                app.Status    = nameof(ApplicationStatus.NominationFeePending);
+                app.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
+            _db.PaymentAuditLogs.Add(new PaymentAuditLog
+            {
+                PaymentId   = paymentId,
+                Action      = "SlipUploaded",
+                PerformedAt = DateTime.UtcNow,
+                Remarks     = "Manual slip uploaded at registration"
+            });
+            await _db.SaveChangesAsync();
+        });
 }

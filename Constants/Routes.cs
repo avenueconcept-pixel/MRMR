@@ -55,9 +55,13 @@ public class Routes
   public const string AdminRank                   = "/Ranks/Index";
 
   // Applicant
-  public const string ApplicantLogin     = "/Login";
-  public const string ApplicantDashboard = "/Dashboard";
-  public const string ApplicantRegister  = "/Register";
+  public const string ApplicantLogin                  = "/Login";
+  public const string ApplicantDashboard              = "/Dashboard";
+  public const string ApplicantRegister               = "/Register";
+  public const string ApplicantPaymentSelect          = "/Payment/Select";
+  public const string ApplicantPaymentManual          = "/Payment/Manual";
+  public const string ApplicantPaymentAxaipayCallback = "/Payment/AxaipayCallback";
+  public const string ApplicantPaymentPending         = "/Payment/Pending";
 
   // MRMR Admin
   public const string AdminMrmrApplications = "/MRMR/Applications/Index";

@@ -1,0 +1,19 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Payment.PendingModel
+@{
+    Layout = "Layouts/_PublicLayout";
+    ViewData["Title"] = await T.GetAsync("Payment.PendingTitle");
+}
+
+<div class="card applicant-card center-align">
+    <div class="card-content">
+        <i class="ri ri-checkbox-circle-line green-text" style="font-size: 4rem;"></i>
+        <h5 class="green-text mt-2">@await T.GetAsync("Payment.PendingTitle")</h5>
+        <p>@await T.GetAsync("Payment.PendingMessage")</p>
+        <p class="grey-text">@await T.GetAsync("Payment.PendingNote")</p>
+        <div class="divider my-4"></div>
+        <a href="@Url.Page("/Register", new { area = "Applicant" })" class="btn-flat blue-text">
+            @await T.GetAsync("Payment.RegisterAnother")
+        </a>
+    </div>
+</div>

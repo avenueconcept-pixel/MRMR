@@ -1,0 +1,53 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Payment.ManualModel
+@{
+    Layout = "Layouts/_PublicLayout";
+    ViewData["Title"] = await T.GetAsync("Payment.ManualTitle");
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Payment.ManualTitle")</span>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel red lighten-4"><span>@Model.AlertMessageContent</span></div>
+        }
+
+        @* Bank Details *@
+        <div class="card blue lighten-5 mb-4">
+            <div class="card-content">
+                <span class="card-title blue-text text-darken-2">@await T.GetAsync("Payment.BankDetails")</span>
+                <table>
+                    <tbody>
+                        <tr><td>@await T.GetAsync("Payment.BankName")</td><td><strong>@Model.BankName</strong></td></tr>
+                        <tr><td>@await T.GetAsync("Payment.AccountName")</td><td><strong>@Model.AccountName</strong></td></tr>
+                        <tr><td>@await T.GetAsync("Payment.AccountNo")</td><td><strong>@Model.AccountNo</strong></td></tr>
+                        <tr><td>@await T.GetAsync("Payment.Amount")</td><td><strong class="red-text">RM @Model.Amount.ToString("N2")</strong></td></tr>
+                        <tr><td>@await T.GetAsync("Payment.Reference")</td><td><strong>@Model.ApplicationId</strong></td></tr>
+                    </tbody>
+                </table>
+                <p class="grey-text caption mt-2">@Model.ReferenceFormat</p>
+            </div>
+        </div>
+
+        @* Slip Upload *@
+        <h6>@await T.GetAsync("Payment.UploadSlip")</h6>
+        <form method="post" asp-page-handler="UploadSlip" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div class="file-field input-field">
+                <div class="btn blue darken-3">
+                    <span>@await T.GetAsync("Payment.ChooseFile")</span>
+                    <input type="file" id="fileSlip" name="fileSlip" accept=".jpg,.jpeg,.png,.pdf" required />
+                </div>
+                <div class="file-path-wrapper">
+                    <input class="file-path validate" type="text" placeholder="@await T.GetAsync("Payment.SlipPlaceholder")" />
+                </div>
+            </div>
+            <p class="grey-text caption">@await T.GetAsync("Payment.SlipNote")</p>
+            <button type="submit" class="btn green darken-2 waves-effect waves-light mt-2">
+                <i class="ri ri-upload-line me-1"></i>@await T.GetAsync("Payment.SubmitSlip")
+            </button>
+        </form>
+    </div>
+</div>
