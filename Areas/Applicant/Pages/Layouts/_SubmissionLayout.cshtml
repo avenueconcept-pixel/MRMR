@@ -7,6 +7,8 @@
 
 <div class="row mt-4">
     @* Side navigation *@
+    @if (ViewData["HideSideNav"] == null)
+    {
     <div class="col s12 m3">
         <ul class="collection submission-sidenav">
             <li class="collection-item @SectionNavClass("SectionA", submission?.SectionAComplete)">
@@ -116,9 +118,10 @@
             </p>
         }
     </div>
+    } @* end HideSideNav check *@
 
     @* Section content *@
-    <div class="col s12 m9">
+    <div class="col s12 @(ViewData["HideSideNav"] != null ? "m12" : "m9")">
         @RenderBody()
     </div>
 </div>

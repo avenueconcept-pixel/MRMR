@@ -1,0 +1,99 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SectionLModel
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.SectionL.Title");
+    bool locked = Model.CurrentApplication?.IsFinalSubmitted == true;
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Submission.SectionL.Title")</span>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionL.Desc")</p>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "success" ? "green" : "red") lighten-4 mb-3">
+                @Model.AlertMessageContent
+            </div>
+        }
+
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+
+            <div class="card blue-grey lighten-5 mb-3">
+                <div class="card-content">
+                    <p class="blue-grey-text text-darken-2">@await T.GetAsync("Submission.SectionL.Preamble")</p>
+                </div>
+            </div>
+
+            @for (int i = 1; i <= 6; i++)
+            {
+                var propName  = $"Box{i}";
+                var isChecked = i switch { 1 => Model.Box1, 2 => Model.Box2, 3 => Model.Box3,
+                                           4 => Model.Box4, 5 => Model.Box5, _ => Model.Box6 };
+                <div class="row mb-1">
+                    <div class="col s12">
+                        <label>
+                            <input type="checkbox" name="@propName" value="true"
+                                   @(isChecked ? "checked" : "") @(locked ? "disabled" : "") />
+                            <span>@await T.GetAsync($"Submission.SectionL.Box{i}")</span>
+                        </label>
+                        @* Hidden field ensures unchecked boxes POST as false *@
+                        @if (!locked)
+                        {
+                            <input type="hidden" name="@propName" value="false" />
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="divider my-3"></div>
+
+            <p class="blue-grey-text text-darken-2 mb-2"><strong>@await T.GetAsync("Submission.SectionL.SignatureBlock")</strong></p>
+            <div class="row">
+                <div class="input-field col s12 m5">
+                    <input id="DeclarantName" type="text" name="DeclarantName"
+                           value="@Model.DeclarantName" @(locked ? "disabled" : "") />
+                    <label for="DeclarantName" class="@(!string.IsNullOrEmpty(Model.DeclarantName) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionL.DeclarantName") *
+                    </label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="Designation" type="text" name="Designation"
+                           value="@Model.Designation" @(locked ? "disabled" : "") />
+                    <label for="Designation" class="@(!string.IsNullOrEmpty(Model.Designation) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionL.Designation")
+                    </label>
+                </div>
+                <div class="input-field col s12 m3">
+                    <input id="DeclarationDate" type="date" name="DeclarationDate"
+                           value="@Model.DeclarationDate" @(locked ? "disabled" : "") />
+                    <label for="DeclarationDate" class="@(!string.IsNullOrEmpty(Model.DeclarationDate) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionL.Date")
+                    </label>
+                </div>
+            </div>
+
+            @if (!locked)
+            {
+                <div class="row mt-3">
+                    <div class="col s12 right-align">
+                        <a asp-area="Applicant" asp-page="/Submission/SectionK"
+                           asp-route-applicationId="@Model.ApplicationId"
+                           class="btn-flat grey-text waves-effect mr-2">
+                            <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Submission.Back")
+                        </a>
+                        <button type="submit" asp-page-handler="SaveDraft" class="btn-flat blue-text waves-effect mr-2">
+                            <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Submission.SaveDraft")
+                        </button>
+                        <button type="submit" asp-page-handler="SaveNext" class="btn blue darken-3 waves-effect waves-light">
+                            @await T.GetAsync("Submission.SaveNext") <i class="ri ri-arrow-right-line ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </form>
+    </div>
+</div>

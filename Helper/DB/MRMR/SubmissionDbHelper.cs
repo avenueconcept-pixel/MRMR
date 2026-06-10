@@ -215,4 +215,88 @@ public class SubmissionDbHelper : DbHelper
             await _db.AwardCategories
                 .Include(c => c.Criteria.Where(cr => cr.IsActive).OrderBy(cr => cr.DisplayOrder))
                 .FirstOrDefaultAsync(c => c.Id == categoryId));
+
+    // ── Section K — Application Documents ──
+
+    public async Task<List<ApplicationDocument>> GetApplicationDocumentsAsync(int applicationDbId)
+        => await ExecuteAsync(async () =>
+            await _db.ApplicationDocuments
+                .Where(d => d.ApplicationId == applicationDbId)
+                .OrderBy(d => d.DocumentType)
+                .ThenBy(d => d.UploadedAt)
+                .ToListAsync());
+
+    public async Task<ApplicationDocument?> GetApplicationDocumentAsync(int documentId)
+        => await ExecuteAsync(async () =>
+            await _db.ApplicationDocuments.FindAsync(documentId));
+
+    public async Task<ApplicationDocument?> GetDocumentByTypeAsync(int applicationDbId, string documentType)
+        => await ExecuteAsync(async () =>
+            await _db.ApplicationDocuments
+                .Where(d => d.ApplicationId == applicationDbId && d.DocumentType == documentType)
+                .OrderByDescending(d => d.UploadedAt)
+                .FirstOrDefaultAsync());
+
+    public async Task<ApplicationDocument> InsertApplicationDocumentAsync(ApplicationDocument doc)
+        => await ExecuteAsync(async () =>
+        {
+            doc.CreatedAt  = DateTime.UtcNow;
+            doc.UpdatedAt  = DateTime.UtcNow;
+            doc.UploadedAt = DateTime.UtcNow;
+            _db.ApplicationDocuments.Add(doc);
+            await _db.SaveChangesAsync();
+            return doc;
+        });
+
+    public async Task DeleteApplicationDocumentRecordAsync(int documentId)
+        => await ExecuteAsync(async () =>
+        {
+            var doc = await _db.ApplicationDocuments.FindAsync(documentId);
+            if (doc != null)
+            {
+                _db.ApplicationDocuments.Remove(doc);
+                await _db.SaveChangesAsync();
+            }
+        });
+
+    public async Task<bool> AreRequiredDocumentsCompleteAsync(int applicationDbId, string applicationType)
+        => await ExecuteAsync(async () =>
+        {
+            var uploaded = await _db.ApplicationDocuments
+                .Where(d => d.ApplicationId == applicationDbId)
+                .Select(d => d.DocumentType)
+                .ToListAsync();
+
+            var required = applicationType == "Corporate"
+                ? DocumentTypeConstants.RequiredCorporate
+                : DocumentTypeConstants.RequiredIndividual;
+
+            return required.All(r => uploaded.Contains(r));
+        });
+
+    // ── Section M — Final Submit ──
+
+    public async Task FinalSubmitAsync(int applicationDbId)
+        => await ExecuteAsync(async () =>
+        {
+            var app = await _db.Applications
+                .FirstOrDefaultAsync(a => a.Id == applicationDbId);
+            var sub = await _db.ApplicationSubmissions
+                .FirstOrDefaultAsync(s => s.ApplicationId == applicationDbId);
+
+            if (app != null)
+            {
+                app.IsFinalSubmitted = true;
+                app.SubmittedAt      = DateTime.UtcNow;
+                app.Status           = nameof(ApplicationStatus.SubmissionCompleted);
+                app.UpdatedAt        = DateTime.UtcNow;
+            }
+            if (sub != null)
+            {
+                sub.IsFinalSubmitted = true;
+                sub.UpdatedAt        = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+        });
 }

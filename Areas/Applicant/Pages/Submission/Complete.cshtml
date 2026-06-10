@@ -1,0 +1,34 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.CompleteModel
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.Complete.Title");
+}
+
+<div class="row" style="margin-top: 60px;">
+    <div class="col s12 m8 offset-m2 l6 offset-l3">
+        <div class="card center-align applicant-card">
+            <div class="card-content" style="padding: 48px 32px;">
+                <i class="ri ri-checkbox-circle-line green-text" style="font-size: 72px;"></i>
+                <h5 class="mt-2 mb-1">@await T.GetAsync("Submission.Complete.Title")</h5>
+                <p class="grey-text">@await T.GetAsync("Submission.Complete.Subtitle")</p>
+
+                <div class="card blue-grey lighten-5 left-align mt-3">
+                    <div class="card-content">
+                        <p><strong>@await T.GetAsync("Submission.SectionM.AppId"):</strong>
+                            <span class="blue-text">@Model.ApplicationId</span></p>
+                        <p><strong>@await T.GetAsync("Submission.Complete.SubmittedAt"):</strong>
+                            @Model.CurrentApplication?.SubmittedAt?.ToString("dd MMM yyyy, hh:mm tt") UTC</p>
+                    </div>
+                </div>
+
+                <p class="grey-text mt-3">@await T.GetAsync("Submission.Complete.NextSteps")</p>
+
+                <a asp-area="Applicant" asp-page="/Dashboard"
+                   class="btn blue darken-3 waves-effect waves-light mt-2">
+                    <i class="ri ri-home-4-line me-1"></i>@await T.GetAsync("Submission.Complete.BackToDashboard")
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

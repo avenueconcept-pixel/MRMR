@@ -1,0 +1,128 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SectionJModel
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.SectionJ.Title");
+    bool locked = Model.CurrentApplication?.IsFinalSubmitted == true;
+}
+
+@* Reusable introducer form block — called twice (Proposer + Seconder) *@
+@{
+    async Task IntroducerBlock(string role, string labelKey,
+        string fullName, string nric, string contact, string email,
+        string membership, string designation, string org)
+    {
+        <div class="card blue-grey lighten-5 mb-3">
+            <div class="card-content">
+                <span class="card-title blue-grey-text text-darken-2">@await T.GetAsync(labelKey)</span>
+                <div class="row">
+                    <div class="input-field col s12 m6">
+                        <input id="@(role)FullName" type="text" name="@(role)FullName"
+                               value="@fullName" @(locked ? "disabled" : "") required />
+                        <label for="@(role)FullName" class="@(!string.IsNullOrEmpty(fullName) ? "active" : "")">
+                            @await T.GetAsync("Submission.SectionJ.FullName") *
+                        </label>
+                    </div>
+                    <div class="input-field col s12 m6">
+                        <input id="@(role)Nric" type="text" name="@(role)Nric"
+                               value="@nric" @(locked ? "disabled" : "") required />
+                        <label for="@(role)Nric" class="@(!string.IsNullOrEmpty(nric) ? "active" : "")">
+                            @await T.GetAsync("Submission.SectionJ.Nric") *
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s12 m4">
+                        <input id="@(role)ContactNo" type="tel" name="@(role)ContactNo"
+                               value="@contact" @(locked ? "disabled" : "") />
+                        <label for="@(role)ContactNo" class="@(!string.IsNullOrEmpty(contact) ? "active" : "")">
+                            @await T.GetAsync("Submission.SectionJ.ContactNo")
+                        </label>
+                    </div>
+                    <div class="input-field col s12 m4">
+                        <input id="@(role)Email" type="email" name="@(role)Email"
+                               value="@email" @(locked ? "disabled" : "") />
+                        <label for="@(role)Email" class="@(!string.IsNullOrEmpty(email) ? "active" : "")">
+                            @await T.GetAsync("Submission.SectionJ.Email")
+                        </label>
+                    </div>
+                    <div class="input-field col s12 m4">
+                        <input id="@(role)MembershipNo" type="text" name="@(role)MembershipNo"
+                               value="@membership" @(locked ? "disabled" : "") />
+                        <label for="@(role)MembershipNo" class="@(!string.IsNullOrEmpty(membership) ? "active" : "")">
+                            @await T.GetAsync("Submission.SectionJ.MembershipNo")
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s12 m6">
+                        <input id="@(role)Designation" type="text" name="@(role)Designation"
+                               value="@designation" @(locked ? "disabled" : "") />
+                        <label for="@(role)Designation" class="@(!string.IsNullOrEmpty(designation) ? "active" : "")">
+                            @await T.GetAsync("Submission.SectionJ.Designation")
+                        </label>
+                    </div>
+                    <div class="input-field col s12 m6">
+                        <input id="@(role)Organization" type="text" name="@(role)Organization"
+                               value="@org" @(locked ? "disabled" : "") />
+                        <label for="@(role)Organization" class="@(!string.IsNullOrEmpty(org) ? "active" : "")">
+                            @await T.GetAsync("Submission.SectionJ.Organization")
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Submission.SectionJ.Title")</span>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionJ.Desc")</p>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "success" ? "green" : "red") lighten-4">
+                @Model.AlertMessageContent
+            </div>
+        }
+
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+
+            @{ await IntroducerBlock("Proposer", "Submission.SectionJ.Proposer",
+                Model.ProposerFullName, Model.ProposerNric, Model.ProposerContactNo,
+                Model.ProposerEmail, Model.ProposerMembershipNo,
+                Model.ProposerDesignation, Model.ProposerOrganization); }
+
+            @{ await IntroducerBlock("Seconder", "Submission.SectionJ.Seconder",
+                Model.SeconderFullName, Model.SeconderNric, Model.SeconderContactNo,
+                Model.SeconderEmail, Model.SeconderMembershipNo,
+                Model.SeconderDesignation, Model.SeconderOrganization); }
+
+            @if (!locked)
+            {
+                <div class="row mt-3">
+                    <div class="col s12 right-align">
+                        @{
+                            var prevSection = Model.CurrentApplication?.ApplicationType == "Corporate"
+                                ? "/Submission/SectionI" : "/Submission/SectionH";
+                        }
+                        <a asp-area="Applicant" asp-page="@prevSection"
+                           asp-route-applicationId="@Model.ApplicationId"
+                           class="btn-flat grey-text waves-effect mr-2">
+                            <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Submission.Back")
+                        </a>
+                        <button type="submit" asp-page-handler="SaveDraft" class="btn-flat blue-text waves-effect mr-2">
+                            <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Submission.SaveDraft")
+                        </button>
+                        <button type="submit" asp-page-handler="SaveNext" class="btn blue darken-3 waves-effect waves-light">
+                            @await T.GetAsync("Submission.SaveNext") <i class="ri ri-arrow-right-line ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </form>
+    </div>
+</div>

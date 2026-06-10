@@ -1,0 +1,155 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SectionMModel
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.SectionM.Title");
+    bool alreadySubmitted = Model.CurrentApplication?.IsFinalSubmitted == true;
+    var msgConfirmTitle = await T.GetAsync("Submission.SectionM.ConfirmTitle");
+    var msgConfirmText  = await T.GetAsync("Submission.SectionM.ConfirmText");
+    var msgConfirmYes   = await T.GetAsync("Submission.SectionM.ConfirmYes");
+    var msgNo           = await T.GetAsync("Common.No");
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Submission.SectionM.Title")</span>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionM.Desc")</p>
+
+        @if (alreadySubmitted)
+        {
+            <div class="card-panel green lighten-4 mb-3">
+                <i class="ri ri-checkbox-circle-line me-1"></i>
+                @await T.GetAsync("Submission.SectionM.AlreadySubmitted")
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel red lighten-4 mb-3">@Model.AlertMessageContent</div>
+        }
+
+        <div class="card blue-grey lighten-5 mb-3">
+            <div class="card-content">
+                <div class="row mb-0">
+                    <div class="col s6 m3">
+                        <p class="grey-text mb-0"><small>@await T.GetAsync("Submission.SectionM.AppId")</small></p>
+                        <p class="fw-bold mb-0">@Model.ApplicationId</p>
+                    </div>
+                    <div class="col s6 m3">
+                        <p class="grey-text mb-0"><small>@await T.GetAsync("Submission.SectionM.Category")</small></p>
+                        <p class="fw-bold mb-0">@Model.CurrentApplication?.AwardCategory?.Name</p>
+                    </div>
+                    <div class="col s6 m3">
+                        <p class="grey-text mb-0"><small>@await T.GetAsync("Submission.SectionM.Type")</small></p>
+                        <p class="fw-bold mb-0">@Model.CurrentApplication?.ApplicationType</p>
+                    </div>
+                    <div class="col s6 m3">
+                        <p class="grey-text mb-0"><small>@await T.GetAsync("Submission.SectionM.Applicant")</small></p>
+                        <p class="fw-bold mb-0">@Model.CurrentApplication?.Registrant?.FullName</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h6 class="blue-grey-text text-darken-2 mb-2 fw-bold">
+            @await T.GetAsync("Submission.SectionM.ChecklistTitle")
+        </h6>
+
+        <table class="striped">
+            <tbody>
+                @foreach (var stype in Model.Sections.Where(s => !s.Hidden))
+                {
+                    <tr>
+                        <td>
+                            @if (stype.IsComplete)
+                            {
+                                <i class="ri ri-checkbox-circle-line green-text me-2"></i>
+                            }
+                            else
+                            {
+                                <i class="ri ri-error-warning-line red-text me-2"></i>
+                            }
+                            @stype.Label
+                        </td>
+                        <td class="right-align">
+                            @if (stype.IsComplete)
+                            {
+                                <span class="badge green white-text" style="float:none;">@await T.GetAsync("Submission.SectionM.Complete")</span>
+                            }
+                            else
+                            {
+                                <a asp-area="Applicant" asp-page="@stype.PagePath"
+                                   asp-route-applicationId="@Model.ApplicationId"
+                                   class="badge red white-text" style="float:none; text-decoration:none;">
+                                    @await T.GetAsync("Submission.SectionM.Incomplete")
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!alreadySubmitted)
+        {
+            @if (!Model.AllComplete)
+            {
+                <div class="card-panel orange lighten-4 mt-3">
+                    <i class="ri ri-error-warning-line me-1"></i>
+                    @await T.GetAsync("Submission.SectionM.IncompleteWarning")
+                </div>
+            }
+
+            <div class="row mt-4">
+                <div class="col s12 right-align">
+                    <a asp-area="Applicant" asp-page="/Submission/SectionL"
+                       asp-route-applicationId="@Model.ApplicationId"
+                       class="btn-flat grey-text waves-effect mr-2">
+                        <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Submission.Back")
+                    </a>
+
+                    @if (Model.AllComplete)
+                    {
+                        <button type="button" onclick="confirmFinalSubmit()"
+                                class="btn red darken-2 waves-effect waves-light">
+                            <i class="ri ri-send-plane-line me-1"></i>
+                            @await T.GetAsync("Submission.SectionM.SubmitBtn")
+                        </button>
+
+                        <form id="finalSubmitForm" method="post" asp-page-handler="FinalSubmit" style="display:none;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+                        </form>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn red darken-2 waves-effect waves-light" disabled>
+                            <i class="ri ri-send-plane-line me-1"></i>
+                            @await T.GetAsync("Submission.SectionM.SubmitBtn")
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+function confirmFinalSubmit() {
+    Swal.fire({
+        title:             '@Html.Raw(msgConfirmTitle)',
+        text:              '@Html.Raw(msgConfirmText)',
+        icon:              'warning',
+        showCancelButton:  true,
+        confirmButtonText: '@Html.Raw(msgConfirmYes)',
+        cancelButtonText:  '@Html.Raw(msgNo)',
+        confirmButtonColor: '#c62828'
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            document.getElementById('finalSubmitForm').submit();
+        }
+    });
+}
+</script>
+}

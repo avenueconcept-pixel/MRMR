@@ -1,0 +1,315 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SectionKModel
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.SectionK.Title");
+    bool locked = Model.CurrentApplication?.IsFinalSubmitted == true;
+    string appId = Model.ApplicationId;
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Submission.SectionK.Title")</span>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionK.Desc")</p>
+        <p class="grey-text text-darken-1">
+            <i class="ri ri-information-line me-1"></i>
+            @await T.GetAsync("Submission.SectionK.AllowedTypes")
+            &nbsp;|&nbsp;
+            @await T.GetAsync("Submission.SectionK.MaxSize")
+        </p>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "success" ? "green" : "red") lighten-4 mb-3">
+                @Model.AlertMessageContent
+            </div>
+        }
+
+        @Html.AntiForgeryToken()
+
+        @{
+            var required = Model.Slots.Where(s => s.IsRequired).ToList();
+            var optional = Model.Slots.Where(s => !s.IsRequired).ToList();
+        }
+
+        <h6 class="blue-grey-text text-darken-2 mb-2 mt-3 fw-bold">
+            @await T.GetAsync("Submission.SectionK.RequiredDocuments")
+        </h6>
+
+        <table class="striped responsive-table">
+            <thead>
+                <tr>
+                    <th>@await T.GetAsync("Submission.SectionK.Col.Document")</th>
+                    <th>@await T.GetAsync("Submission.SectionK.Col.Status")</th>
+                    <th>@await T.GetAsync("Submission.SectionK.Col.Filename")</th>
+                    <th>@await T.GetAsync("Submission.SectionK.Col.UploadedAt")</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var slot in required)
+                {
+                    await RenderDocumentRow(slot, locked, appId);
+                }
+            </tbody>
+        </table>
+
+        <h6 class="blue-grey-text text-darken-2 mb-2 mt-4 fw-bold">
+            @await T.GetAsync("Submission.SectionK.SupportingDocuments")
+        </h6>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionK.SupportingDesc")</p>
+
+        <table class="striped responsive-table">
+            <thead>
+                <tr>
+                    <th>@await T.GetAsync("Submission.SectionK.Col.Document")</th>
+                    <th>@await T.GetAsync("Submission.SectionK.Col.Status")</th>
+                    <th>@await T.GetAsync("Submission.SectionK.Col.Filename")</th>
+                    <th>@await T.GetAsync("Submission.SectionK.Col.UploadedAt")</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var slot in optional)
+                {
+                    await RenderDocumentRow(slot, locked, appId);
+                }
+            </tbody>
+        </table>
+
+        @if (!locked)
+        {
+            <div class="row mt-4">
+                <div class="col s12 right-align">
+                    <form method="post" asp-page-handler="Back" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ApplicationId" value="@appId" />
+                        <button type="submit" class="btn-flat grey-text waves-effect mr-2">
+                            <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Submission.Back")
+                        </button>
+                    </form>
+                    <form method="post" asp-page-handler="SaveNext" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ApplicationId" value="@appId" />
+                        <button type="submit" class="btn blue darken-3 waves-effect waves-light"
+                                @(!Model.RequiredComplete ? "disabled" : "")>
+                            @await T.GetAsync("Submission.SaveNext")
+                            <i class="ri ri-arrow-right-line ms-1"></i>
+                        </button>
+                    </form>
+                    @if (!Model.RequiredComplete)
+                    {
+                        <p class="red-text mt-1">
+                            <small>@await T.GetAsync("Submission.SectionK.RequiredIncomplete")</small>
+                        </p>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    async Task RenderDocumentRow(
+        MyApp.Areas.Applicant.Pages.Submission.DocumentSlot slot,
+        bool locked,
+        string appId)
+    {
+        var doc     = slot.Uploaded;
+        var hasDoc  = doc != null;
+        var docType = slot.DocType;
+        var inputId = $"file-input-{docType.Replace("_", "-")}";
+
+        <tr id="row-@docType.Replace("_", "-")">
+            <td>
+                @await T.GetAsync(slot.DisplayKey)
+                @if (slot.IsRequired)
+                {
+                    <span class="badge red white-text ml-1" style="float:none;font-size:10px;">
+                        @await T.GetAsync("Submission.SectionK.Required")
+                    </span>
+                }
+            </td>
+            <td>
+                @if (!hasDoc)
+                {
+                    <span class="grey-text">—</span>
+                }
+                else
+                {
+                    var vStatus = doc!.VerificationStatus;
+                    var badgeClass = vStatus switch
+                    {
+                        "Verified" => "green",
+                        "Rejected" => "red",
+                        _          => "orange"
+                    };
+                    <span class="badge @badgeClass white-text" style="float:none;">@vStatus</span>
+                }
+            </td>
+            <td>
+                @if (hasDoc)
+                {
+                    <a href="/@doc!.FilePath" target="_blank" class="blue-text">
+                        <i class="ri ri-file-line me-1"></i>
+                        @(doc.OriginalFilename.Length > 30
+                            ? doc.OriginalFilename[..27] + "..."
+                            : doc.OriginalFilename)
+                    </a>
+                    if (doc.FileSizeBytes.HasValue)
+                    {
+                        <small class="grey-text"> (@(doc.FileSizeBytes / 1024) KB)</small>
+                    }
+                }
+                else
+                {
+                    <span class="grey-text">@await T.GetAsync("Submission.SectionK.NotUploaded")</span>
+                }
+            </td>
+            <td>
+                @if (hasDoc)
+                {
+                    @doc!.UploadedAt.ToString("dd MMM yyyy")
+                }
+            </td>
+            <td class="right-align">
+                @if (!locked)
+                {
+                    <input type="file"
+                           id="@inputId"
+                           accept=".pdf,.jpg,.jpeg,.png"
+                           style="display:none;"
+                           onchange="uploadDocument('@docType', '@appId', this)" />
+
+                    <button type="button"
+                            class="btn-small @(hasDoc ? "blue-grey" : "blue") darken-2 waves-effect waves-light"
+                            onclick="document.getElementById('@inputId').click()">
+                        <i class="ri @(hasDoc ? "ri-refresh-line" : "ri-upload-2-line") me-1"></i>
+                        @if (hasDoc)
+                        { @await T.GetAsync("Submission.SectionK.ReUpload") }
+                        else
+                        { @await T.GetAsync("Submission.SectionK.Upload") }
+                    </button>
+
+                    @if (hasDoc && doc!.VerificationStatus != "Verified")
+                    {
+                        <button type="button"
+                                class="btn-small red lighten-1 waves-effect waves-light ml-1"
+                                onclick="deleteDocument(@doc.Id, '@appId')">
+                            <i class="ri ri-delete-bin-line"></i>
+                        </button>
+                    }
+                }
+
+                <div id="progress-@docType.Replace("_", "-")" style="display:none; margin-top:4px;">
+                    <div class="progress" style="margin:0;">
+                        <div id="pbar-@docType.Replace("_", "-")"
+                             class="determinate blue"
+                             style="width:0%;"></div>
+                    </div>
+                    <small class="grey-text">@await T.GetAsync("Submission.SectionK.Uploading")</small>
+                </div>
+            </td>
+        </tr>
+    }
+}
+
+@{
+    var msgUploadSuccess = await T.GetAsync("Submission.SectionK.UploadSuccess");
+    var msgUploadFailed  = await T.GetAsync("Submission.SectionK.UploadFailed");
+    var msgDeleteConfirm = await T.GetAsync("Submission.SectionK.DeleteConfirm");
+    var msgDeleteSuccess = await T.GetAsync("Submission.SectionK.DeleteSuccess");
+    var msgDeleteFailed  = await T.GetAsync("Submission.SectionK.DeleteFailed");
+    var msgConfirmDelete = await T.GetAsync("Common.ConfirmDelete");
+    var msgYes           = await T.GetAsync("Common.Yes");
+    var msgNo            = await T.GetAsync("Common.No");
+}
+@section PageScripts {
+<script>
+var antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+function uploadDocument(docType, appId, inputEl) {
+    var file = inputEl.files[0];
+    if (!file) return;
+
+    var safeId      = docType.replace(/_/g, '-');
+    var progressWrap = document.getElementById('progress-' + safeId);
+    var progressBar  = document.getElementById('pbar-'     + safeId);
+
+    progressWrap.style.display = 'block';
+    progressBar.style.width    = '0%';
+
+    var formData = new FormData();
+    formData.append('__RequestVerificationToken', antiForgeryToken);
+    formData.append('ApplicationId',             appId);
+    formData.append('UploadFile',                file);
+    formData.append('UploadDocumentType',        docType);
+
+    var xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable)
+            progressBar.style.width = Math.round(e.loaded / e.total * 100) + '%';
+    });
+
+    xhr.addEventListener('load', function() {
+        progressWrap.style.display = 'none';
+        try {
+            var result = JSON.parse(xhr.responseText);
+            if (result.success) {
+                M.toast({ html: '<i class="ri ri-check-line me-1"></i>@Html.Raw(msgUploadSuccess)', classes: 'green' });
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                M.toast({ html: result.message || '@Html.Raw(msgUploadFailed)', classes: 'red' });
+            }
+        } catch(e) {
+            M.toast({ html: '@Html.Raw(msgUploadFailed)', classes: 'red' });
+        }
+    });
+
+    xhr.addEventListener('error', function() {
+        progressWrap.style.display = 'none';
+        M.toast({ html: '@Html.Raw(msgUploadFailed)', classes: 'red' });
+    });
+
+    xhr.open('POST', '?handler=Upload&applicationId=' + encodeURIComponent(appId));
+    xhr.send(formData);
+}
+
+function deleteDocument(docId, appId) {
+    Swal.fire({
+        title:             '@Html.Raw(msgConfirmDelete)',
+        text:              '@Html.Raw(msgDeleteConfirm)',
+        icon:              'warning',
+        showCancelButton:  true,
+        confirmButtonText: '@Html.Raw(msgYes)',
+        cancelButtonText:  '@Html.Raw(msgNo)',
+        confirmButtonColor: '#f44336'
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+
+        var formData = new FormData();
+        formData.append('__RequestVerificationToken', antiForgeryToken);
+        formData.append('ApplicationId',             appId);
+        formData.append('DeleteDocumentId',          docId);
+
+        fetch('?handler=DeleteDocument&applicationId=' + encodeURIComponent(appId), {
+            method: 'POST',
+            body:   formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                M.toast({ html: '@Html.Raw(msgDeleteSuccess)', classes: 'green' });
+                setTimeout(function() { location.reload(); }, 600);
+            } else {
+                M.toast({ html: data.message || '@Html.Raw(msgDeleteFailed)', classes: 'red' });
+            }
+        })
+        .catch(function() {
+            M.toast({ html: '@Html.Raw(msgDeleteFailed)', classes: 'red' });
+        });
+    });
+}
+</script>
+}
