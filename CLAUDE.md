@@ -242,11 +242,33 @@ public static class ThingConstants
 
 ### Page authorization — inherit from area base model
 ```csharp
-public class IndexModel : AdminPageModel { ... }   // admin
-public class DashboardModel : CustomerPageModel { ... }  // customer
+public class IndexModel : AdminPageModel { ... }        // admin area
+public class DashboardModel : CustomerPageModel { ... } // customer area
+public class DashboardModel : ApplicantPageModel { ... }// applicant portal (auth required)
 ```
 
-Public pages (Login, ForgotPassword, ResetPassword) inherit from `BasePageModel` or `PageModel` directly.
+`ApplicantPageModel` lives in `Helper/ApplicantPageModel.cs` and applies `[Authorize(AuthenticationSchemes = AuthSchemeConstants.Applicant)]`. Use it for all applicant portal pages that require login.
+
+Public pages (Login, ForgotPassword, ResetPassword) inherit from `BasePageModel` or `PageModel` directly. `BasePageModel` exposes `AlertMessageContent`, `AlertMessageType`, and `AlertMessageTitle` — **not** `AlertMessage`.
+
+### Applicant area layouts
+
+`_ViewStart.cshtml` in the Applicant area defaults to `_PublicLayout`. Portal pages (post-login) must override this:
+```cshtml
+@{
+    Layout = "Layouts/_PortalLayout";
+}
+```
+
+### PageModel result helpers — no Controller shorthand
+
+`PageModel` is **not** a controller. `Ok()`, `BadRequest()`, and `StatusCode()` do not exist. Use the result types directly:
+```csharp
+return new OkResult();
+return new BadRequestObjectResult("message");
+return new StatusCodeResult(500);
+return new JsonResult(new { success = true });
+```
 
 ### BackgroundService — scoped services via CreateScope
 
