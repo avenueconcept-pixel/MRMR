@@ -55,3 +55,16 @@
     font-size: 0.8rem;
     font-weight: 500;
 }
+
+/* Submission wizard side-nav */
+.submission-sidenav .collection-item a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+    color: inherit;
+}
+.submission-sidenav .collection-item.active a {
+    color: #fff !important;
+}

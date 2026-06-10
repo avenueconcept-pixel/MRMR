@@ -1,0 +1,156 @@
+@{
+    Layout = "Layouts/_PortalLayout";
+    var applicationId = ViewData["ApplicationId"] as string ?? string.Empty;
+    var submission    = ViewData["Submission"] as MyApp.Models.MRMR.ApplicationSubmission;
+    var appType       = ViewData["ApplicationType"] as string ?? "Individual";
+}
+
+<div class="row mt-4">
+    @* Side navigation *@
+    <div class="col s12 m3">
+        <ul class="collection submission-sidenav">
+            <li class="collection-item @SectionNavClass("SectionA", submission?.SectionAComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionA"
+                   asp-route-applicationId="@applicationId">
+                    A — @await T.GetAsync("Submission.Nav.SectionA")
+                    @SectionIcon(submission?.SectionAComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionB", submission?.SectionBComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionB"
+                   asp-route-applicationId="@applicationId">
+                    B — @await T.GetAsync("Submission.Nav.SectionB")
+                    @SectionIcon(submission?.SectionBComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionC", submission?.SectionCComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionC"
+                   asp-route-applicationId="@applicationId">
+                    C — @await T.GetAsync("Submission.Nav.SectionC")
+                    @SectionIcon(submission?.SectionCComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionD", submission?.SectionDComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionD"
+                   asp-route-applicationId="@applicationId">
+                    D — @await T.GetAsync("Submission.Nav.SectionD")
+                    @SectionIcon(submission?.SectionDComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionE", submission?.SectionEComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionE"
+                   asp-route-applicationId="@applicationId">
+                    E — @await T.GetAsync("Submission.Nav.SectionE")
+                    @SectionIcon(submission?.SectionEComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionF", submission?.SectionFComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionF"
+                   asp-route-applicationId="@applicationId">
+                    F — @await T.GetAsync("Submission.Nav.SectionF")
+                    @SectionIcon(submission?.SectionFComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionG", submission?.SectionGComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionG"
+                   asp-route-applicationId="@applicationId">
+                    G — @await T.GetAsync("Submission.Nav.SectionG")
+                    @SectionIcon(submission?.SectionGComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionH", submission?.SectionHComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionH"
+                   asp-route-applicationId="@applicationId">
+                    H — @await T.GetAsync("Submission.Nav.SectionH")
+                    @SectionIcon(submission?.SectionHComplete)
+                </a>
+            </li>
+            @if (appType == "Corporate")
+            {
+            <li class="collection-item @SectionNavClass("SectionI", submission?.SectionIComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionI"
+                   asp-route-applicationId="@applicationId">
+                    I — @await T.GetAsync("Submission.Nav.SectionI")
+                    @SectionIcon(submission?.SectionIComplete)
+                </a>
+            </li>
+            }
+            <li class="collection-item @SectionNavClass("SectionJ", submission?.SectionJComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionJ"
+                   asp-route-applicationId="@applicationId">
+                    J — @await T.GetAsync("Submission.Nav.SectionJ")
+                    @SectionIcon(submission?.SectionJComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionK", submission?.SectionKComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionK"
+                   asp-route-applicationId="@applicationId">
+                    K — @await T.GetAsync("Submission.Nav.SectionK")
+                    @SectionIcon(submission?.SectionKComplete)
+                </a>
+            </li>
+            <li class="collection-item @SectionNavClass("SectionL", submission?.SectionLComplete)">
+                <a asp-area="Applicant" asp-page="/Submission/SectionL"
+                   asp-route-applicationId="@applicationId">
+                    L — @await T.GetAsync("Submission.Nav.SectionL")
+                    @SectionIcon(submission?.SectionLComplete)
+                </a>
+            </li>
+            <li class="collection-item">
+                <a asp-area="Applicant" asp-page="/Submission/SectionM"
+                   asp-route-applicationId="@applicationId"
+                   class="@(submission?.IsFinalSubmitted == true ? "green-text" : "grey-text")">
+                    M — @await T.GetAsync("Submission.Nav.SectionM")
+                    @if (submission?.IsFinalSubmitted == true)
+                    {
+                        <i class="ri ri-checkbox-circle-fill green-text float-right"></i>
+                    }
+                </a>
+            </li>
+        </ul>
+
+        @if (submission?.LastSavedAt != null)
+        {
+            <p class="grey-text caption center-align">
+                @await T.GetAsync("Submission.LastSaved"): @submission.LastSavedAt?.ToString("dd MMM yyyy HH:mm")
+            </p>
+        }
+    </div>
+
+    @* Section content *@
+    <div class="col s12 m9">
+        @RenderBody()
+    </div>
+</div>
+
+@section VendorStyles {
+    @RenderSection("VendorStyles", required: false)
+}
+
+@section PageStyles {
+    @RenderSection("PageStyles", required: false)
+}
+
+@section VendorScripts {
+    @RenderSection("VendorScripts", required: false)
+}
+
+@section PageScripts {
+    @RenderSection("PageScripts", required: false)
+}
+
+@functions {
+    private string SectionNavClass(string sectionName, bool? complete)
+    {
+        var current = ViewData["CurrentSection"] as string ?? string.Empty;
+        if (current == sectionName) return "active blue darken-3 white-text";
+        return complete == true ? "teal lighten-5" : string.Empty;
+    }
+
+    private Microsoft.AspNetCore.Html.IHtmlContent SectionIcon(bool? complete)
+    {
+        if (complete == true)
+            return new Microsoft.AspNetCore.Html.HtmlString("<i class=\"ri ri-checkbox-circle-fill teal-text float-right\"></i>");
+        return Microsoft.AspNetCore.Html.HtmlString.Empty;
+    }
+}

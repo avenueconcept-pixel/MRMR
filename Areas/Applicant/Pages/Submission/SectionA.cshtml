@@ -1,0 +1,167 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SectionAModel
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.SectionA.Title");
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Submission.SectionA.Title")</span>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionA.Desc")</p>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "success" ? "green" : "red") lighten-4">
+                @Model.AlertMessageContent
+            </div>
+        }
+
+        @if (Model.CurrentApplication?.IsFinalSubmitted == true)
+        {
+            <div class="card-panel grey lighten-3">
+                <i class="ri ri-lock-line"></i> @await T.GetAsync("Submission.Locked")
+            </div>
+        }
+
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+            <input type="hidden" asp-for="SectionA.ApplicationId" />
+
+            <div class="row">
+                @* Salutation *@
+                <div class="input-field col s12 m3">
+                    <select name="SectionA.Title" id="ddlTitle">
+                        @foreach (var titleOpt in new[] { "Dato'", "Datuk", "Datin", "Dr.", "Mr.", "Mrs.", "Ms.", "Prof." })
+                        {
+                            @if (Model.SectionA.Title == titleOpt)
+                            {
+                                <option value="@titleOpt" selected>@titleOpt</option>
+                            }
+                            else
+                            {
+                                <option value="@titleOpt">@titleOpt</option>
+                            }
+                        }
+                    </select>
+                    <label for="ddlTitle">@await T.GetAsync("Submission.SectionA.Title_Field")</label>
+                </div>
+
+                @* Full Name *@
+                <div class="input-field col s12 m9">
+                    <input id="txtFullName" type="text" name="SectionA.FullName"
+                           value="@Model.SectionA.FullName" required />
+                    <label for="txtFullName" class="@(!string.IsNullOrEmpty(Model.SectionA.FullName) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionA.FullName") *
+                    </label>
+                </div>
+            </div>
+
+            <div class="row">
+                @* NRIC / Passport *@
+                <div class="input-field col s12 m6">
+                    <input id="txtNric" type="text" name="SectionA.NricPassport"
+                           value="@Model.SectionA.NricPassport" required />
+                    <label for="txtNric" class="@(!string.IsNullOrEmpty(Model.SectionA.NricPassport) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionA.NricPassport") *
+                    </label>
+                </div>
+
+                @* Contact No *@
+                <div class="input-field col s12 m6">
+                    <input id="txtContactNo" type="tel" name="SectionA.ContactNo"
+                           value="@Model.SectionA.ContactNo" required />
+                    <label for="txtContactNo" class="@(!string.IsNullOrEmpty(Model.SectionA.ContactNo) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionA.ContactNo") *
+                    </label>
+                </div>
+            </div>
+
+            <div class="row">
+                @* Email *@
+                <div class="input-field col s12 m6">
+                    <input id="txtEmail" type="email" name="SectionA.Email"
+                           value="@Model.SectionA.Email" required />
+                    <label for="txtEmail" class="@(!string.IsNullOrEmpty(Model.SectionA.Email) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionA.Email") *
+                    </label>
+                </div>
+
+                @* Membership No *@
+                <div class="input-field col s12 m6">
+                    <input id="txtMembershipNo" type="text" name="SectionA.MembershipNo"
+                           value="@Model.SectionA.MembershipNo" />
+                    <label for="txtMembershipNo" class="@(!string.IsNullOrEmpty(Model.SectionA.MembershipNo) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionA.MembershipNo")
+                    </label>
+                </div>
+            </div>
+
+            <h6 class="mt-3">@await T.GetAsync("Submission.SectionA.Address")</h6>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="txtAddr1" type="text" name="SectionA.AddressLine1"
+                           value="@Model.SectionA.AddressLine1" />
+                    <label for="txtAddr1" class="@(!string.IsNullOrEmpty(Model.SectionA.AddressLine1) ? "active" : "")">
+                        @await T.GetAsync("Submission.AddressLine1")
+                    </label>
+                </div>
+                <div class="input-field col s12">
+                    <input id="txtAddr2" type="text" name="SectionA.AddressLine2"
+                           value="@Model.SectionA.AddressLine2" />
+                    <label for="txtAddr2" class="@(!string.IsNullOrEmpty(Model.SectionA.AddressLine2) ? "active" : "")">
+                        @await T.GetAsync("Submission.AddressLine2")
+                    </label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="txtCity" type="text" name="SectionA.City" value="@Model.SectionA.City" />
+                    <label for="txtCity" class="@(!string.IsNullOrEmpty(Model.SectionA.City) ? "active" : "")">
+                        @await T.GetAsync("Submission.City")
+                    </label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="txtState" type="text" name="SectionA.State" value="@Model.SectionA.State" />
+                    <label for="txtState" class="@(!string.IsNullOrEmpty(Model.SectionA.State) ? "active" : "")">
+                        @await T.GetAsync("Submission.State")
+                    </label>
+                </div>
+                <div class="input-field col s12 m2">
+                    <input id="txtPostcode" type="text" name="SectionA.Postcode" value="@Model.SectionA.Postcode" />
+                    <label for="txtPostcode" class="@(!string.IsNullOrEmpty(Model.SectionA.Postcode) ? "active" : "")">
+                        @await T.GetAsync("Submission.Postcode")
+                    </label>
+                </div>
+                <div class="input-field col s12 m2">
+                    <input id="txtCountry" type="text" name="SectionA.Country"
+                           value="@(Model.SectionA.Country ?? "Malaysia")" />
+                    <label for="txtCountry" class="active">@await T.GetAsync("Submission.Country")</label>
+                </div>
+            </div>
+
+            @if (Model.CurrentApplication?.IsFinalSubmitted != true)
+            {
+                <div class="row mt-3">
+                    <div class="col s12 right-align">
+                        <button type="submit" asp-page-handler="SaveDraft"
+                                class="btn-flat blue-text waves-effect mr-2">
+                            <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Submission.SaveDraft")
+                        </button>
+                        <button type="submit" asp-page-handler="SaveNext"
+                                class="btn blue darken-3 waves-effect waves-light">
+                            @await T.GetAsync("Submission.SaveNext") <i class="ri ri-arrow-right-line ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        M.FormSelect.init(document.querySelectorAll('select'));
+    });
+</script>
+}

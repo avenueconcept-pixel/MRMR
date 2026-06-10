@@ -1,0 +1,170 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SectionBModel
+@using MyApp.Constants.MRMR
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.SectionB.Title");
+    var industries = Enum.GetNames<Industry>();
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Submission.SectionB.Title")</span>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionB.Desc")</p>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "success" ? "green" : "red") lighten-4">
+                @Model.AlertMessageContent
+            </div>
+        }
+
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+
+            <div class="row">
+                <div class="input-field col s12 m8">
+                    <input id="txtCompanyName" type="text" name="SectionB.CompanyName"
+                           value="@Model.SectionB.CompanyName" required />
+                    <label for="txtCompanyName" class="@(!string.IsNullOrEmpty(Model.SectionB.CompanyName) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionB.CompanyName") *
+                    </label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="txtSsmRegNo" type="text" name="SectionB.SsmRegNo"
+                           value="@Model.SectionB.SsmRegNo" />
+                    <label for="txtSsmRegNo" class="@(!string.IsNullOrEmpty(Model.SectionB.SsmRegNo) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionB.SsmRegNo")
+                    </label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12 m4">
+                    <input id="txtIncDate" type="date" name="SectionB.IncorporationDate"
+                           value="@Model.SectionB.IncorporationDate?.ToString("yyyy-MM-dd")" />
+                    <label for="txtIncDate" class="@(Model.SectionB.IncorporationDate != null ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionB.IncorporationDate")
+                    </label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="txtBizContact" type="tel" name="SectionB.ContactNo"
+                           value="@Model.SectionB.ContactNo" />
+                    <label for="txtBizContact" class="@(!string.IsNullOrEmpty(Model.SectionB.ContactNo) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionB.ContactNo")
+                    </label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="txtWebsite" type="url" name="SectionB.Website"
+                           value="@Model.SectionB.Website" placeholder="https://" />
+                    <label for="txtWebsite" class="@(!string.IsNullOrEmpty(Model.SectionB.Website) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionB.Website")
+                    </label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <select name="SectionB.Industry" id="ddlIndustry">
+                        @if (string.IsNullOrEmpty(Model.SectionB.Industry))
+                        {
+                            <option value="" disabled selected>@await T.GetAsync("Submission.Select")</option>
+                        }
+                        else
+                        {
+                            <option value="" disabled>@await T.GetAsync("Submission.Select")</option>
+                        }
+                        @foreach (var ind in industries)
+                        {
+                            @if (Model.SectionB.Industry == ind)
+                            {
+                                <option value="@ind" selected>@ind</option>
+                            }
+                            else
+                            {
+                                <option value="@ind">@ind</option>
+                            }
+                        }
+                    </select>
+                    <label for="ddlIndustry">@await T.GetAsync("Submission.SectionB.Industry")</label>
+                </div>
+                <div class="input-field col s12 m6">
+                    <input id="txtBizNature" type="text" name="SectionB.BusinessNature"
+                           value="@Model.SectionB.BusinessNature" />
+                    <label for="txtBizNature" class="@(!string.IsNullOrEmpty(Model.SectionB.BusinessNature) ? "active" : "")">
+                        @await T.GetAsync("Submission.SectionB.BusinessNature")
+                    </label>
+                </div>
+            </div>
+
+            <h6 class="mt-3">@await T.GetAsync("Submission.SectionB.BusinessAddress")</h6>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="txtBAddr1" type="text" name="SectionB.AddressLine1" value="@Model.SectionB.AddressLine1" />
+                    <label for="txtBAddr1" class="@(!string.IsNullOrEmpty(Model.SectionB.AddressLine1) ? "active" : "")">
+                        @await T.GetAsync("Submission.AddressLine1")
+                    </label>
+                </div>
+                <div class="input-field col s12">
+                    <input id="txtBAddr2" type="text" name="SectionB.AddressLine2" value="@Model.SectionB.AddressLine2" />
+                    <label for="txtBAddr2" class="@(!string.IsNullOrEmpty(Model.SectionB.AddressLine2) ? "active" : "")">
+                        @await T.GetAsync("Submission.AddressLine2")
+                    </label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="txtBCity" type="text" name="SectionB.City" value="@Model.SectionB.City" />
+                    <label for="txtBCity" class="@(!string.IsNullOrEmpty(Model.SectionB.City) ? "active" : "")">
+                        @await T.GetAsync("Submission.City")
+                    </label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input id="txtBState" type="text" name="SectionB.State" value="@Model.SectionB.State" />
+                    <label for="txtBState" class="@(!string.IsNullOrEmpty(Model.SectionB.State) ? "active" : "")">
+                        @await T.GetAsync("Submission.State")
+                    </label>
+                </div>
+                <div class="input-field col s12 m2">
+                    <input id="txtBPostcode" type="text" name="SectionB.Postcode" value="@Model.SectionB.Postcode" />
+                    <label for="txtBPostcode" class="@(!string.IsNullOrEmpty(Model.SectionB.Postcode) ? "active" : "")">
+                        @await T.GetAsync("Submission.Postcode")
+                    </label>
+                </div>
+                <div class="input-field col s12 m2">
+                    <input id="txtBCountry" type="text" name="SectionB.Country"
+                           value="@(Model.SectionB.Country ?? "Malaysia")" />
+                    <label for="txtBCountry" class="active">@await T.GetAsync("Submission.Country")</label>
+                </div>
+            </div>
+
+            @if (Model.CurrentApplication?.IsFinalSubmitted != true)
+            {
+                <div class="row mt-3">
+                    <div class="col s12 right-align">
+                        <a asp-area="Applicant" asp-page="/Submission/SectionA"
+                           asp-route-applicationId="@Model.ApplicationId"
+                           class="btn-flat grey-text waves-effect mr-2">
+                            <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Submission.Back")
+                        </a>
+                        <button type="submit" asp-page-handler="SaveDraft"
+                                class="btn-flat blue-text waves-effect mr-2">
+                            <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Submission.SaveDraft")
+                        </button>
+                        <button type="submit" asp-page-handler="SaveNext"
+                                class="btn blue darken-3 waves-effect waves-light">
+                            @await T.GetAsync("Submission.SaveNext") <i class="ri ri-arrow-right-line ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        M.FormSelect.init(document.querySelectorAll('select'));
+    });
+</script>
+}
