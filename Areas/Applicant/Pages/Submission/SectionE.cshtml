@@ -1,0 +1,113 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SectionEModel
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.SectionE.Title");
+    bool locked = Model.CurrentApplication?.IsFinalSubmitted == true;
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Submission.SectionE.Title")</span>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionE.Desc")</p>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "success" ? "green" : "red") lighten-4">
+                @Model.AlertMessageContent
+            </div>
+        }
+
+        <form method="post" id="sectionEForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+            <input type="hidden" id="KeyAchievements"        name="KeyAchievements"        value="@Html.Raw(Model.KeyAchievements)" />
+            <input type="hidden" id="AwardsRecognition"      name="AwardsRecognition"      value="@Html.Raw(Model.AwardsRecognition)" />
+            <input type="hidden" id="CommunityContributions" name="CommunityContributions" value="@Html.Raw(Model.CommunityContributions)" />
+
+            @* Field 1 — Key Achievements *@
+            <h6 class="mt-3">@await T.GetAsync("Submission.SectionE.KeyAchievements") <span class="red-text">*</span></h6>
+            <p class="grey-text caption">@await T.GetAsync("Submission.SectionE.KeyAchievementsHint")</p>
+            <div id="quill-achievements" class="quill-editor-field" data-target="KeyAchievements"
+                 style="min-height:200px;">@Html.Raw(Model.KeyAchievements)</div>
+            <p class="grey-text caption right-align"><span class="wc-achievements">0</span> @await T.GetAsync("Submission.Words")</p>
+
+            @* Field 2 — Awards & Recognition *@
+            <h6 class="mt-4">@await T.GetAsync("Submission.SectionE.AwardsRecognition")</h6>
+            <p class="grey-text caption">@await T.GetAsync("Submission.SectionE.AwardsRecognitionHint")</p>
+            <div id="quill-awards" class="quill-editor-field" data-target="AwardsRecognition"
+                 style="min-height:150px;">@Html.Raw(Model.AwardsRecognition)</div>
+            <p class="grey-text caption right-align"><span class="wc-awards">0</span> @await T.GetAsync("Submission.Words")</p>
+
+            @* Field 3 — Community Contributions *@
+            <h6 class="mt-4">@await T.GetAsync("Submission.SectionE.CommunityContributions")</h6>
+            <p class="grey-text caption">@await T.GetAsync("Submission.SectionE.CommunityContributionsHint")</p>
+            <div id="quill-community" class="quill-editor-field" data-target="CommunityContributions"
+                 style="min-height:150px;">@Html.Raw(Model.CommunityContributions)</div>
+            <p class="grey-text caption right-align"><span class="wc-community">0</span> @await T.GetAsync("Submission.Words")</p>
+
+            @if (!locked)
+            {
+                <div class="row mt-4">
+                    <div class="col s12 right-align">
+                        <a asp-area="Applicant" asp-page="/Submission/SectionD"
+                           asp-route-applicationId="@Model.ApplicationId"
+                           class="btn-flat grey-text waves-effect mr-2">
+                            <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Submission.Back")
+                        </a>
+                        <button type="submit" asp-page-handler="SaveDraft"
+                                class="btn-flat blue-text waves-effect mr-2">
+                            <i class="ri ri-save-line me-1"></i>@await T.GetAsync("Submission.SaveDraft")
+                        </button>
+                        <button type="submit" asp-page-handler="SaveNext"
+                                class="btn blue darken-3 waves-effect waves-light">
+                            @await T.GetAsync("Submission.SaveNext") <i class="ri ri-arrow-right-line ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+@section VendorStyles {
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" />
+}
+@section VendorScripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+}
+@section PageScripts {
+<script>
+    var toolbarOptions = [
+        ['bold', 'italic', 'underline'],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['clean']
+    ];
+    var locked = @(locked ? "true" : "false");
+
+    function initQuill(containerId, wordCountClass) {
+        var q = new Quill('#' + containerId, {
+            theme: 'snow',
+            modules: { toolbar: locked ? false : { container: toolbarOptions } },
+            readOnly: locked
+        });
+        function countWords() {
+            var text = q.getText().trim();
+            document.querySelector('.' + wordCountClass).textContent = text.length > 0 ? text.split(/\s+/).length : 0;
+        }
+        q.on('text-change', countWords);
+        countWords();
+        return q;
+    }
+
+    var qAchievements = initQuill('quill-achievements', 'wc-achievements');
+    var qAwards       = initQuill('quill-awards',       'wc-awards');
+    var qCommunity    = initQuill('quill-community',    'wc-community');
+
+    document.getElementById('sectionEForm').addEventListener('submit', function () {
+        document.getElementById('KeyAchievements').value        = qAchievements.root.innerHTML;
+        document.getElementById('AwardsRecognition').value      = qAwards.root.innerHTML;
+        document.getElementById('CommunityContributions').value = qCommunity.root.innerHTML;
+    });
+</script>
+}
