@@ -151,4 +151,68 @@ public class SubmissionDbHelper : DbHelper
                 await _db.SaveChangesAsync();
             }
         });
+
+    public async Task<SubmissionSectionJsonb?> GetJsonbSectionAsync(int applicationDbId, string sectionCode)
+        => await ExecuteAsync(async () =>
+            await _db.SubmissionSectionsJsonb
+                .FirstOrDefaultAsync(s =>
+                    s.ApplicationId == applicationDbId
+                    && s.SectionCode == sectionCode));
+
+    public async Task SaveJsonbSectionAsync(int applicationDbId, string sectionCode,
+        string jsonData, bool markComplete)
+        => await ExecuteAsync(async () =>
+        {
+            var existing = await _db.SubmissionSectionsJsonb
+                .FirstOrDefaultAsync(s =>
+                    s.ApplicationId == applicationDbId
+                    && s.SectionCode == sectionCode);
+
+            if (existing == null)
+            {
+                _db.SubmissionSectionsJsonb.Add(new SubmissionSectionJsonb
+                {
+                    ApplicationId = applicationDbId,
+                    SectionCode   = sectionCode,
+                    SectionData   = jsonData,
+                    IsComplete    = markComplete,
+                    CreatedAt     = DateTime.UtcNow,
+                    UpdatedAt     = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                existing.SectionData = jsonData;
+                existing.IsComplete  = markComplete;
+                existing.UpdatedAt   = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync();
+
+            var submission = await _db.ApplicationSubmissions
+                .FirstOrDefaultAsync(s => s.ApplicationId == applicationDbId);
+            if (submission == null) return;
+
+            switch (sectionCode)
+            {
+                case "C": submission.SectionCComplete = markComplete; break;
+                case "D": submission.SectionDComplete = markComplete; break;
+                case "E": submission.SectionEComplete = markComplete; break;
+                case "F": submission.SectionFComplete = markComplete; break;
+                case "G": submission.SectionGComplete = markComplete; break;
+                case "H": submission.SectionHComplete = markComplete; break;
+                case "I": submission.SectionIComplete = markComplete; break;
+                case "J": submission.SectionJComplete = markComplete; break;
+                case "K": submission.SectionKComplete = markComplete; break;
+                case "L": submission.SectionLComplete = markComplete; break;
+            }
+            submission.LastSavedAt = DateTime.UtcNow;
+            submission.UpdatedAt   = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task<AwardCategory?> GetCategoryWithCriteriaAsync(int categoryId)
+        => await ExecuteAsync(async () =>
+            await _db.AwardCategories
+                .Include(c => c.Criteria.Where(cr => cr.IsActive).OrderBy(cr => cr.DisplayOrder))
+                .FirstOrDefaultAsync(c => c.Id == categoryId));
 }

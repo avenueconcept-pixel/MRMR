@@ -1,0 +1,73 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SectionCModel
+@{
+    Layout = "Layouts/_SubmissionLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.SectionC.Title");
+}
+
+<div class="card applicant-card">
+    <div class="card-content">
+        <span class="card-title">@await T.GetAsync("Submission.SectionC.Title")</span>
+        <p class="grey-text">@await T.GetAsync("Submission.SectionC.Desc")</p>
+
+        <div class="card blue lighten-5">
+            <div class="card-content">
+                <span class="card-title blue-text text-darken-2">
+                    @Model.CurrentApplication?.AwardCategory?.Name
+                </span>
+                <p>
+                    <strong>@await T.GetAsync("Submission.SectionC.Type"):</strong>
+                    @Model.CurrentApplication?.ApplicationType
+                </p>
+                @if (!string.IsNullOrEmpty(Model.Category?.Description))
+                {
+                    <p>@Model.Category.Description</p>
+                }
+            </div>
+        </div>
+
+        @if (Model.Category?.Criteria?.Any() == true)
+        {
+            <h6 class="mt-3">@await T.GetAsync("Submission.SectionC.EvaluationCriteria")</h6>
+            <table class="striped">
+                <thead>
+                    <tr>
+                        <th>@await T.GetAsync("Submission.SectionC.Criterion")</th>
+                        <th>@await T.GetAsync("Submission.SectionC.Description")</th>
+                        <th class="right-align">@await T.GetAsync("Submission.SectionC.Weight")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cr in Model.Category.Criteria)
+                    {
+                        <tr>
+                            <td><strong>@cr.CriterionName</strong></td>
+                            <td class="grey-text">@cr.Description</td>
+                            <td class="right-align">@cr.Weight%</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <div class="card-panel green lighten-5 mt-3">
+            <i class="ri ri-checkbox-circle-line green-text me-1"></i>
+            @await T.GetAsync("Submission.SectionC.Confirmed")
+        </div>
+
+        <form method="post" asp-page-handler="Next">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+            <div class="right-align mt-3">
+                <a asp-area="Applicant" asp-page="/Submission/SectionB"
+                   asp-route-applicationId="@Model.ApplicationId"
+                   class="btn-flat grey-text waves-effect mr-2">
+                    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Submission.Back")
+                </a>
+                <button type="submit" class="btn blue darken-3 waves-effect waves-light">
+                    @await T.GetAsync("Submission.Next") <i class="ri ri-arrow-right-line ms-1"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
