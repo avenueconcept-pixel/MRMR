@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using MyApp.Constants;
 using MyApp.Constants.MRMR;
 using MyApp.Data;
 using MyApp.Models.MRMR;
+using AdminUser = MyApp.Models.AdminUser;
 
 namespace MyApp.Helper.DB.MRMR;
 
@@ -442,6 +444,124 @@ public class AdminMrmrDbHelper : DbHelper
             throw new InvalidOperationException(
                 $"Criteria weights must total exactly 100%. Current total: {total}%.");
     }
+
+    // ── Judge Management ──
+
+    public async Task<List<AdminUser>> GetJudgeListAsync()
+        => await ExecuteAsync(async () =>
+        {
+            var judgeRole = await _db.Roles.FirstOrDefaultAsync(r => r.RoleCode == "JUDGE");
+            if (judgeRole == null) return [];
+
+            return await _db.AdminUsers
+                .Where(u => u.RoleId == judgeRole.Id)
+                .OrderBy(u => u.FullName)
+                .ToListAsync();
+        });
+
+    public async Task<List<JudgeCategoryAssignment>> GetJudgeAssignmentsAsync(int judgeId)
+        => await ExecuteAsync(async () =>
+            await _db.JudgeCategoryAssignments
+                .Include(a => a.AwardCategory)
+                .Where(a => a.JudgeId == judgeId && a.IsActive)
+                .ToListAsync());
+
+    public async Task<List<AwardCategory>> GetActiveCategoriesAsync()
+        => await ExecuteAsync(async () =>
+            await _db.AwardCategories
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync());
+
+    public async Task<AdminUser> CreateJudgeAsync(
+        string fullName, string email, string username,
+        string tempPassword, int createdByAdminId)
+        => await ExecuteAsync(async () =>
+        {
+            if (await _db.AdminUsers.AnyAsync(u => u.Email == email))
+                throw new InvalidOperationException("An account with this email already exists.");
+
+            if (await _db.AdminUsers.AnyAsync(u => u.Username == username))
+                throw new InvalidOperationException("This username is already taken.");
+
+            var judgeRole = await _db.Roles.FirstOrDefaultAsync(r => r.RoleCode == "JUDGE")
+                ?? throw new InvalidOperationException(
+                    "Judge role not found. Please ensure a role with RoleCode='JUDGE' exists in the roles table.");
+
+            var judge = new AdminUser
+            {
+                FullName              = fullName,
+                Email                 = email,
+                Username              = username,
+                PasswordHash          = BCrypt.Net.BCrypt.HashPassword(tempPassword),
+                RoleId                = judgeRole.Id,
+                CountryCode           = "MY",
+                Status                = StatusConstants.Active,
+                IsForceChangePassword = true,
+                CreatedAt             = DateTime.UtcNow,
+                CreatedBy             = createdByAdminId.ToString(),
+                UpdatedAt             = DateTime.UtcNow,
+                UpdatedBy             = createdByAdminId.ToString()
+            };
+
+            _db.AdminUsers.Add(judge);
+            await _db.SaveChangesAsync();
+            return judge;
+        });
+
+    public async Task AssignJudgeToCategoriesAsync(
+        int judgeId, List<int> categoryIds, int assignedByAdminId)
+        => await ExecuteAsync(async () =>
+        {
+            foreach (var catId in categoryIds)
+            {
+                var exists = await _db.JudgeCategoryAssignments
+                    .AnyAsync(a => a.JudgeId == judgeId && a.AwardCategoryId == catId);
+
+                if (!exists)
+                {
+                    _db.JudgeCategoryAssignments.Add(new JudgeCategoryAssignment
+                    {
+                        JudgeId         = judgeId,
+                        AwardCategoryId = catId,
+                        AssignedBy      = assignedByAdminId,
+                        AssignedAt      = DateTime.UtcNow,
+                        IsActive        = true
+                    });
+                }
+            }
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task DeactivateJudgeAssignmentAsync(int assignmentId)
+        => await ExecuteAsync(async () =>
+        {
+            var assignment = await _db.JudgeCategoryAssignments.FindAsync(assignmentId)
+                ?? throw new InvalidOperationException("Assignment not found.");
+
+            assignment.IsActive = false;
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task DeactivateJudgeAsync(int judgeId)
+        => await ExecuteAsync(async () =>
+        {
+            var judge = await _db.AdminUsers.FindAsync(judgeId)
+                ?? throw new InvalidOperationException("Judge not found.");
+
+            judge.Status    = StatusConstants.Inactive;
+            judge.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            var assignments = await _db.JudgeCategoryAssignments
+                .Where(a => a.JudgeId == judgeId && a.IsActive)
+                .ToListAsync();
+
+            foreach (var a in assignments)
+                a.IsActive = false;
+
+            await _db.SaveChangesAsync();
+        });
 }
 
 public class MrmrDashboardStats

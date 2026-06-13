@@ -1,0 +1,154 @@
+@page
+@model MyApp.Areas.Admin.Pages.MRMR.Judges.IndexModel
+@using MyApp.Constants
+@{
+    ViewData["Title"]      = "Judge Management";
+    ViewData["ActiveMenu"] = "MRMR_JUDGES";
+}
+
+<div class="row">
+    <div class="col s12">
+        <div class="row valign-wrapper mb-3">
+            <div class="col s12 m8">
+                <h5 class="mb-0"><i class="ri ri-user-star-line me-1"></i>Judge Management</h5>
+            </div>
+            <div class="col s12 m4 right-align">
+                <a asp-page="Create" class="btn blue darken-3 waves-effect waves-light">
+                    <i class="ri ri-add-line me-1"></i>Add Judge
+                </a>
+            </div>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="card-panel green lighten-4 mb-2">
+                <i class="ri ri-checkbox-circle-line me-1 green-text"></i>@TempData["SuccessMessage"]
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="card-panel red lighten-4 mb-2">
+                <i class="ri ri-error-warning-line me-1 red-text"></i>@TempData["ErrorMessage"]
+            </div>
+        }
+
+        @if (!Model.Judges.Any())
+        {
+            <div class="card">
+                <div class="card-content center-align py-4">
+                    <i class="ri ri-user-star-line grey-text" style="font-size:3rem;"></i>
+                    <p class="grey-text">No judges yet. Add the first judge.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <table class="striped responsive-table highlight card" style="padding:0;">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Assigned Categories</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var judge in Model.Judges)
+                    {
+                        var assignments = Model.Assignments.GetValueOrDefault(judge.Id, []);
+                        <tr>
+                            <td><strong>@judge.FullName</strong></td>
+                            <td>@judge.Username</td>
+                            <td>@judge.Email</td>
+                            <td>
+                                <span class="badge @(judge.Status == StatusConstants.Active ? "green" : "grey") white-text"
+                                      style="float:none; font-size:0.75rem;">@judge.Status</span>
+                            </td>
+                            <td>
+                                @if (!assignments.Any())
+                                {
+                                    <span class="grey-text">None</span>
+                                }
+                                else
+                                {
+                                    @foreach (var a in assignments)
+                                    {
+                                        <span class="chip" style="height:24px; line-height:24px; font-size:0.75rem;">
+                                            @a.AwardCategory.Name
+                                            <form method="post" asp-page-handler="RemoveAssignment"
+                                                  id="removeAssignmentForm_@a.Id"
+                                                  style="display:inline;" class="ms-1">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="assignmentId" value="@a.Id" />
+                                                <button type="button"
+                                                        class="btn-flat"
+                                                        style="padding:0; min-width:0; height:auto; line-height:1;"
+                                                        onclick="confirmRemoveAssignment(@a.Id)"
+                                                        title="Remove">
+                                                    <i class="ri ri-close-line" style="font-size:0.9rem; vertical-align:middle;"></i>
+                                                </button>
+                                            </form>
+                                        </span>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                @if (judge.Status == StatusConstants.Active)
+                                {
+                                    <form method="post" asp-page-handler="DeactivateJudge"
+                                          id="deactivateJudgeForm_@judge.Id" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="judgeId" value="@judge.Id" />
+                                        <button type="button"
+                                                class="btn-small red darken-2 waves-effect waves-light"
+                                                onclick="confirmDeactivateJudge(@judge.Id)">
+                                            <i class="ri ri-user-unfollow-line me-1"></i>Deactivate
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+function confirmRemoveAssignment(id) {
+    Swal.fire({
+        title:              'Remove Assignment?',
+        text:               'This judge will no longer be assigned to this category.',
+        icon:               'warning',
+        showCancelButton:   true,
+        confirmButtonText:  'Yes, Remove',
+        cancelButtonText:   'Cancel',
+        confirmButtonColor: '#c62828'
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('removeAssignmentForm_' + id).submit();
+        }
+    });
+}
+
+function confirmDeactivateJudge(id) {
+    Swal.fire({
+        title:              'Deactivate Judge?',
+        text:               'This will deactivate the judge account and remove all category assignments.',
+        icon:               'warning',
+        showCancelButton:   true,
+        confirmButtonText:  'Yes, Deactivate',
+        cancelButtonText:   'Cancel',
+        confirmButtonColor: '#c62828'
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('deactivateJudgeForm_' + id).submit();
+        }
+    });
+}
+</script>
+}
