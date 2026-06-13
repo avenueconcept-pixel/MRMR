@@ -118,7 +118,7 @@ public class CreateModel : AdminPageModel
       Label        = l.LanguageName,
       Value        = existing != null
           ? existing.FirstOrDefault(t => t.LanguageCode == l.LanguageCode)?.BankName ?? string.Empty
-          : Request.Form[$"txtName_{l.LanguageCode}"].ToString(),
+          : (Request.HasFormContentType ? Request.Form[$"txtName_{l.LanguageCode}"].ToString() : string.Empty),
       Placeholder  = placeholder
     }).ToList();
   }
@@ -133,7 +133,7 @@ public class CreateModel : AdminPageModel
       Label        = l.LanguageName,
       Value        = existing != null
           ? existing.FirstOrDefault(t => t.LanguageCode == l.LanguageCode)?.ShortName ?? string.Empty
-          : Request.Form[$"txtShortName_{l.LanguageCode}"].ToString(),
+          : (Request.HasFormContentType ? Request.Form[$"txtShortName_{l.LanguageCode}"].ToString() : string.Empty),
       Placeholder  = placeholder
     }).ToList();
   }
