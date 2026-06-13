@@ -27,3 +27,10 @@ public enum RegistrationResult
     CategoryNotFound,
     Error
 }
+
+public class CriterionScoreInputDto
+{
+    public int     CriterionId { get; set; }
+    public decimal Score       { get; set; }
+    public string? Comment     { get; set; }
+}

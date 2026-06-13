@@ -595,6 +595,100 @@ public class AdminMrmrDbHelper : DbHelper
                 a.JudgeId == judgeId &&
                 a.AwardCategoryId == categoryId &&
                 a.IsActive));
+
+    public async Task<Application?> GetApplicationForJudgeAsync(int applicationId)
+        => await ExecuteAsync(async () =>
+            await _db.Applications
+                .Include(a => a.Registrant)
+                .Include(a => a.AwardCategory)
+                    .ThenInclude(c => c.Criteria.Where(x => x.IsActive).OrderBy(x => x.DisplayOrder))
+                .Include(a => a.Submission)
+                .FirstOrDefaultAsync(a => a.Id == applicationId && a.IsFinalSubmitted));
+
+    public async Task SaveEvaluationDraftAsync(
+        int applicationId, int judgeId,
+        List<(int CriterionId, decimal Score, string? Comment)> scores,
+        string? overallComment, string? recommendation)
+        => await ExecuteAsync(async () =>
+        {
+            var eval = await _db.JudgeEvaluations
+                .Include(e => e.Scores)
+                .FirstOrDefaultAsync(e => e.ApplicationId == applicationId && e.JudgeId == judgeId);
+
+            if (eval == null)
+            {
+                eval = new JudgeEvaluation
+                {
+                    ApplicationId  = applicationId,
+                    JudgeId        = judgeId,
+                    Status         = nameof(EvaluationStatus.Draft),
+                    OverallComment = overallComment,
+                    Recommendation = recommendation,
+                    CreatedAt      = DateTime.UtcNow,
+                    UpdatedAt      = DateTime.UtcNow
+                };
+                _db.JudgeEvaluations.Add(eval);
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                if (eval.Status == nameof(EvaluationStatus.Submitted))
+                    throw new InvalidOperationException("Evaluation already submitted and cannot be modified.");
+
+                eval.OverallComment = overallComment;
+                eval.Recommendation = recommendation;
+                eval.Status         = nameof(EvaluationStatus.Draft);
+                eval.UpdatedAt      = DateTime.UtcNow;
+            }
+
+            foreach (var (criterionId, score, comment) in scores)
+            {
+                var existing  = eval.Scores.FirstOrDefault(s => s.AwardCriterionId == criterionId);
+                var criterion = await _db.AwardCriteria.FindAsync(criterionId);
+                var weighted  = criterion != null ? Math.Round(score * (criterion.Weight / 100m), 4) : (decimal?)null;
+
+                if (existing != null)
+                {
+                    existing.Score         = score;
+                    existing.WeightedScore = weighted;
+                    existing.Comment       = comment;
+                    existing.UpdatedAt     = DateTime.UtcNow;
+                }
+                else
+                {
+                    _db.JudgeScores.Add(new JudgeScore
+                    {
+                        ApplicationId    = applicationId,
+                        JudgeId          = judgeId,
+                        AwardCriterionId = criterionId,
+                        Score            = score,
+                        WeightedScore    = weighted,
+                        Comment          = comment,
+                        CreatedAt        = DateTime.UtcNow,
+                        UpdatedAt        = DateTime.UtcNow
+                    });
+                }
+            }
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task SubmitEvaluationAsync(
+        int applicationId, int judgeId,
+        List<(int CriterionId, decimal Score, string? Comment)> scores,
+        string? overallComment, string? recommendation)
+        => await ExecuteAsync(async () =>
+        {
+            await SaveEvaluationDraftAsync(applicationId, judgeId, scores, overallComment, recommendation);
+
+            var eval = await _db.JudgeEvaluations
+                .FirstOrDefaultAsync(e => e.ApplicationId == applicationId && e.JudgeId == judgeId)
+                ?? throw new InvalidOperationException("Evaluation not found after save.");
+
+            eval.Status      = nameof(EvaluationStatus.Submitted);
+            eval.SubmittedAt = DateTime.UtcNow;
+            eval.UpdatedAt   = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
 }
 
 public class MrmrDashboardStats
