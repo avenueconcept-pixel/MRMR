@@ -14,13 +14,11 @@ public class Routes
   public const string AdminLogs = "/Logs/Index";
   public const string AdminCountry  = "/Countries/Index";
   public const string AdminLanguage    = "/Languages/Index";
-  public const string AdminDepartment  = "/Departments/Index";
   public const string AdminPaymentMethod    = "/PaymentMethods/Index";
   public const string AdminProductCategory  = "/ProductCategories/Index";
   public const string AdminAuditLogs       = "/AuditLogs/Index";
   public const string AdminAuditLogsDetail = "/AuditLogs/Detail";
   public const string AdminState           = "/States/Index";
-  public const string AdminRegion          = "/Regions/Index";
   public const string AdminLocation        = "/Locations/Index";
   public const string AdminRole            = "/Roles/Index";
   public const string AdminMenu            = "/Menus/Index";
@@ -53,6 +51,7 @@ public class Routes
   public const string AdminWalletAdjustments      = "/Wallets/Adjustments";
   public const string AdminSystemSettings         = "/SystemSettings/Index";
   public const string AdminRank                   = "/Ranks/Index";
+  public const string AdminCompanyBankAccounts    = "/CompanyBankAccounts";
 
   // Applicant
   public const string ApplicantLogin                  = "/Login";

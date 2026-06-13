@@ -11,14 +11,42 @@ using MyApp.Middleware;
 using MyApp.Services;
 using MyApp.Services.Logging;
 // using MyApp.Data;
-// using MyApp.Models;
+using MyApp.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var adminPrefix     = builder.Configuration[AppConstants.AdminUrlPrefixConfigKey]     ?? "admin";
+var applicantPrefix = builder.Configuration[AppConstants.ApplicantUrlPrefixConfigKey] ?? "applicant";
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 // Add services to the container.
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AddAreaFolderRouteModelConvention("Admin", "/", models =>
+    {
+        foreach (var selector in models.Selectors)
+        {
+            var template = selector.AttributeRouteModel?.Template ?? "";
+            if (template.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                selector.AttributeRouteModel!.Template = adminPrefix;
+            else if (template.StartsWith("Admin/", StringComparison.OrdinalIgnoreCase))
+                selector.AttributeRouteModel!.Template = adminPrefix + template["Admin".Length..];
+        }
+    });
+
+    options.Conventions.AddAreaFolderRouteModelConvention("Applicant", "/", models =>
+    {
+        foreach (var selector in models.Selectors)
+        {
+            var template = selector.AttributeRouteModel?.Template ?? "";
+            if (template.Equals("Applicant", StringComparison.OrdinalIgnoreCase))
+                selector.AttributeRouteModel!.Template = applicantPrefix;
+            else if (template.StartsWith("Applicant/", StringComparison.OrdinalIgnoreCase))
+                selector.AttributeRouteModel!.Template = applicantPrefix + template["Applicant".Length..];
+        }
+    });
+});
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -53,6 +81,7 @@ builder.Services.AddScoped<MenuDbHelper>();
 builder.Services.AddScoped<PermissionDbHelper>();
 builder.Services.AddScoped<RoleDbHelper>();
 builder.Services.AddScoped<BankDbHelper>();
+builder.Services.AddScoped<CompanyBankAccountDbHelper>();
 builder.Services.AddScoped<AdminUserDbHelper>();
 builder.Services.AddScoped<TranslationDbHelper>();
 builder.Services.AddScoped<UserSessionDbHelper>();
@@ -83,20 +112,21 @@ builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
 
 
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.Configure<AppSettingsOptions>(builder.Configuration.GetSection("AppSettings"));
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddHostedService<LogCleanupService>();
 
 builder.Services.AddAuthentication()
     .AddCookie(AuthSchemeConstants.Admin, options =>
     {
-      options.LoginPath = "/Admin/Login";
-      options.ExpireTimeSpan = TimeSpan.FromDays(30);
+      options.LoginPath         = $"/{adminPrefix}/Login";
+      options.ExpireTimeSpan    = TimeSpan.FromDays(30);
       options.SlidingExpiration = true;
     })
     .AddCookie(AuthSchemeConstants.Applicant, options =>
     {
-      options.LoginPath = "/Applicant/Login";
-      options.ExpireTimeSpan = TimeSpan.FromDays(30);
+      options.LoginPath         = $"/{applicantPrefix}/Login";
+      options.ExpireTimeSpan    = TimeSpan.FromDays(30);
       options.SlidingExpiration = true;
     });
 
@@ -158,7 +188,7 @@ app.UseMiddleware<SessionTrackingMiddleware>();
 //app.MapFallbackToPage("/Jobsheets/AddJobSheet"); // or "/Index", "/Dashboard", etc.
 
 
-app.MapGet("/", () => Results.Redirect("/Admin/Login"));
+app.MapGet("/", () => Results.Redirect($"/{adminPrefix}/Login"));
 app.MapRazorPages();
 
 PasswordCryptoHelper.Configure(app.Configuration);

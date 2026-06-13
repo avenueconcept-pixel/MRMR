@@ -1,0 +1,54 @@
+@page
+@model MyApp.Areas.Customer.Pages.CompanyBankAccounts.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("CompanyBankAccount.PageTitle");
+}
+
+<div class="py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("CompanyBankAccount.PageTitle")</h4>
+</div>
+
+@if (!Model.Items.Any())
+{
+  <div class="card">
+    <div class="card-body text-center text-muted py-5">
+      <i class="ri ri-bank-line ri-3x mb-3 d-block"></i>
+      <p>@await T.GetAsync("CompanyBankAccount.NoAccounts")</p>
+    </div>
+  </div>
+}
+else
+{
+  <div class="row g-4">
+    @foreach (var account in Model.Items)
+    {
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h6 class="card-title mb-1">@account.BankName</h6>
+            <p class="text-muted small mb-3">
+              @(account.Country?.Translations.FirstOrDefault()?.CountryName ?? account.Country?.CountryCode ?? account.CountryCode)
+              &bull; @account.Currency
+            </p>
+            <dl class="row mb-0 small">
+              <dt class="col-5">@await T.GetAsync("CompanyBankAccount.AccountName")</dt>
+              <dd class="col-7">@account.AccountName</dd>
+              <dt class="col-5">@await T.GetAsync("CompanyBankAccount.AccountNumber")</dt>
+              <dd class="col-7"><strong>@account.AccountNumber</strong></dd>
+              @if (!string.IsNullOrEmpty(account.Branch))
+              {
+                <dt class="col-5">@await T.GetAsync("CompanyBankAccount.Branch")</dt>
+                <dd class="col-7">@account.Branch</dd>
+              }
+              @if (!string.IsNullOrEmpty(account.Remarks))
+              {
+                <dt class="col-5">@await T.GetAsync("CompanyBankAccount.Remarks")</dt>
+                <dd class="col-7">@account.Remarks</dd>
+              }
+            </dl>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}

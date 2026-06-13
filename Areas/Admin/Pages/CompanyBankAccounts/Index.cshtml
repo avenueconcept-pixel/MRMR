@@ -1,0 +1,185 @@
+@page
+@model MyApp.Areas.Admin.Pages.CompanyBankAccounts.IndexModel
+@{
+  ViewData["title"] = await T.GetAsync("CompanyBankAccount.PageTitle");
+}
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@{
+  var lblToggleTitle   = await T.GetAsync("ToggleStatusTitle");
+  var lblToggleConfirm = await T.GetAsync("ToggleStatusConfirm");
+  var lblToggleYes     = await T.GetAsync("ToggleStatusYes");
+  var lblCancel        = await T.GetAsync("Cancel");
+  var lblToggleFailed  = await T.GetAsync("ToggleFailed");
+  var lblToggleError   = await T.GetAsync("ToggleError");
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+  <h4 class="mb-0">@await T.GetAsync("CompanyBankAccount.PageTitle")</h4>
+  <a asp-area="Admin" asp-page="/CompanyBankAccounts/Create" class="btn btn-primary">
+    <i class="ri ri-add-line me-1"></i> @await T.GetAsync("CompanyBankAccount.AddAccount")
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="ddlCountryFilter">@await T.GetAsync("CompanyBankAccount.Country")</label>
+        <select id="ddlCountryFilter" class="form-select" onchange="window.location.href='?countryCode=' + this.value">
+          @foreach (var opt in Model.CountryOptions)
+          {
+            <option value="@opt.Value" selected="@(opt.Value == Model.SelectedCountry ? "selected" : null)">@opt.Text</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">@await T.GetAsync("CompanyBankAccount.AccountList")</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="tblCompanyBankAccounts" class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>@await T.GetAsync("CompanyBankAccount.Country")</th>
+            <th>@await T.GetAsync("CompanyBankAccount.BankName")</th>
+            <th>@await T.GetAsync("CompanyBankAccount.AccountName")</th>
+            <th>@await T.GetAsync("CompanyBankAccount.AccountNumber")</th>
+            <th>@await T.GetAsync("CompanyBankAccount.Branch")</th>
+            <th>@await T.GetAsync("CompanyBankAccount.Currency")</th>
+            <th>@await T.GetAsync("Status")</th>
+            <th>@await T.GetAsync("UpdatedAt")</th>
+            <th>@await T.GetAsync("Actions")</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var account in Model.Items)
+          {
+            var badgeClass  = account.Status == StatusConstants.Active ? "bg-success" : "bg-danger";
+            var statusLabel = account.Status == StatusConstants.Active
+                ? await T.GetAsync("status.active")
+                : await T.GetAsync("status.inactive");
+            <tr>
+              <td>@(account.Country?.Translations.FirstOrDefault()?.CountryName ?? account.Country?.CountryCode ?? account.CountryCode)</td>
+              <td>@account.BankName</td>
+              <td>@account.AccountName</td>
+              <td>@account.AccountNumber</td>
+              <td>@(account.Branch ?? "-")</td>
+              <td>@account.Currency</td>
+              <td><span class="badge @badgeClass">@statusLabel</span></td>
+              <td>@account.UpdatedAt.ToUserLocalTime(Model.UserTimezone, AppConstants.DateTimeFormat)</td>
+              <td>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri ri-more-2-fill"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" asp-area="Admin" asp-page="/CompanyBankAccounts/Edit"
+                         asp-route-id="@account.Id">
+                        <i class="ri ri-edit-line me-1"></i>@await T.GetAsync("Edit")
+                      </a>
+                    </li>
+                    <li>
+                      <button class="dropdown-item" type="button" onclick="toggleStatus(@account.Id)">
+                        <i class="ri ri-toggle-line me-1"></i>@await T.GetAsync("ToggleStatus")
+                      </button>
+                    </li>
+                    <li>
+                      <button class="dropdown-item text-danger" type="button"
+                              onclick="confirmDelete(@account.Id,
+                                                    '@Html.Raw(Model.MsgDeleteConfirmTitle)',
+                                                    '@Html.Raw(Model.MsgDeleteConfirmText)',
+                                                    '@Html.Raw(Model.MsgDeleteConfirmBtn)',
+                                                    '@Html.Raw(Model.MsgCancelBtn)')">
+                        <i class="ri ri-delete-bin-line me-1"></i>@Model.LabelDelete
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<form id="formAjax" method="post">@Html.AntiForgeryToken()</form>
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
+
+@section PageScripts {
+<script>
+  var msgToggleTitle   = '@lblToggleTitle';
+  var msgToggleConfirm = '@lblToggleConfirm';
+  var msgToggleYes     = '@lblToggleYes';
+  var msgCancel        = '@lblCancel';
+  var msgToggleFailed  = '@lblToggleFailed';
+  var msgToggleError   = '@lblToggleError';
+  var msgDeleteSuccess = '@Html.Raw(Model.MsgDeleteSuccess)';
+  var msgDeleteError   = '@Html.Raw(Model.MsgDeleteError)';
+
+  function toggleStatus(id) {
+    Swal.fire({
+      title: msgToggleTitle, text: msgToggleConfirm, icon: 'warning',
+      showCancelButton: true, confirmButtonText: msgToggleYes, cancelButtonText: msgCancel
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '?handler=ToggleStatus', type: 'POST',
+          data: { id: id, __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val() },
+          success: function (data) {
+            if (data.success) location.reload();
+            else Swal.fire({ icon: 'error', text: msgToggleFailed });
+          },
+          error: function () { Swal.fire({ icon: 'error', text: msgToggleError }); }
+        });
+      }
+    });
+  }
+
+  async function confirmDelete(id, title, text, confirmBtn, cancelBtn) {
+    const result = await Swal.fire({
+      icon: 'warning', title: title, text: text,
+      showCancelButton: true, confirmButtonText: confirmBtn, cancelButtonText: cancelBtn,
+      confirmButtonColor: '#dc3545'
+    });
+    if (!result.isConfirmed) return;
+    $.post('?handler=Delete&id=' + id, {
+      __RequestVerificationToken: $('#formAjax input[name="__RequestVerificationToken"]').val()
+    }, function (data) {
+      if (data.success)
+        Swal.fire({ icon: 'success', title: msgDeleteSuccess, timer: 1500, showConfirmButton: false })
+          .then(function () { location.reload(); });
+      else
+        Swal.fire({ icon: 'error', text: data.message || msgDeleteError });
+    }).fail(function () { Swal.fire({ icon: 'error', text: msgDeleteError }); });
+  }
+
+  $(document).ready(function () { initDataTable('#tblCompanyBankAccounts', 8); });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var messageType = '@Model.AlertMessageType';
+    if (messageType !== '') {
+      Swal.fire({
+        icon: messageType,
+        title: @Html.Raw(Json.Serialize(Model.AlertMessageTitle)),
+        text:  @Html.Raw(Json.Serialize(Model.AlertMessageContent))
+      });
+    }
+  });
+</script>
+}

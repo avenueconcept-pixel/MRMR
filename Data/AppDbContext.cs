@@ -36,6 +36,7 @@ public class AppDbContext : DbContext
   public DbSet<MaintenanceScheduleSystem>  MaintenanceScheduleSystems  => Set<MaintenanceScheduleSystem>();
   public DbSet<MaintenanceScheduleMessage> MaintenanceScheduleMessages => Set<MaintenanceScheduleMessage>();
   public DbSet<AppSetting>                 AppSettings                 => Set<AppSetting>();
+  public DbSet<CompanyBankAccount>         CompanyBankAccounts         => Set<CompanyBankAccount>();
 
   // MRMR2026
   public DbSet<Registrant>              Registrants              => Set<Registrant>();
@@ -80,9 +81,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(200).IsRequired();
       entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(200).IsRequired();
       entity.Property(e => e.RoleId).HasColumnName("role_id");
-      entity.Property(e => e.DeptId).HasColumnName("dept_id");
       entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).HasDefaultValue("MY");
-      entity.Property(e => e.RegionId).HasColumnName("region_id");
       entity.Property(e => e.MobileCountryCode).HasColumnName("mobile_country_code").HasMaxLength(10);
       entity.Property(e => e.MobileNo).HasColumnName("mobile_no").HasMaxLength(20);
       entity.Property(e => e.IsForceChangePassword).HasColumnName("is_force_change_password").HasDefaultValue(false);
@@ -95,9 +94,7 @@ public class AppDbContext : DbContext
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100);
       entity.HasOne(e => e.Role).WithMany().HasForeignKey(e => e.RoleId).OnDelete(DeleteBehavior.Restrict);
-      entity.HasOne(e => e.Department).WithMany().HasForeignKey(e => e.DeptId).OnDelete(DeleteBehavior.NoAction);
       entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode).OnDelete(DeleteBehavior.NoAction);
-      entity.HasOne(e => e.Region).WithMany().HasForeignKey(e => e.RegionId).OnDelete(DeleteBehavior.NoAction);
     });
 
     // EmailTemplate
@@ -853,6 +850,27 @@ public class AppDbContext : DbContext
       entity.Property(e => e.UpdatedAt).HasColumnName("updated_at")
             .HasDefaultValueSql("now() AT TIME ZONE 'utc'");
       entity.HasIndex(e => e.SettingKey).IsUnique();
+    });
+
+    // CompanyBankAccount
+    modelBuilder.Entity<CompanyBankAccount>(entity =>
+    {
+      entity.ToTable("company_bank_accounts");
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id).HasColumnName("id").UseIdentityColumn();
+      entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+      entity.Property(e => e.BankName).HasColumnName("bank_name").HasMaxLength(150).IsRequired();
+      entity.Property(e => e.AccountName).HasColumnName("account_name").HasMaxLength(150).IsRequired();
+      entity.Property(e => e.AccountNumber).HasColumnName("account_number").HasMaxLength(50).IsRequired();
+      entity.Property(e => e.Branch).HasColumnName("branch").HasMaxLength(150);
+      entity.Property(e => e.Currency).HasColumnName("currency").HasMaxLength(10).IsRequired();
+      entity.Property(e => e.Remarks).HasColumnName("remarks");
+      entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+      entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.CreatedBy).HasColumnName("created_by").HasMaxLength(100).IsRequired();
+      entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now() AT TIME ZONE 'utc'");
+      entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").HasMaxLength(100).IsRequired();
+      entity.HasOne(e => e.Country).WithMany().HasForeignKey(e => e.CountryCode).OnDelete(DeleteBehavior.NoAction);
     });
 
     // Applicant
