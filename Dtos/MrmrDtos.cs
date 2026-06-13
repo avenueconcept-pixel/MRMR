@@ -12,9 +12,10 @@ public class CategorySummaryDto
 
 public class ApplicationDashboardDto
 {
-    public MyApp.Models.MRMR.Application Application { get; set; } = null!;
-    public MyApp.Models.MRMR.Payment? NominationPayment { get; set; }
-    public MyApp.Models.MRMR.Payment? AwardPayment { get; set; }
+    public MyApp.Models.MRMR.Application             Application       { get; set; } = null!;
+    public MyApp.Models.MRMR.Payment?                NominationPayment { get; set; }
+    public MyApp.Models.MRMR.Payment?                AwardPayment      { get; set; }
+    public List<MyApp.Models.MRMR.ApplicationDocument> Documents       { get; set; } = [];
 }
 
 public enum RegistrationResult

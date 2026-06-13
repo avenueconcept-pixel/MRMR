@@ -22,6 +22,15 @@
     </div>
 </div>
 
+@* Re-upload success toast *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="card-panel green lighten-4 mb-3">
+        <i class="ri ri-checkbox-circle-line me-1 green-text"></i>
+        @TempData["SuccessMessage"]
+    </div>
+}
+
 @if (!Model.Applications.Any())
 {
     <div class="card-panel blue lighten-5 center-align">
@@ -158,46 +167,50 @@
             @* ── STATE 7: SubmissionCompleted ── *@
             else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.SubmissionCompleted))
             {
-                <div class="center-align py-3">
+                <div class="center-align py-2">
                     <i class="ri ri-checkbox-circle-line teal-text" style="font-size:3rem;"></i>
-                    <h6 class="mt-2">@await T.GetAsync("Dashboard.State.Submitted")</h6>
+                    <h6 class="mt-2 teal-text">@await T.GetAsync("Dashboard.State.Submitted")</h6>
                     <p class="grey-text">@await T.GetAsync("Dashboard.State.SubmittedDesc")</p>
                     <a asp-area="Applicant" asp-page="/Submission/Summary"
                        asp-route-applicationId="@app.ApplicationId"
-                       class="btn-flat teal-text">
-                        @await T.GetAsync("Dashboard.State.ViewSubmission")
+                       class="btn-flat teal-text waves-effect">
+                        <i class="ri ri-eye-line me-1"></i>@await T.GetAsync("Dashboard.State.ViewSubmission")
                     </a>
                 </div>
+                @await RenderDocumentStatus(dto.Documents, app.ApplicationId)
             }
 
             @* ── STATE 8: UnderEvaluation ── *@
             else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.UnderEvaluation))
             {
-                <div class="center-align py-3">
+                <div class="center-align py-2">
                     <i class="ri ri-search-eye-line purple-text" style="font-size:3rem;"></i>
                     <h6 class="mt-2">@await T.GetAsync("Dashboard.State.UnderEvaluation")</h6>
                     <p class="grey-text">@await T.GetAsync("Dashboard.State.UnderEvaluationDesc")</p>
                 </div>
+                @await RenderDocumentStatus(dto.Documents, app.ApplicationId)
             }
 
             @* ── STATE 9: Approved ── *@
             else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.Approved))
             {
-                <div class="center-align py-3">
+                <div class="center-align py-2">
                     <i class="ri ri-trophy-fill yellow-text text-darken-2" style="font-size:3rem;"></i>
                     <h6 class="mt-2 green-text">@await T.GetAsync("Dashboard.State.Approved")</h6>
                     <p class="grey-text">@await T.GetAsync("Dashboard.State.ApprovedDesc")</p>
                 </div>
+                @await RenderDocumentStatus(dto.Documents, app.ApplicationId)
             }
 
-            @* ── STATE 10: Rejected ── *@
+            @* ── STATE 10: Rejected (Application) ── *@
             else if (app.Status == nameof(MyApp.Constants.MRMR.ApplicationStatus.Rejected))
             {
-                <div class="center-align py-3">
+                <div class="center-align py-2">
                     <i class="ri ri-close-circle-line red-text" style="font-size:3rem;"></i>
                     <h6 class="mt-2 grey-text">@await T.GetAsync("Dashboard.State.Rejected")</h6>
                     <p class="grey-text">@await T.GetAsync("Dashboard.State.RejectedDesc")</p>
                 </div>
+                @await RenderDocumentStatus(dto.Documents, app.ApplicationId)
             }
 
         </div>
@@ -259,5 +272,74 @@
         nameof(MyApp.Constants.MRMR.ApplicationStatus.Approved)              => "green darken-1 white-text",
         nameof(MyApp.Constants.MRMR.ApplicationStatus.Rejected)              => "red lighten-4 red-text",
         _ => "grey lighten-3 grey-text"
+    };
+
+    async Task RenderDocumentStatus(
+        List<MyApp.Models.MRMR.ApplicationDocument> docs,
+        string applicationId)
+    {
+        if (!docs.Any()) return;
+
+        <div class="mt-3">
+            <div class="divider mb-2"></div>
+            <p class="blue-grey-text text-darken-2 mb-1">
+                <strong><i class="ri ri-folder-check-line me-1"></i>@await T.GetAsync("Dashboard.DocVerification.Title")</strong>
+            </p>
+            <table class="striped" style="font-size:0.9rem;">
+                <tbody>
+                    @foreach (var doc in docs.OrderBy(d => d.DocumentType))
+                    {
+                        var badgeClass = doc.VerificationStatus switch
+                        {
+                            "Verified" => "green white-text",
+                            "Rejected" => "red white-text",
+                            _          => "orange white-text"
+                        };
+                        <tr>
+                            <td>
+                                <i class="ri ri-file-line me-1 grey-text"></i>
+                                @await T.GetAsync($"Submission.SectionK.Doc.{DocTypeDisplayKey(doc.DocumentType)}")
+                            </td>
+                            <td>
+                                <span class="badge @badgeClass" style="float:none;">
+                                    @doc.VerificationStatus
+                                </span>
+                            </td>
+                            <td><small class="grey-text">@doc.OriginalFilename</small></td>
+                            <td class="right-align">
+                                @if (doc.VerificationStatus == "Rejected")
+                                {
+                                    <a asp-area="Applicant" asp-page="/Submission/DocReUpload"
+                                       asp-route-applicationId="@applicationId"
+                                       asp-route-documentType="@doc.DocumentType"
+                                       class="btn-small red lighten-1 white-text waves-effect">
+                                        <i class="ri ri-upload-2-line me-1"></i>@await T.GetAsync("Dashboard.DocVerification.ReUpload")
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(doc.AdminRemarks))
+                                    {
+                                        <p class="red-text mt-0 mb-0"><small>@doc.AdminRemarks</small></p>
+                                    }
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    private static string DocTypeDisplayKey(string docType) => docType switch
+    {
+        "ic_passport"           => "IcPassport",
+        "company_registration"  => "CompanyRegistration",
+        "auditor_report"        => "AuditorReport",
+        "business_profile"      => "BusinessProfile",
+        "tax_compliance"        => "TaxCompliance",
+        "supporting_document_1" => "Supporting1",
+        "supporting_document_2" => "Supporting2",
+        "supporting_document_3" => "Supporting3",
+        "supporting_document_4" => "Supporting4",
+        "supporting_document_5" => "Supporting5",
+        _                       => docType
     };
 }

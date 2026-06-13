@@ -1,0 +1,98 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.DocReUploadModel
+@{
+    Layout = "Layouts/_PortalLayout";
+    ViewData["Title"] = await T.GetAsync("Dashboard.DocVerification.ReUploadTitle");
+}
+
+<div class="row" style="margin-top: 32px;">
+    <div class="col s12 m8 offset-m2 l6 offset-l3">
+        <div class="card applicant-card">
+            <div class="card-content">
+                <span class="card-title">
+                    <i class="ri ri-upload-2-line me-1 red-text"></i>
+                    @await T.GetAsync("Dashboard.DocVerification.ReUploadTitle")
+                </span>
+
+                <div class="card-panel orange lighten-4 mb-3">
+                    <i class="ri ri-error-warning-line me-1"></i>
+                    @await T.GetAsync("Dashboard.DocVerification.RejectedNotice")
+                    @if (!string.IsNullOrEmpty(Model.ExistingDoc?.AdminRemarks))
+                    {
+                        <br />
+                        <strong>@await T.GetAsync("Dashboard.DocVerification.AdminRemarks"):</strong>
+                        @Model.ExistingDoc.AdminRemarks
+                    }
+                </div>
+
+                <p>
+                    <strong>@await T.GetAsync("Dashboard.DocVerification.DocType"):</strong>
+                    @await T.GetAsync($"Submission.SectionK.Doc.{DocTypeKey(Model.DocumentType)}")
+                </p>
+                <p>
+                    <strong>@await T.GetAsync("Dashboard.DocVerification.AppId"):</strong>
+                    @Model.ApplicationId
+                </p>
+                <p class="grey-text">
+                    <small>
+                        @await T.GetAsync("Submission.SectionK.AllowedTypes")
+                        &nbsp;|&nbsp;
+                        @await T.GetAsync("Submission.SectionK.MaxSize")
+                    </small>
+                </p>
+
+                @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+                {
+                    <div class="card-panel red lighten-4 mb-2">@Model.AlertMessageContent</div>
+                }
+
+                <form method="post" asp-page-handler="Upload" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ApplicationId" value="@Model.ApplicationId" />
+                    <input type="hidden" name="DocumentType"  value="@Model.DocumentType" />
+
+                    <div class="file-field input-field mt-3">
+                        <div class="btn blue darken-3">
+                            <span><i class="ri ri-upload-2-line me-1"></i>@await T.GetAsync("Submission.SectionK.Upload")</span>
+                            <input type="file" name="UploadFile" accept=".pdf,.jpg,.jpeg,.png" required />
+                        </div>
+                        <div class="file-path-wrapper">
+                            <input class="file-path validate" type="text"
+                                   placeholder="@await T.GetAsync("Dashboard.DocVerification.ChooseFile")" />
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col s12 right-align">
+                            <a asp-area="Applicant" asp-page="/Dashboard"
+                               class="btn-flat grey-text waves-effect mr-2">
+                                @await T.GetAsync("Common.Cancel")
+                            </a>
+                            <button type="submit" class="btn red darken-2 waves-effect waves-light">
+                                <i class="ri ri-upload-cloud-2-line me-1"></i>
+                                @await T.GetAsync("Dashboard.DocVerification.SubmitReUpload")
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private static string DocTypeKey(string docType) => docType switch
+    {
+        "ic_passport"           => "IcPassport",
+        "company_registration"  => "CompanyRegistration",
+        "auditor_report"        => "AuditorReport",
+        "business_profile"      => "BusinessProfile",
+        "tax_compliance"        => "TaxCompliance",
+        "supporting_document_1" => "Supporting1",
+        "supporting_document_2" => "Supporting2",
+        "supporting_document_3" => "Supporting3",
+        "supporting_document_4" => "Supporting4",
+        "supporting_document_5" => "Supporting5",
+        _                       => docType
+    };
+}

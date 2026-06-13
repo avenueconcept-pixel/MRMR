@@ -5,282 +5,570 @@
     ViewData["Title"] = await T.GetAsync("Registration.PageTitle");
 
     var categoryDetailsUrl = Url.Page("/Register", "CategoryDetails", new { area = "Applicant" });
+
+    var lblStep1        = await T.GetAsync("Registration.StepApplicationType");
+    var lblStep2        = await T.GetAsync("Registration.StepPersonalDetails");
+    var lblStep3        = await T.GetAsync("Registration.StepCompanyDetails");
+    var lblStep4        = await T.GetAsync("Registration.StepPayment");
+    var lblNext         = await T.GetAsync("Registration.Next");
+    var lblBack         = await T.GetAsync("Registration.Back");
+    var lblProceed      = await T.GetAsync("Registration.ProceedToPayment");
+    var lblSelect       = await T.GetAsync("Select");
+    var lblSelectType   = await T.GetAsync("Registration.SelectApplicationType");
+    var lblSelectCat    = await T.GetAsync("Registration.SelectAwardCategory");
+    var lblRequired     = await T.GetAsync(MyApp.Constants.MessageConstants.RequiredField);
 }
 
-<div class="card applicant-card">
-    <div class="card-content">
-        <span class="card-title">@await T.GetAsync("Registration.PageTitle")</span>
-        <p class="grey-text">@await T.GetAsync("Registration.Subtitle")</p>
+@section PageStyles {
+<style>
+.mrmr-stepper {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    padding: 4px 0;
+}
+.stepper-item {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 64px;
+}
+.stepper-line {
+    flex: 1;
+    height: 2px;
+    background: var(--bs-secondary-bg);
+    margin-top: 15px;
+    transition: background .25s;
+}
+.stepper-line.completed { background: var(--bs-primary); }
+.stepper-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-secondary-color);
+    position: relative;
+    z-index: 1;
+    transition: background .25s, color .25s;
+}
+.stepper-item.active .stepper-circle   { background: var(--bs-primary); color: #fff; }
+.stepper-item.completed .stepper-circle { background: var(--bs-primary); color: #fff; }
+.stepper-item.completed .stepper-circle .step-num  { display: none; }
+.stepper-item.completed .stepper-circle .step-check { display: inline !important; }
+.stepper-label {
+    font-size: 10px;
+    margin-top: 5px;
+    text-align: center;
+    color: var(--bs-secondary-color);
+    font-weight: 500;
+    max-width: 70px;
+    line-height: 1.3;
+}
+.stepper-item.active .stepper-label,
+.stepper-item.completed .stepper-label { color: var(--bs-primary); }
+.wizard-step { display: none; }
+.wizard-step.active { display: block; }
+.step-check { display: none; }
+.bank-card {
+    border-left: 4px solid var(--bs-primary);
+}
+@@media (max-width: 600px) {
+    .stepper-label { font-size: 9px; max-width: 55px; }
+    .stepper-item { min-width: 50px; }
+}
+</style>
+}
 
-        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
-        {
-            <div class="card-panel @(Model.AlertMessageType == "error" ? "red lighten-4" : "green lighten-4")">
-                <span>@Model.AlertMessageContent</span>
-            </div>
-        }
+<h5 class="card-title mb-1">@await T.GetAsync("Registration.PageTitle")</h5>
+<p class="text-muted mb-3">@await T.GetAsync("Registration.Subtitle")</p>
 
-        <form method="post" asp-page-handler="Register" id="frmRegister">
-            @Html.AntiForgeryToken()
+@if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+{
+    <div class="alert @(Model.AlertMessageType == "error" ? "alert-danger" : "alert-success") d-flex align-items-center gap-2 mb-3">
+        <i class="ri ri-error-warning-line"></i>
+        @Model.AlertMessageContent
+    </div>
+}
 
-            @* ─── Section: Application Type ─── *@
-            <h6 class="mt-4">@await T.GetAsync("Registration.ApplicationType")</h6>
-            <div class="row">
-                <div class="input-field col s12 m6">
-                    <select id="ddlApplicationType" name="ddlApplicationType" required>
-                        <option value="" disabled selected>@await T.GetAsync("Select")</option>
-                        @if (Model.ddlApplicationType == "Individual")
-                        {
-                            <option value="Individual" selected>@await T.GetAsync("Registration.Individual")</option>
-                        }
-                        else
-                        {
-                            <option value="Individual">@await T.GetAsync("Registration.Individual")</option>
-                        }
-                        @if (Model.ddlApplicationType == "Corporate")
-                        {
-                            <option value="Corporate" selected>@await T.GetAsync("Registration.Corporate")</option>
-                        }
-                        else
-                        {
-                            <option value="Corporate">@await T.GetAsync("Registration.Corporate")</option>
-                        }
-                    </select>
-                    <label>@await T.GetAsync("Registration.ApplicationType") <span class="red-text">*</span></label>
-                </div>
-
-                <div class="input-field col s12 m6" id="divAwardCategory">
-                    <select id="ddlAwardCategory" name="ddlAwardCategory" required>
-                        <option value="" disabled selected>@await T.GetAsync("Registration.SelectCategoryFirst")</option>
-                    </select>
-                    <label>@await T.GetAsync("Registration.AwardCategory") <span class="red-text">*</span></label>
-                </div>
-            </div>
-
-            @* ─── Payment Summary Panel (hidden until category selected) ─── *@
-            <div id="divPaymentSummary" class="card blue lighten-5" style="display:none;">
-                <div class="card-content">
-                    <span class="card-title blue-text text-darken-2">@await T.GetAsync("Registration.PaymentSummary")</span>
-                    <table class="highlight">
-                        <tbody>
-                            <tr>
-                                <td>@await T.GetAsync("Registration.CategorySelected")</td>
-                                <td id="lblCategoryName" class="right-align"><strong>—</strong></td>
-                            </tr>
-                            <tr>
-                                <td>@await T.GetAsync("Registration.AwardFee")</td>
-                                <td id="lblAwardFee" class="right-align">—</td>
-                            </tr>
-                            <tr class="blue-text text-darken-2">
-                                <td><strong>@await T.GetAsync("Registration.PayNow") (RM 1,000)</strong></td>
-                                <td class="right-align"><strong>RM 1,000.00</strong></td>
-                            </tr>
-                            <tr>
-                                <td class="grey-text">@await T.GetAsync("Registration.PayAfterLogin")</td>
-                                <td id="lblPayAfterLogin" class="right-align grey-text">—</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <p class="grey-text caption mt-2">@await T.GetAsync("Registration.NominationFeeNote")</p>
-                </div>
-            </div>
-
-            @* ─── Section: Personal Details ─── *@
-            <h6 class="mt-4">@await T.GetAsync("Registration.PersonalDetails")</h6>
-            <div class="row">
-                <div class="input-field col s12 m3">
-                    <select id="ddlTitle" name="ddlTitle" required>
-                        <option value="" disabled selected>@await T.GetAsync("Select")</option>
-                        @foreach (var titleOpt in new[] { "Tan Sri", "Dato Sri", "Dato", "Mr", "Ms", "Dr", "Others" })
-                        {
-                            @if (Model.ddlTitle == titleOpt)
-                            {
-                                <option value="@titleOpt" selected>@titleOpt</option>
-                            }
-                            else
-                            {
-                                <option value="@titleOpt">@titleOpt</option>
-                            }
-                        }
-                    </select>
-                    <label>@await T.GetAsync("Registration.Title") <span class="red-text">*</span></label>
-                </div>
-                <div class="input-field col s12 m9">
-                    <input type="text" id="txtFullName" name="txtFullName" value="@Model.txtFullName" required />
-                    <label for="txtFullName">@await T.GetAsync("Registration.FullName") <span class="red-text">*</span></label>
-                </div>
-            </div>
-            <div class="row">
-                <div class="input-field col s12 m6">
-                    <input type="text" id="txtNric" name="txtNric" value="@Model.txtNric" required />
-                    <label for="txtNric">@await T.GetAsync("Registration.NricPassport") <span class="red-text">*</span></label>
-                </div>
-                <div class="input-field col s12 m6">
-                    <input type="text" id="txtContactNo" name="txtContactNo" value="@Model.txtContactNo" required />
-                    <label for="txtContactNo">@await T.GetAsync("Registration.ContactNo") <span class="red-text">*</span></label>
-                </div>
-            </div>
-            <div class="row">
-                <div class="input-field col s12">
-                    <input type="email" id="txtEmail" name="txtEmail" value="@Model.txtEmail" required />
-                    <label for="txtEmail">@await T.GetAsync("Registration.Email") <span class="red-text">*</span></label>
-                </div>
-            </div>
-
-            @* ─── Section: Company Details (shown for Corporate) ─── *@
-            <div id="divCompanySection">
-                <h6 class="mt-4">@await T.GetAsync("Registration.CompanyDetails")</h6>
-                <div class="row">
-                    <div class="input-field col s12 m6">
-                        <input type="text" id="txtCompanyName" name="txtCompanyName" value="@Model.txtCompanyName" />
-                        <label for="txtCompanyName">@await T.GetAsync("Registration.CompanyName") <span class="red-text corporate-required" style="display:none;">*</span></label>
-                    </div>
-                    <div class="input-field col s12 m6">
-                        <input type="text" id="txtSsmRegNo" name="txtSsmRegNo" value="@Model.txtSsmRegNo" />
-                        <label for="txtSsmRegNo">@await T.GetAsync("Registration.SsmRegNo") <span class="red-text corporate-required" style="display:none;">*</span></label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <textarea id="txtCompanyAddress" name="txtCompanyAddress" class="materialize-textarea">@Model.txtCompanyAddress</textarea>
-                        <label for="txtCompanyAddress">@await T.GetAsync("Registration.CompanyAddress")</label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-field col s12 m6">
-                        <input type="text" id="txtWebsite" name="txtWebsite" value="@Model.txtWebsite" />
-                        <label for="txtWebsite">@await T.GetAsync("Registration.Website")</label>
-                    </div>
-                    <div class="input-field col s12 m6" id="divIndustry">
-                        <select id="ddlIndustry" name="ddlIndustry">
-                            <option value="" disabled selected>@await T.GetAsync("Select")</option>
-                            @foreach (var ind in Enum.GetNames<MyApp.Constants.MRMR.Industry>())
-                            {
-                                @if (Model.ddlIndustry == ind)
-                                {
-                                    <option value="@ind" selected>@ind.Replace("_", " ")</option>
-                                }
-                                else
-                                {
-                                    <option value="@ind">@ind.Replace("_", " ")</option>
-                                }
-                            }
-                        </select>
-                        <label>@await T.GetAsync("Registration.Industry") <span class="red-text corporate-required" style="display:none;">*</span></label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <textarea id="txtBusinessNature" name="txtBusinessNature" class="materialize-textarea">@Model.txtBusinessNature</textarea>
-                        <label for="txtBusinessNature">@await T.GetAsync("Registration.BusinessNature")</label>
-                    </div>
-                </div>
-            </div>
-
-            @* ─── Section: Payment Method ─── *@
-            <h6 class="mt-4">@await T.GetAsync("Registration.PaymentMethod")</h6>
-            <div class="row">
-                <div class="col s12">
-                    <label>
-                        <input type="radio" name="ddlPaymentMethod" value="Axaipay" @(Model.ddlPaymentMethod == "Axaipay" ? "checked" : "") required />
-                        <span>@await T.GetAsync("Registration.Axaipay")</span>
-                    </label>
-                </div>
-                <div class="col s12 mt-2">
-                    <label>
-                        <input type="radio" name="ddlPaymentMethod" value="ManualBankTransfer" @(Model.ddlPaymentMethod == "ManualBankTransfer" ? "checked" : "") />
-                        <span>@await T.GetAsync("Registration.ManualBankTransfer")</span>
-                    </label>
-                </div>
-            </div>
-
-            @* ─── Section: Declaration ─── *@
-            <h6 class="mt-4">@await T.GetAsync("Registration.Declaration")</h6>
-            <div class="row">
-                <div class="col s12">
-                    <label>
-                        <input type="checkbox" id="chkDeclInfoAccurate" name="chkDeclInfoAccurate" value="true" @(Model.chkDeclInfoAccurate ? "checked" : "") required />
-                        <span>@await T.GetAsync("Registration.DeclInfoAccurate")</span>
-                    </label>
-                </div>
-                <div class="col s12 mt-2">
-                    <label>
-                        <input type="checkbox" id="chkDeclFeeNonrefundable" name="chkDeclFeeNonrefundable" value="true" @(Model.chkDeclFeeNonrefundable ? "checked" : "") required />
-                        <span>@await T.GetAsync("Registration.DeclFeeNonrefundable")</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="row mt-4">
-                <div class="col s12">
-                    <button type="submit" class="btn blue darken-3 waves-effect waves-light">
-                        <i class="ri ri-arrow-right-line me-1"></i>@await T.GetAsync("Registration.SubmitBtn")
-                    </button>
-                </div>
-            </div>
-        </form>
+@* ─── Step progress indicator ─── *@
+<div class="mrmr-stepper" id="wizardStepper">
+    <div class="stepper-item active" data-step="1">
+        <div class="stepper-circle">
+            <span class="step-num">1</span>
+            <i class="ri ri-check-line step-check"></i>
+        </div>
+        <div class="stepper-label">@lblStep1</div>
+    </div>
+    <div class="stepper-line" id="stepLine1"></div>
+    <div class="stepper-item" data-step="2">
+        <div class="stepper-circle">
+            <span class="step-num">2</span>
+            <i class="ri ri-check-line step-check"></i>
+        </div>
+        <div class="stepper-label">@lblStep2</div>
+    </div>
+    <div class="stepper-line" id="stepLine2"></div>
+    <div class="stepper-item" data-step="3">
+        <div class="stepper-circle">
+            <span class="step-num">3</span>
+            <i class="ri ri-check-line step-check"></i>
+        </div>
+        <div class="stepper-label">@lblStep3</div>
+    </div>
+    <div class="stepper-line" id="stepLine3"></div>
+    <div class="stepper-item" data-step="4">
+        <div class="stepper-circle">
+            <span class="step-num">4</span>
+            <i class="ri ri-check-line step-check"></i>
+        </div>
+        <div class="stepper-label">@lblStep4</div>
     </div>
 </div>
 
+<form method="post" asp-page-handler="Register" id="frmRegister">
+    @Html.AntiForgeryToken()
+
+    @* ══════════════════════════════════════════════════ *@
+    @* Step 1 — Application Type                         *@
+    @* ══════════════════════════════════════════════════ *@
+    <div class="wizard-step active" id="stepApplicationType">
+        <h6 class="text-primary mb-3">@await T.GetAsync("Registration.ApplicationType")</h6>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label">@await T.GetAsync("Registration.ApplicationType") <span class="text-danger">*</span></label>
+                <select id="ddlApplicationType" name="ddlApplicationType" class="form-select">
+                    <option value="" disabled selected>@lblSelectType</option>
+                    @if (Model.ddlApplicationType == "Individual")
+                    {
+                        <option value="Individual" selected>@await T.GetAsync("Registration.Individual")</option>
+                    }
+                    else
+                    {
+                        <option value="Individual">@await T.GetAsync("Registration.Individual")</option>
+                    }
+                    @if (Model.ddlApplicationType == "Corporate")
+                    {
+                        <option value="Corporate" selected>@await T.GetAsync("Registration.Corporate")</option>
+                    }
+                    else
+                    {
+                        <option value="Corporate">@await T.GetAsync("Registration.Corporate")</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label">@await T.GetAsync("Registration.AwardCategory") <span class="text-danger">*</span></label>
+                <select id="ddlAwardCategory" name="ddlAwardCategory" class="form-select">
+                    <option value="" disabled selected>@lblSelectCat</option>
+                </select>
+            </div>
+        </div>
+
+        @* Payment Summary Panel *@
+        <div id="divPaymentSummary" class="card border-primary bg-primary bg-opacity-10 mt-3" style="display:none;">
+            <div class="card-body py-3">
+                <h6 class="card-title text-primary mb-2">
+                    <i class="ri ri-money-dollar-circle-line me-1"></i>@await T.GetAsync("Registration.PaymentSummary")
+                </h6>
+                <table class="table table-sm table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td>@await T.GetAsync("Registration.CategorySelected")</td>
+                            <td class="text-end fw-semibold" id="lblCategoryName">—</td>
+                        </tr>
+                        <tr>
+                            <td>@await T.GetAsync("Registration.AwardFee")</td>
+                            <td class="text-end fw-bold text-primary" id="lblFeeAmount">—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+            <button type="button" class="btn btn-primary waves-effect waves-light" id="btnNext1" disabled>
+                @lblNext <i class="ri ri-arrow-right-line ms-1"></i>
+            </button>
+        </div>
+    </div>
+
+    @* ══════════════════════════════════════════════════ *@
+    @* Step 2 — Personal Details                         *@
+    @* ══════════════════════════════════════════════════ *@
+    <div class="wizard-step" id="stepPersonalDetails">
+        <h6 class="text-primary mb-3">@await T.GetAsync("Registration.PersonalDetails")</h6>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-3">
+                <label class="form-label">@await T.GetAsync("Registration.Title") <span class="text-danger">*</span></label>
+                <select id="ddlTitle" name="ddlTitle" class="form-select">
+                    <option value="" disabled selected>@lblSelect</option>
+                    @foreach (var t in new[] { "Mr", "Mrs", "Ms", "Dr", "Prof", "Dato'", "Datin", "Tan Sri", "Puan Sri", "Others" })
+                    {
+                        @if (Model.ddlTitle == t)
+                        {
+                            <option value="@t" selected>@t</option>
+                        }
+                        else
+                        {
+                            <option value="@t">@t</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-9">
+                <label class="form-label" for="txtFullName">@await T.GetAsync("Registration.FullName") <span class="text-danger">*</span></label>
+                <input type="text" id="txtFullName" name="txtFullName" class="form-control" value="@Model.txtFullName" />
+            </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="txtNric">@await T.GetAsync("Registration.NricPassport") <span class="text-danger">*</span></label>
+                <input type="text" id="txtNric" name="txtNric" class="form-control" value="@Model.txtNric" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="txtContactNo">@await T.GetAsync("Registration.ContactNo") <span class="text-danger">*</span></label>
+                <input type="text" id="txtContactNo" name="txtContactNo" class="form-control" value="@Model.txtContactNo" />
+            </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-12">
+                <label class="form-label" for="txtEmail">@await T.GetAsync("Registration.Email") <span class="text-danger">*</span></label>
+                <input type="email" id="txtEmail" name="txtEmail" class="form-control" value="@Model.txtEmail" />
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-secondary waves-effect" id="btnPrev2">
+                <i class="ri ri-arrow-left-line me-1"></i>@lblBack
+            </button>
+            <button type="button" class="btn btn-primary waves-effect waves-light" id="btnNext2">
+                @lblNext <i class="ri ri-arrow-right-line ms-1"></i>
+            </button>
+        </div>
+    </div>
+
+    @* ══════════════════════════════════════════════════ *@
+    @* Step 3 — Company Details                          *@
+    @* ══════════════════════════════════════════════════ *@
+    <div class="wizard-step" id="stepCompanyDetails">
+        <h6 class="text-primary mb-3">@await T.GetAsync("Registration.CompanyDetails")</h6>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="txtCompanyName">
+                    @await T.GetAsync("Registration.CompanyName")
+                    <span class="text-danger corporate-required" style="display:none;"> *</span>
+                </label>
+                <input type="text" id="txtCompanyName" name="txtCompanyName" class="form-control" value="@Model.txtCompanyName" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="txtSsmRegNo">@await T.GetAsync("Registration.SsmRegNo")</label>
+                <input type="text" id="txtSsmRegNo" name="txtSsmRegNo" class="form-control" value="@Model.txtSsmRegNo" />
+            </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-12">
+                <label class="form-label" for="txtCompanyAddress">@await T.GetAsync("Registration.CompanyAddress")</label>
+                <textarea id="txtCompanyAddress" name="txtCompanyAddress" class="form-control" rows="3">@Model.txtCompanyAddress</textarea>
+            </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="txtWebsite">@await T.GetAsync("Registration.Website")</label>
+                <input type="text" id="txtWebsite" name="txtWebsite" class="form-control" value="@Model.txtWebsite" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label">
+                    @await T.GetAsync("Registration.Industry")
+                    <span class="text-danger corporate-required" style="display:none;"> *</span>
+                </label>
+                <select id="ddlIndustry" name="ddlIndustry" class="form-select">
+                    <option value="" disabled selected>@lblSelect</option>
+                    @foreach (var ind in Enum.GetNames<Industry>())
+                    {
+                        @if (Model.ddlIndustry == ind)
+                        {
+                            <option value="@ind" selected>@ind</option>
+                        }
+                        else
+                        {
+                            <option value="@ind">@ind</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-12">
+                <label class="form-label" for="txtBusinessNature">@await T.GetAsync("Registration.BusinessNature")</label>
+                <input type="text" id="txtBusinessNature" name="txtBusinessNature" class="form-control" value="@Model.txtBusinessNature" />
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-secondary waves-effect" id="btnPrev3">
+                <i class="ri ri-arrow-left-line me-1"></i>@lblBack
+            </button>
+            <button type="button" class="btn btn-primary waves-effect waves-light" id="btnNext3">
+                @lblNext <i class="ri ri-arrow-right-line ms-1"></i>
+            </button>
+        </div>
+    </div>
+
+    @* ══════════════════════════════════════════════════ *@
+    @* Step 4 — Payment & Declaration                    *@
+    @* ══════════════════════════════════════════════════ *@
+    <div class="wizard-step" id="stepPayment">
+        <h6 class="text-primary mb-3">@await T.GetAsync("Registration.PaymentMethod")</h6>
+
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="ddlPaymentMethod" id="rdoAxaipay" value="Axaipay"
+                   @(Model.ddlPaymentMethod == "Axaipay" ? "checked" : "") />
+            <label class="form-check-label" for="rdoAxaipay">
+                <i class="ri ri-bank-card-line me-1"></i>@await T.GetAsync("Registration.Axaipay")
+            </label>
+        </div>
+
+        @if (Model.ManualBankTransferEnabled)
+        {
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="ddlPaymentMethod" id="rdoManualBank" value="ManualBankTransfer"
+                       @(Model.ddlPaymentMethod == "ManualBankTransfer" ? "checked" : "") />
+                <label class="form-check-label" for="rdoManualBank">
+                    <i class="ri ri-building-2-line me-1"></i>@await T.GetAsync("Registration.ManualBankTransfer")
+                </label>
+            </div>
+        }
+
+        @* Bank details panel *@
+        <div id="divBankDetails" style="display:none;" class="mt-3">
+            <h6 class="text-primary">@await T.GetAsync("Registration.BankDetails")</h6>
+            @foreach (var bank in Model.BankAccounts)
+            {
+                <div class="card bank-card border-start border-3 mb-2">
+                    <div class="card-body py-2">
+                        <div class="fw-bold">@bank.BankName</div>
+                        <div>@await T.GetAsync("Payment.AccountName"): <strong>@bank.AccountName</strong></div>
+                        <div>@await T.GetAsync("Payment.AccountNo"): <strong>@bank.AccountNumber</strong></div>
+                        @if (!string.IsNullOrEmpty(bank.Branch))
+                        {
+                            <div>Branch: <strong>@bank.Branch</strong></div>
+                        }
+                        <div>Currency: <strong>@bank.Currency</strong></div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* Declaration *@
+        <h6 class="mt-4">@await T.GetAsync("Registration.Declaration")</h6>
+
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="chkDeclInfoAccurate" name="chkDeclInfoAccurate" value="true"
+                   @(Model.chkDeclInfoAccurate ? "checked" : "") />
+            <label class="form-check-label" for="chkDeclInfoAccurate">
+                @await T.GetAsync("Registration.DeclInfoAccurate")
+            </label>
+        </div>
+
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="chkDeclFeeNonrefundable" name="chkDeclFeeNonrefundable" value="true"
+                   @(Model.chkDeclFeeNonrefundable ? "checked" : "") />
+            <label class="form-check-label" for="chkDeclFeeNonrefundable">
+                @await T.GetAsync("Registration.DeclFeeNonrefundable")
+            </label>
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-secondary waves-effect" id="btnPrev4">
+                <i class="ri ri-arrow-left-line me-1"></i>@lblBack
+            </button>
+            <button type="submit" class="btn btn-primary waves-effect waves-light" id="btnSubmit" disabled>
+                <i class="ri ri-arrow-right-circle-line me-1"></i>@lblProceed
+            </button>
+        </div>
+    </div>
+
+</form>
+
 @section PageScripts {
 <script>
+    var currentStep = 1;
+    var stepIds     = ['stepApplicationType', 'stepPersonalDetails', 'stepCompanyDetails', 'stepPayment'];
+
+    var msgRequired  = '@Html.Raw(lblRequired)';
+    var lblSelectPh  = '@Html.Raw(lblSelectCat)';
+
     var individualCategories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-        Model.IndividualCategories.Select(c => new { id = c.Id, name = c.Name, price = c.Price })));
-    var corporateCategories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-        Model.CorporateCategories.Select(c => new { id = c.Id, name = c.Name, price = c.Price })));
+        Model.IndividualCategories.Select(c => new { id = c.Id, name = c.Name })));
+    var corporateCategories  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.CorporateCategories.Select(c => new { id = c.Id, name = c.Name })));
+
     var categoryDetailsUrl = '@categoryDetailsUrl';
-    var selectPlaceholder = '@await T.GetAsync("Select")';
+    var restoredType       = '@Model.ddlApplicationType';
+    var restoredCategory   = @Model.ddlAwardCategory;
+    var restoredPayment    = '@Model.ddlPaymentMethod';
 
     $(document).ready(function () {
-        M.FormSelect.init(document.querySelectorAll('select'));
-        M.updateTextFields();
+        // ── Navigation ──
+        $('#btnNext1').on('click', function () { goNext(1); });
+        $('#btnNext2').on('click', function () { goNext(2); });
+        $('#btnNext3').on('click', function () { goNext(3); });
+        $('#btnPrev2').on('click', function () { showStep(1); });
+        $('#btnPrev3').on('click', function () { showStep(2); });
+        $('#btnPrev4').on('click', function () { showStep(3); });
 
+        // ── Step 1 events ──
         $('#ddlApplicationType').on('change', function () {
-            updateCategoryDropdown($(this).val());
-            toggleCompanySection($(this).val());
+            var type = $(this).val();
+            populateCategoryDropdown(type, 0);
+            updateCorporateMarkers(type);
+            updateStep1Next();
         });
 
         $('#ddlAwardCategory').on('change', function () {
-            showPaymentSummary($(this).val());
+            loadPaymentSummary($(this).val());
+            updateStep1Next();
         });
 
-        var selectedType = '@Model.ddlApplicationType';
-        if (selectedType) {
-            updateCategoryDropdown(selectedType);
-            toggleCompanySection(selectedType);
+        // ── Step 4 events ──
+        $('input[name="ddlPaymentMethod"]').on('change', function () {
+            toggleBankPanel($(this).val());
+            updateSubmitBtn();
+        });
+
+        $('#chkDeclInfoAccurate, #chkDeclFeeNonrefundable').on('change', function () {
+            updateSubmitBtn();
+        });
+
+        // ── Restore POST-error state ──
+        if (restoredType) {
+            populateCategoryDropdown(restoredType, restoredCategory);
+            updateCorporateMarkers(restoredType);
+            if (restoredCategory > 0) { loadPaymentSummary(restoredCategory); }
         }
+
+        if (restoredPayment) { toggleBankPanel(restoredPayment); }
+
+        updateStep1Next();
+        updateSubmitBtn();
     });
 
-    function updateCategoryDropdown(type) {
-        var categories = type === 'Corporate' ? corporateCategories : individualCategories;
-        var $select = $('#ddlAwardCategory');
-        $select.empty();
-        $select.append('<option value="" disabled selected>' + selectPlaceholder + '</option>');
-        $.each(categories, function (i, cat) {
-            $select.append('<option value="' + cat.id + '">' + cat.name + '</option>');
+    // ── Step navigation ──────────────────────────────────────
+
+    function showStep(step) {
+        currentStep = step;
+        $('.wizard-step').hide();
+        $('#' + stepIds[step - 1]).show();
+
+        $('.stepper-item').each(function () {
+            var s = parseInt($(this).data('step'));
+            $(this).removeClass('active completed');
+            if (s === step) $(this).addClass('active');
+            else if (s < step) $(this).addClass('completed');
         });
-        M.FormSelect.init($select[0]);
-        $('#divPaymentSummary').hide();
-    }
 
-    function toggleCompanySection(type) {
-        if (type === 'Corporate') {
-            $('.corporate-required').show();
-            $('#txtCompanyName, #txtSsmRegNo, #ddlIndustry').prop('required', true);
-        } else {
-            $('.corporate-required').hide();
-            $('#txtCompanyName, #txtSsmRegNo, #ddlIndustry').prop('required', false);
+        for (var i = 1; i <= 3; i++) {
+            $('#stepLine' + i).toggleClass('completed', i < step);
         }
+
+        $('html, body').animate({ scrollTop: $('.card').offset().top - 20 }, 250);
     }
 
-    function showPaymentSummary(categoryId) {
-        if (!categoryId) { $('#divPaymentSummary').hide(); return; }
-        $.get(categoryDetailsUrl + '&id=' + categoryId, function (res) {
+    function goNext(fromStep) {
+        if (!validateStep(fromStep)) {
+            Swal.fire({
+                icon: 'warning', text: msgRequired,
+                toast: true, position: 'top-end',
+                timer: 3000, showConfirmButton: false
+            });
+            return;
+        }
+        showStep(fromStep + 1);
+    }
+
+    function validateStep(step) {
+        if (step === 1) {
+            return !!$('#ddlApplicationType').val() && isCurrentCatSelected();
+        }
+        if (step === 2) {
+            return $('#ddlTitle').val() && $('#txtFullName').val().trim() &&
+                   $('#txtNric').val().trim() && $('#txtContactNo').val().trim() && $('#txtEmail').val().trim();
+        }
+        if (step === 3) {
+            if ($('#ddlApplicationType').val() === 'Corporate') {
+                return $('#txtCompanyName').val().trim() && !!$('#ddlIndustry').val();
+            }
+            return true;
+        }
+        if (step === 4) {
+            return !!$('input[name="ddlPaymentMethod"]:checked').val() &&
+                   $('#chkDeclInfoAccurate').is(':checked') &&
+                   $('#chkDeclFeeNonrefundable').is(':checked');
+        }
+        return true;
+    }
+
+    function isCurrentCatSelected() {
+        var val = $('#ddlAwardCategory').val();
+        return val && parseInt(val) > 0;
+    }
+
+    function updateStep1Next() {
+        var valid = !!$('#ddlApplicationType').val() && isCurrentCatSelected();
+        $('#btnNext1').prop('disabled', !valid);
+    }
+
+    function updateSubmitBtn() {
+        $('#btnSubmit').prop('disabled', !validateStep(4));
+    }
+
+    // ── Step 1 helpers ───────────────────────────────────────
+
+    function populateCategoryDropdown(type, selectedId) {
+        var cats = type === 'Corporate' ? corporateCategories : individualCategories;
+        var $sel = $('#ddlAwardCategory');
+        $sel.empty().append('<option value="" disabled selected>' + lblSelectPh + '</option>');
+        $.each(cats, function (i, c) {
+            var sel = (c.id === selectedId) ? ' selected' : '';
+            $sel.append('<option value="' + c.id + '"' + sel + '>' + c.name + '</option>');
+        });
+        if (!selectedId) { $('#divPaymentSummary').hide(); }
+    }
+
+    function loadPaymentSummary(catId) {
+        if (!catId || parseInt(catId) <= 0) { $('#divPaymentSummary').hide(); return; }
+        $.get(categoryDetailsUrl + '&id=' + catId, function (res) {
             if (!res.success) return;
             $('#lblCategoryName').text(res.name);
-            $('#lblAwardFee').text(res.priceDisplay);
-            $('#lblPayAfterLogin').text(res.priceDisplay);
+            $('#lblFeeAmount').text(res.priceDisplay);
             $('#divPaymentSummary').show();
         });
+    }
+
+    function updateCorporateMarkers(type) {
+        if (type === 'Corporate') { $('.corporate-required').show(); }
+        else                      { $('.corporate-required').hide(); }
+    }
+
+    // ── Step 4 helpers ───────────────────────────────────────
+
+    function toggleBankPanel(method) {
+        if (method === 'ManualBankTransfer') { $('#divBankDetails').show(); }
+        else                                 { $('#divBankDetails').hide(); }
     }
 </script>
 }

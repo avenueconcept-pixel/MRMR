@@ -3,21 +3,31 @@ using MyApp.Constants;
 using MyApp.Constants.MRMR;
 using MyApp.Dtos;
 using MyApp.Helper;
+using MyApp.Helper.DB;
 using MyApp.Helper.DB.MRMR;
+using MyApp.Models;
 using MyApp.Models.MRMR;
 using MyApp.Services;
 
 namespace MyApp.Areas.Applicant.Pages;
 
-public class RegisterModel : BasePageModel
+public class RegisterModel : PublicPageModel
 {
-    private readonly RegistrationDbHelper _dbHelper;
-    private readonly TranslationService   _translation;
+    private readonly RegistrationDbHelper       _dbHelper;
+    private readonly TranslationService         _translation;
+    private readonly SystemSettingService       _systemSetting;
+    private readonly CompanyBankAccountDbHelper _bankAccountDbHelper;
 
-    public RegisterModel(RegistrationDbHelper dbHelper, TranslationService translation)
+    public RegisterModel(
+        RegistrationDbHelper       dbHelper,
+        TranslationService         translation,
+        SystemSettingService       systemSetting,
+        CompanyBankAccountDbHelper bankAccountDbHelper)
     {
-        _dbHelper    = dbHelper;
-        _translation = translation;
+        _dbHelper            = dbHelper;
+        _translation         = translation;
+        _systemSetting       = systemSetting;
+        _bankAccountDbHelper = bankAccountDbHelper;
     }
 
     [BindProperty] public string  ddlTitle                { get; set; } = string.Empty;
@@ -37,13 +47,15 @@ public class RegisterModel : BasePageModel
     [BindProperty] public bool    chkDeclInfoAccurate     { get; set; }
     [BindProperty] public bool    chkDeclFeeNonrefundable { get; set; }
 
-    public List<CategorySummaryDto> IndividualCategories { get; set; } = new();
-    public List<CategorySummaryDto> CorporateCategories  { get; set; } = new();
+    public List<CategorySummaryDto>    IndividualCategories      { get; set; } = new();
+    public List<CategorySummaryDto>    CorporateCategories       { get; set; } = new();
+    public bool                        ManualBankTransferEnabled  { get; set; }
+    public List<CompanyBankAccount>    BankAccounts              { get; set; } = new();
 
-    public string MsgDuplicateEmail          { get; set; } = string.Empty;
-    public string MsgDuplicateNric           { get; set; } = string.Empty;
+    public string MsgDuplicateEmail           { get; set; } = string.Empty;
+    public string MsgDuplicateNric            { get; set; } = string.Empty;
     public string MsgDuplicateApplicationType { get; set; } = string.Empty;
-    public string MsgError                   { get; set; } = string.Empty;
+    public string MsgError                    { get; set; } = string.Empty;
 
     public async Task OnGetAsync()
     {
@@ -66,9 +78,14 @@ public class RegisterModel : BasePageModel
         }
 
         if (ddlApplicationType == "Corporate" &&
-            (string.IsNullOrWhiteSpace(txtCompanyName) ||
-             string.IsNullOrWhiteSpace(txtSsmRegNo)    ||
-             string.IsNullOrWhiteSpace(ddlIndustry)))
+            (string.IsNullOrWhiteSpace(txtCompanyName) || string.IsNullOrWhiteSpace(ddlIndustry)))
+        {
+            AlertMessageContent = await _translation.GetAsync(MessageConstants.RequiredField);
+            AlertMessageType    = MessageType.Error;
+            return Page();
+        }
+
+        if (ddlPaymentMethod == nameof(MyApp.Constants.MRMR.PaymentMethod.ManualBankTransfer) && !ManualBankTransferEnabled)
         {
             AlertMessageContent = await _translation.GetAsync(MessageConstants.RequiredField);
             AlertMessageType    = MessageType.Error;
@@ -108,7 +125,7 @@ public class RegisterModel : BasePageModel
         {
             case RegistrationResult.Success:
                 TempData["RegisteredApplicationId"] = applicationDbId;
-                TempData["RegisteredPaymentMethod"] = ddlPaymentMethod;
+                TempData["RegisteredPaymentMethod"]  = ddlPaymentMethod;
                 return RedirectToPage("/Payment/Select", new { area = "Applicant" });
 
             case RegistrationResult.DuplicateEmail:
@@ -153,11 +170,13 @@ public class RegisterModel : BasePageModel
 
     private async Task LoadPageDataAsync()
     {
-        IndividualCategories      = await _dbHelper.GetActiveCategoriesAsync("Individual");
-        CorporateCategories       = await _dbHelper.GetActiveCategoriesAsync("Corporate");
-        MsgDuplicateEmail         = await _translation.GetAsync("Registration.DuplicateEmail");
-        MsgDuplicateNric          = await _translation.GetAsync("Registration.DuplicateNric");
+        IndividualCategories       = await _dbHelper.GetActiveCategoriesAsync("Individual");
+        CorporateCategories        = await _dbHelper.GetActiveCategoriesAsync("Corporate");
+        ManualBankTransferEnabled  = await _systemSetting.GetAsBoolAsync("Registration.ManualBankTransferEnabled", false);
+        BankAccounts               = await _bankAccountDbHelper.GetAllActiveByCountryAsync("MY", _translation.CurrentLanguage);
+        MsgDuplicateEmail          = await _translation.GetAsync("Registration.DuplicateEmail");
+        MsgDuplicateNric           = await _translation.GetAsync("Registration.DuplicateNric");
         MsgDuplicateApplicationType = await _translation.GetAsync("Registration.DuplicateApplicationType");
-        MsgError                  = await _translation.GetAsync(MessageConstants.SaveError);
+        MsgError                   = await _translation.GetAsync(MessageConstants.SaveError);
     }
 }

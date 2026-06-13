@@ -1,0 +1,137 @@
+@page
+@model MyApp.Areas.Applicant.Pages.Submission.SummaryModel
+@{
+    Layout = "Layouts/_PortalLayout";
+    ViewData["Title"] = await T.GetAsync("Submission.Summary.Title");
+    var app = Model.CurrentApplication!;
+    var sub = Model.Submission;
+}
+
+<div class="row mt-3">
+    <div class="col s12">
+        <a asp-area="Applicant" asp-page="/Dashboard" class="btn-flat grey-text waves-effect mb-2">
+            <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Dashboard.Title")
+        </a>
+
+        <div class="card applicant-card">
+            <div class="card-content">
+                <div class="row valign-wrapper mb-0">
+                    <div class="col s12 m9">
+                        <span class="card-title mb-0">@app.ApplicationId</span>
+                        <p class="grey-text mt-0">
+                            @app.AwardCategory?.Name &nbsp;·&nbsp; @app.ApplicationType
+                        </p>
+                    </div>
+                    <div class="col s12 m3 right-align">
+                        <span class="badge teal white-text" style="float:none;">@app.Status</span>
+                    </div>
+                </div>
+
+                <div class="divider mb-3"></div>
+
+                @* Submission info *@
+                <div class="row mb-2">
+                    <div class="col s6">
+                        <p class="grey-text mb-0"><small>@await T.GetAsync("Submission.Summary.SubmittedAt")</small></p>
+                        <p class="mb-0">@app.SubmittedAt?.ToString("dd MMM yyyy, hh:mm tt") UTC</p>
+                    </div>
+                    <div class="col s6">
+                        <p class="grey-text mb-0"><small>@await T.GetAsync("Submission.Summary.Applicant")</small></p>
+                        <p class="mb-0">@app.Registrant?.FullName</p>
+                    </div>
+                </div>
+
+                @* Section completion checklist *@
+                <h6 class="blue-grey-text text-darken-2 mt-3 mb-1 fw-bold">
+                    @await T.GetAsync("Submission.SectionM.ChecklistTitle")
+                </h6>
+                <table class="striped" style="font-size:0.9rem;">
+                    <tbody>
+                        @{
+                            bool isCorporate = app.ApplicationType == "Corporate";
+                            var sectionRows = new List<(string Label, bool Complete, bool Hide)>
+                            {
+                                (await T.GetAsync("Submission.Nav.SectionA"), sub?.SectionAComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionB"), sub?.SectionBComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionC"), sub?.SectionCComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionD"), sub?.SectionDComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionE"), sub?.SectionEComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionF"), sub?.SectionFComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionG"), sub?.SectionGComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionH"), sub?.SectionHComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionI"), sub?.SectionIComplete ?? false, !isCorporate),
+                                (await T.GetAsync("Submission.Nav.SectionJ"), sub?.SectionJComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionK"), sub?.SectionKComplete ?? false, false),
+                                (await T.GetAsync("Submission.Nav.SectionL"), sub?.SectionLComplete ?? false, false),
+                            };
+                        }
+                        @foreach (var (label, complete, hide) in sectionRows.Where(r => !r.Hide))
+                        {
+                            <tr>
+                                <td>
+                                    <i class="ri @(complete ? "ri-checkbox-circle-line green-text" : "ri-close-circle-line red-text") me-1"></i>
+                                    @label
+                                </td>
+                                <td class="right-align">
+                                    <span class="badge @(complete ? "green" : "red") white-text" style="float:none;">
+                                        @(complete ? await T.GetAsync("Submission.SectionM.Complete") : await T.GetAsync("Submission.SectionM.Incomplete"))
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Documents *@
+                @if (Model.Documents.Any())
+                {
+                    <h6 class="blue-grey-text text-darken-2 mt-4 mb-1 fw-bold">
+                        @await T.GetAsync("Dashboard.DocVerification.Title")
+                    </h6>
+                    <table class="striped" style="font-size:0.9rem;">
+                        <tbody>
+                            @foreach (var doc in Model.Documents.OrderBy(d => d.DocumentType))
+                            {
+                                var badgeClass = doc.VerificationStatus switch
+                                {
+                                    "Verified" => "green white-text",
+                                    "Rejected" => "red white-text",
+                                    _          => "orange white-text"
+                                };
+                                <tr>
+                                    <td>@await T.GetAsync($"Submission.SectionK.Doc.{DocTypeKey(doc.DocumentType)}")</td>
+                                    <td><span class="badge @badgeClass" style="float:none;">@doc.VerificationStatus</span></td>
+                                    <td><small class="grey-text">@doc.OriginalFilename</small></td>
+                                    <td><small class="grey-text">@doc.UploadedAt.ToString("dd MMM yyyy")</small></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+
+            <div class="card-action grey lighten-5">
+                <a asp-area="Applicant" asp-page="/Dashboard" class="btn-flat grey-text waves-effect">
+                    <i class="ri ri-arrow-left-line me-1"></i>@await T.GetAsync("Submission.Complete.BackToDashboard")
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private static string DocTypeKey(string docType) => docType switch
+    {
+        "ic_passport"           => "IcPassport",
+        "company_registration"  => "CompanyRegistration",
+        "auditor_report"        => "AuditorReport",
+        "business_profile"      => "BusinessProfile",
+        "tax_compliance"        => "TaxCompliance",
+        "supporting_document_1" => "Supporting1",
+        "supporting_document_2" => "Supporting2",
+        "supporting_document_3" => "Supporting3",
+        "supporting_document_4" => "Supporting4",
+        "supporting_document_5" => "Supporting5",
+        _                       => docType
+    };
+}
