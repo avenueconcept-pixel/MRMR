@@ -274,11 +274,11 @@
         _ => "grey lighten-3 grey-text"
     };
 
-    async Task RenderDocumentStatus(
+    async Task<object?> RenderDocumentStatus(
         List<MyApp.Models.MRMR.ApplicationDocument> docs,
         string applicationId)
     {
-        if (!docs.Any()) return;
+        if (!docs.Any()) return null!;
 
         <div class="mt-3">
             <div class="divider mb-2"></div>
@@ -326,6 +326,7 @@
                 </tbody>
             </table>
         </div>
+        return null!;
     }
 
     private static string DocTypeDisplayKey(string docType) => docType switch

@@ -105,6 +105,7 @@ builder.Services.AddScoped<MyApp.Services.MRMR.InvoiceService>();
 // MRMR2026 DbHelpers
 builder.Services.AddScoped<MyApp.Helper.DB.MRMR.RegistrationDbHelper>();
 builder.Services.AddScoped<MyApp.Helper.DB.MRMR.SubmissionDbHelper>();
+builder.Services.AddScoped<MyApp.Helper.DB.MRMR.AdminMrmrDbHelper>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Logging.AddProvider(new DbLoggerProvider(connectionString));
