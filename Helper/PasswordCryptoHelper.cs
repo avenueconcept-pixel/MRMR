@@ -10,9 +10,11 @@ public static class PasswordCryptoHelper
 
   public static void Configure(IConfiguration configuration)
   {
-    _encryptionKey = configuration["Security:EncryptionKey"]
-        ?? throw new InvalidOperationException(
-            "EncryptionKey is not configured. Add 'Security:EncryptionKey' to appsettings.json.");
+    var key = configuration["Security:EncryptionKey"];
+    if (string.IsNullOrWhiteSpace(key))
+        throw new InvalidOperationException(
+            "EncryptionKey is not configured or is empty. Set 'Security:EncryptionKey' in appsettings.json.");
+    _encryptionKey = key;
   }
 
   private static string EncryptionKey
