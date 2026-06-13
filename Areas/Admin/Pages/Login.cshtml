@@ -5,6 +5,7 @@
 	Layout = "Layouts/_BlankLayout";
 	ViewData["Title"] = await T.GetAsync("Login");
 	var loginLogo = await _loginBrandingSvc.GetAsync("global", "logo_path");
+	var adminSystemName = await _loginBrandingSvc.GetAsync("admin", "system_name");
 }
 
 
@@ -61,7 +62,7 @@
 							</div>
 						</div>
 					}
-					<h4 class="mb-1">@await T.GetAsync("WelcomeSystem") 👋</h4>
+					<h4 class="mb-1">@await T.GetAsync("WelcomeTo") @adminSystemName 👋</h4>
 					<p class="mb-5">@await T.GetAsync("SignInLoginHeader")</p>
 
 
