@@ -1,0 +1,223 @@
+@page
+@model MyApp.Areas.Admin.Pages.MRMR.Payments.DetailModel
+@using MyApp.Constants.MRMR
+@using System.IO
+@{
+    ViewData["Title"]      = $"Payment — {Model.Payment?.InvoiceNo}";
+    ViewData["ActiveMenu"] = "MRMR_PAYMENTS";
+    var pay     = Model.Payment!;
+    var app     = pay.Application;
+    var reg     = app?.Registrant;
+    bool pending = pay.Status == nameof(PaymentStatus.PendingVerification);
+}
+
+<div class="row">
+    <div class="col s12">
+        <a asp-page="Index" class="btn-flat grey-text waves-effect mb-2">
+            <i class="ri ri-arrow-left-line me-1"></i>Back to Queue
+        </a>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "success" ? "green" : "red") lighten-4 mb-3">
+                @Model.AlertMessageContent
+            </div>
+        }
+
+        <div class="row">
+            @* Left column — payment info + slip *@
+            <div class="col s12 l7">
+
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">
+                            <i class="ri ri-receipt-line me-1"></i>@pay.InvoiceNo
+                            @{
+                                var badgeClass = pay.Status switch
+                                {
+                                    nameof(PaymentStatus.Verified)            => "green white-text",
+                                    nameof(PaymentStatus.Rejected)            => "red white-text",
+                                    nameof(PaymentStatus.PendingVerification) => "orange white-text",
+                                    _ => "grey white-text"
+                                };
+                            }
+                            <span class="badge @badgeClass ms-2" style="float:none;">@pay.Status</span>
+                        </span>
+
+                        <table class="striped">
+                            <tbody>
+                                <tr><td class="grey-text">Applicant</td><td><strong>@reg?.FullName</strong></td></tr>
+                                <tr><td class="grey-text">Application ID</td><td>@app?.ApplicationId</td></tr>
+                                <tr><td class="grey-text">Application Type</td><td>@app?.ApplicationType</td></tr>
+                                <tr><td class="grey-text">Payment Type</td><td>@pay.PaymentType</td></tr>
+                                <tr><td class="grey-text">Amount</td><td><strong>RM @pay.Amount.ToString("N2")</strong></td></tr>
+                                <tr><td class="grey-text">Method</td><td>@pay.Method</td></tr>
+                                <tr><td class="grey-text">Slip Uploaded</td><td>@(pay.SlipUploadedAt?.ToString("dd MMM yyyy, HH:mm") ?? "-")</td></tr>
+                                @if (pay.Status == nameof(PaymentStatus.Verified) || pay.Status == nameof(PaymentStatus.Rejected))
+                                {
+                                    <tr><td class="grey-text">Actioned At</td><td>@(pay.VerifiedAt?.ToString("dd MMM yyyy, HH:mm") ?? "-")</td></tr>
+                                }
+                                @if (!string.IsNullOrEmpty(pay.AdminRemarks))
+                                {
+                                    <tr><td class="grey-text">Admin Remarks</td><td class="red-text">@pay.AdminRemarks</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @* Payment slip preview *@
+                @if (!string.IsNullOrEmpty(pay.SlipFilePath))
+                {
+                    <div class="card">
+                        <div class="card-content">
+                            <span class="card-title" style="font-size:1rem;">
+                                <i class="ri ri-image-line me-1"></i>Payment Slip
+                            </span>
+                            @{
+                                var ext = System.IO.Path.GetExtension(pay.SlipFilePath).ToLowerInvariant();
+                            }
+                            @if (ext == ".pdf")
+                            {
+                                <a href="/@pay.SlipFilePath" target="_blank"
+                                   class="btn blue darken-3 waves-effect waves-light">
+                                    <i class="ri ri-file-pdf-line me-1"></i>Open PDF Slip
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/@pay.SlipFilePath" target="_blank">
+                                    <img src="/@pay.SlipFilePath" alt="Payment Slip"
+                                         style="max-width:100%; border:1px solid #ddd; border-radius:4px;" />
+                                </a>
+                                <p class="grey-text mt-1"><small>Click image to open full size</small></p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @* Right column — approve/reject + audit log *@
+            <div class="col s12 l5">
+
+                @if (pending)
+                {
+                    <div class="card">
+                        <div class="card-content">
+                            <span class="card-title" style="font-size:1rem;">
+                                <i class="ri ri-shield-check-line me-1"></i>Verification Action
+                            </span>
+
+                            @* Approve *@
+                            <form method="post" asp-page-handler="Approve" class="mb-3">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="PaymentId" value="@pay.Id" />
+                                <button type="button" onclick="confirmApprove()"
+                                        class="btn green darken-2 waves-effect waves-light w-100">
+                                    <i class="ri ri-checkbox-circle-line me-1"></i>Approve Payment
+                                </button>
+                                <div id="approveForm" style="display:none;">
+                                    <button type="submit" id="approveSubmit"></button>
+                                </div>
+                            </form>
+
+                            <div class="divider mb-3"></div>
+
+                            @* Reject *@
+                            <form method="post" asp-page-handler="Reject" id="rejectForm">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="PaymentId" value="@pay.Id" />
+                                <div class="input-field">
+                                    <textarea id="txtRejectRemarks" name="RejectRemarks"
+                                              class="materialize-textarea" rows="3"
+                                              placeholder="Reason for rejection (required)">@Model.RejectRemarks</textarea>
+                                    <label for="txtRejectRemarks" class="@(!string.IsNullOrEmpty(Model.RejectRemarks) ? "active" : "")">
+                                        Rejection Remarks *
+                                    </label>
+                                </div>
+                                <button type="button" onclick="confirmReject()"
+                                        class="btn red darken-2 waves-effect waves-light w-100">
+                                    <i class="ri ri-close-circle-line me-1"></i>Reject Payment
+                                </button>
+                                <button type="submit" id="rejectSubmit" style="display:none;"></button>
+                            </form>
+                        </div>
+                    </div>
+                }
+
+                @* Audit log *@
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title" style="font-size:1rem;">
+                            <i class="ri ri-history-line me-1"></i>Audit Log
+                        </span>
+                        @if (!pay.AuditLogs.Any())
+                        {
+                            <p class="grey-text">No audit entries.</p>
+                        }
+                        else
+                        {
+                            <ul class="collection" style="border:none;">
+                                @foreach (var log in pay.AuditLogs)
+                                {
+                                    <li class="collection-item" style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <span class="badge @(log.Action.Contains("Approved") ? "green" : log.Action.Contains("Rejected") ? "red" : "blue") white-text"
+                                              style="float:none; margin-right:8px; font-size:0.75rem;">
+                                            @log.Action
+                                        </span>
+                                        <small class="grey-text">@log.PerformedAt.ToString("dd MMM yyyy HH:mm")</small>
+                                        @if (!string.IsNullOrEmpty(log.Remarks))
+                                        {
+                                            <br /><small class="grey-text">@log.Remarks</small>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+function confirmApprove() {
+    Swal.fire({
+        title:              'Approve Payment?',
+        text:               'This will verify the payment and notify the applicant. This action cannot be undone.',
+        icon:               'question',
+        showCancelButton:   true,
+        confirmButtonText:  'Yes, Approve',
+        cancelButtonText:   'Cancel',
+        confirmButtonColor: '#388e3c'
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('approveSubmit').click();
+        }
+    });
+}
+
+function confirmReject() {
+    var remarks = document.getElementById('txtRejectRemarks').value.trim();
+    if (!remarks) {
+        Swal.fire({ icon: 'warning', title: 'Remarks Required', text: 'Please enter a reason for rejection.' });
+        return;
+    }
+    Swal.fire({
+        title:              'Reject Payment?',
+        text:               'The applicant will be notified with your remarks.',
+        icon:               'warning',
+        showCancelButton:   true,
+        confirmButtonText:  'Yes, Reject',
+        cancelButtonText:   'Cancel',
+        confirmButtonColor: '#c62828'
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('rejectSubmit').click();
+        }
+    });
+}
+</script>
+}

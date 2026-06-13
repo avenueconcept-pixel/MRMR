@@ -61,6 +61,164 @@ public class AdminMrmrDbHelper : DbHelper
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(take)
                 .ToListAsync());
+
+    // ── Payment Verification ──
+
+    public async Task<List<Payment>> GetPaymentListAsync(
+        string? paymentType, string? status, string? search)
+        => await ExecuteAsync(async () =>
+        {
+            var query = _db.Payments
+                .Include(p => p.Application)
+                    .ThenInclude(a => a.Registrant)
+                .AsQueryable();
+
+            query = query.Where(p => p.Method == nameof(PaymentMethod.ManualBankTransfer));
+
+            if (!string.IsNullOrWhiteSpace(paymentType))
+                query = query.Where(p => p.PaymentType == paymentType);
+
+            if (!string.IsNullOrWhiteSpace(status))
+                query = query.Where(p => p.Status == status);
+            else
+                query = query.Where(p => p.Status == nameof(PaymentStatus.PendingVerification));
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(p =>
+                    (p.InvoiceNo != null && p.InvoiceNo.ToLower().Contains(s)) ||
+                    p.Application.Registrant.FullName.ToLower().Contains(s) ||
+                    p.Application.ApplicationId.ToLower().Contains(s));
+            }
+
+            return await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Take(100)
+                .ToListAsync();
+        });
+
+    public async Task<Payment?> GetPaymentForAdminAsync(int paymentId)
+        => await ExecuteAsync(async () =>
+            await _db.Payments
+                .Include(p => p.Application)
+                    .ThenInclude(a => a.Registrant)
+                .Include(p => p.Application)
+                    .ThenInclude(a => a.AwardCategory)
+                .Include(p => p.AuditLogs.OrderByDescending(l => l.PerformedAt))
+                .FirstOrDefaultAsync(p => p.Id == paymentId));
+
+    public async Task ApprovePaymentAsync(int paymentId, int adminId)
+        => await ExecuteAsync(async () =>
+        {
+            var payment = await _db.Payments
+                .Include(p => p.Application)
+                    .ThenInclude(a => a.AwardCategory)
+                .FirstOrDefaultAsync(p => p.Id == paymentId)
+                ?? throw new InvalidOperationException("Payment not found.");
+
+            if (payment.Status != nameof(PaymentStatus.PendingVerification))
+                throw new InvalidOperationException("Payment is not pending verification.");
+
+            payment.Status     = nameof(PaymentStatus.Verified);
+            payment.VerifiedBy = adminId;
+            payment.VerifiedAt = DateTime.UtcNow;
+            payment.UpdatedAt  = DateTime.UtcNow;
+
+            var app = payment.Application;
+            if (app != null)
+            {
+                app.Status    = payment.PaymentType == nameof(PaymentType.NominationFee)
+                    ? nameof(ApplicationStatus.NominationFeeVerified)
+                    : nameof(ApplicationStatus.AwardFeeVerified);
+                app.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+
+            _db.PaymentAuditLogs.Add(new PaymentAuditLog
+            {
+                PaymentId   = paymentId,
+                Action      = "AdminApproved",
+                PerformedBy = adminId,
+                PerformedAt = DateTime.UtcNow,
+                Remarks     = "Approved by admin"
+            });
+            await _db.SaveChangesAsync();
+
+            if (payment.PaymentType == nameof(PaymentType.NominationFee))
+            {
+                var exists = await _db.Payments.AnyAsync(p =>
+                    p.ApplicationId == payment.ApplicationId &&
+                    p.PaymentType   == nameof(PaymentType.AwardFee));
+
+                if (!exists && app != null)
+                {
+                    var invoiceNo = $"INV-{DateTime.UtcNow:yyyyMMdd}-{payment.ApplicationId:D5}-AWD";
+                    var awardFee  = new Payment
+                    {
+                        ApplicationId = payment.ApplicationId,
+                        PaymentType   = nameof(PaymentType.AwardFee),
+                        Method        = nameof(PaymentMethod.ManualBankTransfer),
+                        Amount        = app.AwardCategory?.Price ?? 0,
+                        Status        = nameof(PaymentStatus.Pending),
+                        InvoiceNo     = invoiceNo,
+                        CreatedAt     = DateTime.UtcNow,
+                        UpdatedAt     = DateTime.UtcNow
+                    };
+                    _db.Payments.Add(awardFee);
+                    await _db.SaveChangesAsync();
+
+                    _db.PaymentAuditLogs.Add(new PaymentAuditLog
+                    {
+                        PaymentId   = awardFee.Id,
+                        Action      = "AwardFeeCreated",
+                        PerformedAt = DateTime.UtcNow,
+                        Remarks     = "Auto-created on NominationFee admin approval"
+                    });
+                    await _db.SaveChangesAsync();
+                }
+            }
+        });
+
+    public async Task RejectPaymentAsync(int paymentId, int adminId, string remarks)
+        => await ExecuteAsync(async () =>
+        {
+            var payment = await _db.Payments
+                .Include(p => p.Application)
+                .FirstOrDefaultAsync(p => p.Id == paymentId)
+                ?? throw new InvalidOperationException("Payment not found.");
+
+            if (payment.Status != nameof(PaymentStatus.PendingVerification))
+                throw new InvalidOperationException("Payment is not pending verification.");
+
+            payment.Status       = nameof(PaymentStatus.Rejected);
+            payment.AdminRemarks = remarks;
+            payment.VerifiedBy   = adminId;
+            payment.VerifiedAt   = DateTime.UtcNow;
+            payment.UpdatedAt    = DateTime.UtcNow;
+
+            var app = payment.Application;
+            if (app != null)
+            {
+                app.Status    = payment.PaymentType == nameof(PaymentType.NominationFee)
+                    ? nameof(ApplicationStatus.NominationFeePending)
+                    : nameof(ApplicationStatus.AwardFeePending);
+                app.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+
+            _db.PaymentAuditLogs.Add(new PaymentAuditLog
+            {
+                PaymentId   = paymentId,
+                Action      = "AdminRejected",
+                PerformedBy = adminId,
+                PerformedAt = DateTime.UtcNow,
+                Remarks     = remarks
+            });
+            await _db.SaveChangesAsync();
+        });
 }
 
 public class MrmrDashboardStats
