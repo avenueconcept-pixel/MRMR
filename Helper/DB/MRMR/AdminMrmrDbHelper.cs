@@ -295,6 +295,46 @@ public class AdminMrmrDbHelper : DbHelper
                 await _db.SaveChangesAsync();
             }
         });
+
+    // ── Document Verification ──
+
+    public async Task<List<ApplicationDocument>> GetApplicationDocumentsAsync(int applicationId)
+        => await ExecuteAsync(async () =>
+            await _db.ApplicationDocuments
+                .Where(d => d.ApplicationId == applicationId)
+                .OrderBy(d => d.DocumentType)
+                .ToListAsync());
+
+    public async Task VerifyDocumentAsync(int documentId, int adminId)
+        => await ExecuteAsync(async () =>
+        {
+            var doc = await _db.ApplicationDocuments.FindAsync(documentId)
+                ?? throw new InvalidOperationException("Document not found.");
+
+            doc.VerificationStatus = nameof(DocumentVerificationStatus.Verified);
+            doc.AdminRemarks       = null;
+            doc.VerifiedBy         = adminId;
+            doc.VerifiedAt         = DateTime.UtcNow;
+            doc.UpdatedAt          = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task RejectDocumentAsync(int documentId, int adminId, string remarks)
+        => await ExecuteAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(remarks))
+                throw new InvalidOperationException("Remarks are required when rejecting a document.");
+
+            var doc = await _db.ApplicationDocuments.FindAsync(documentId)
+                ?? throw new InvalidOperationException("Document not found.");
+
+            doc.VerificationStatus = nameof(DocumentVerificationStatus.Rejected);
+            doc.AdminRemarks       = remarks;
+            doc.VerifiedBy         = adminId;
+            doc.VerifiedAt         = DateTime.UtcNow;
+            doc.UpdatedAt          = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
 }
 
 public class MrmrDashboardStats
