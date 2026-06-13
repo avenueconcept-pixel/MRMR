@@ -691,6 +691,46 @@ public class AdminMrmrDbHelper : DbHelper
             await _db.SaveChangesAsync();
         });
 
+    // ── Reports ──
+
+    public async Task<List<Application>> GetAllApplicationsForReportAsync()
+        => await ExecuteAsync(async () =>
+            await _db.Applications
+                .Include(a => a.Registrant)
+                .Include(a => a.AwardCategory)
+                .Include(a => a.Payments)
+                .Include(a => a.Ranking)
+                .OrderBy(a => a.ApplicationId)
+                .ToListAsync());
+
+    public async Task<List<Payment>> GetAllPaymentsForReportAsync()
+        => await ExecuteAsync(async () =>
+            await _db.Payments
+                .Include(p => p.Application)
+                    .ThenInclude(a => a.Registrant)
+                .Include(p => p.Application)
+                    .ThenInclude(a => a.AwardCategory)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync());
+
+    public async Task<List<ApplicationRanking>> GetRankingsForReportAsync(int? categoryId)
+        => await ExecuteAsync(async () =>
+        {
+            var query = _db.ApplicationRankings
+                .Include(r => r.Application)
+                    .ThenInclude(a => a.Registrant)
+                .Include(r => r.AwardCategory)
+                .AsQueryable();
+
+            if (categoryId.HasValue && categoryId > 0)
+                query = query.Where(r => r.AwardCategoryId == categoryId);
+
+            return await query
+                .OrderBy(r => r.AwardCategoryId)
+                .ThenBy(r => r.RankPosition)
+                .ToListAsync();
+        });
+
     // ── Evaluation Overview ──
 
     public async Task<List<ApplicationScoreSummaryDto>> GetEvaluationSummaryAsync(int categoryId)
