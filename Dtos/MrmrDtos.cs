@@ -34,3 +34,27 @@ public class CriterionScoreInputDto
     public decimal Score       { get; set; }
     public string? Comment     { get; set; }
 }
+
+public class ApplicationScoreSummaryDto
+{
+    public MyApp.Models.MRMR.Application           Application   { get; set; } = null!;
+    public decimal                                  TotalWeighted { get; set; }
+    public int                                      JudgeCount    { get; set; }
+    public List<JudgeScoreRowDto>                   JudgeRows     { get; set; } = [];
+    public MyApp.Models.MRMR.ApplicationRanking?    Ranking       { get; set; }
+}
+
+public class JudgeScoreRowDto
+{
+    public int     JudgeId        { get; set; }
+    public string  JudgeName      { get; set; } = string.Empty;
+    public decimal TotalWeighted  { get; set; }
+    public string? Recommendation { get; set; }
+}
+
+public class FinalizeDecisionDto
+{
+    public int     ApplicationId    { get; set; }
+    public bool    IsApprovedWinner { get; set; }
+    public string? CommitteeRemarks { get; set; }
+}

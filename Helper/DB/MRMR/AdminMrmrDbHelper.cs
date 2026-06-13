@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApp.Constants;
 using MyApp.Constants.MRMR;
 using MyApp.Data;
+using MyApp.Dtos;
 using MyApp.Helper;
 using MyApp.Models.MRMR;
 using AdminUser = MyApp.Models.AdminUser;
@@ -687,6 +688,118 @@ public class AdminMrmrDbHelper : DbHelper
             eval.Status      = nameof(EvaluationStatus.Submitted);
             eval.SubmittedAt = DateTime.UtcNow;
             eval.UpdatedAt   = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
+
+    // ── Evaluation Overview ──
+
+    public async Task<List<ApplicationScoreSummaryDto>> GetEvaluationSummaryAsync(int categoryId)
+        => await ExecuteAsync(async () =>
+        {
+            var apps = await _db.Applications
+                .Include(a => a.Registrant)
+                .Include(a => a.AwardCategory)
+                .Include(a => a.Ranking)
+                .Where(a => a.AwardCategoryId == categoryId && a.IsFinalSubmitted)
+                .ToListAsync();
+
+            var result = new List<ApplicationScoreSummaryDto>();
+
+            foreach (var app in apps)
+            {
+                var evals = await _db.JudgeEvaluations
+                    .Include(e => e.Scores)
+                        .ThenInclude(s => s.AwardCriterion)
+                    .Where(e => e.ApplicationId == app.Id &&
+                                e.Status == nameof(EvaluationStatus.Submitted))
+                    .ToListAsync();
+
+                var judgeRows = new List<JudgeScoreRowDto>();
+
+                foreach (var ev in evals)
+                {
+                    var judge = await _db.AdminUsers.FindAsync(ev.JudgeId);
+                    var total = ev.Scores.Sum(s => s.WeightedScore ?? 0);
+                    judgeRows.Add(new JudgeScoreRowDto
+                    {
+                        JudgeId        = ev.JudgeId,
+                        JudgeName      = judge?.FullName ?? $"Judge #{ev.JudgeId}",
+                        TotalWeighted  = Math.Round(total, 2),
+                        Recommendation = ev.Recommendation
+                    });
+                }
+
+                var avgScore = judgeRows.Any()
+                    ? Math.Round(judgeRows.Average(r => r.TotalWeighted), 2)
+                    : 0;
+
+                result.Add(new ApplicationScoreSummaryDto
+                {
+                    Application   = app,
+                    TotalWeighted = avgScore,
+                    JudgeCount    = judgeRows.Count,
+                    JudgeRows     = judgeRows,
+                    Ranking       = app.Ranking
+                });
+            }
+
+            return result.OrderByDescending(r => r.TotalWeighted).ToList();
+        });
+
+    public async Task FinalizeRankingsAsync(
+        int categoryId,
+        List<(int ApplicationId, bool IsApprovedWinner, string? CommitteeRemarks)> decisions,
+        int adminId)
+        => await ExecuteAsync(async () =>
+        {
+            var existing = await _db.ApplicationRankings
+                .Where(r => r.AwardCategoryId == categoryId)
+                .ToListAsync();
+            _db.ApplicationRankings.RemoveRange(existing);
+            await _db.SaveChangesAsync();
+
+            short rank = 1;
+            foreach (var (appId, isWinner, remarks) in decisions)
+            {
+                _db.ApplicationRankings.Add(new ApplicationRanking
+                {
+                    ApplicationId    = appId,
+                    AwardCategoryId  = categoryId,
+                    FinalScore       = 0,
+                    RankPosition     = rank++,
+                    IsRecommended    = true,
+                    IsApprovedWinner = isWinner,
+                    CommitteeRemarks = remarks,
+                    ApprovedBy       = isWinner ? adminId : null,
+                    ApprovedAt       = isWinner ? DateTime.UtcNow : null,
+                    RankedAt         = DateTime.UtcNow,
+                    CreatedAt        = DateTime.UtcNow,
+                    UpdatedAt        = DateTime.UtcNow
+                });
+
+                var app = await _db.Applications.FindAsync(appId);
+                if (app != null)
+                {
+                    app.Status    = isWinner
+                        ? nameof(ApplicationStatus.Approved)
+                        : nameof(ApplicationStatus.UnderEvaluation);
+                    app.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            await _db.SaveChangesAsync();
+
+            var summaries = await GetEvaluationSummaryAsync(categoryId);
+            foreach (var s in summaries)
+            {
+                var ranking = await _db.ApplicationRankings
+                    .FirstOrDefaultAsync(r => r.ApplicationId == s.Application.Id);
+                if (ranking != null)
+                {
+                    ranking.FinalScore = s.TotalWeighted;
+                    ranking.UpdatedAt  = DateTime.UtcNow;
+                }
+            }
             await _db.SaveChangesAsync();
         });
 }

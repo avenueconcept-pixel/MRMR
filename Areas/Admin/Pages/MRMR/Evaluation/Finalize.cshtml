@@ -1,0 +1,152 @@
+@page "{categoryId:int}"
+@model MyApp.Areas.Admin.Pages.MRMR.Evaluation.FinalizeModel
+@using MyApp.Dtos
+@{
+    ViewData["Title"]      = $"Finalize — {Model.Category?.Name}";
+    ViewData["ActiveMenu"] = "MRMR_EVALUATION";
+}
+
+<div class="row">
+    <div class="col s12">
+        <a asp-page="Index" asp-route-categoryId="@Model.CategoryId"
+           class="btn-flat grey-text waves-effect mb-2">
+            <i class="ri ri-arrow-left-line me-1"></i>Back to Overview
+        </a>
+
+        <h5 class="mb-3">
+            <i class="ri ri-trophy-line me-1"></i>Finalize Rankings — @Model.Category?.Name
+        </h5>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="card-panel green lighten-4 mb-2">
+                <i class="ri ri-checkbox-circle-line me-1 green-text"></i>@TempData["SuccessMessage"]
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel red lighten-4 mb-2">
+                <i class="ri ri-error-warning-line me-1 red-text"></i>@Model.AlertMessageContent
+            </div>
+        }
+
+        <div class="card-panel orange lighten-4 mb-3">
+            <i class="ri ri-information-line me-1 orange-text"></i>
+            Finalizing will overwrite any existing rankings for this category.
+            Winners will be marked as <strong>Approved</strong>.
+        </div>
+
+        @if (!Model.Summaries.Any())
+        {
+            <div class="card">
+                <div class="card-content center-align py-4">
+                    <p class="grey-text">No evaluated applications to finalize.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Finalize">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="CategoryId" value="@Model.CategoryId" />
+
+                <div class="card">
+                    <div class="card-content">
+                        <table class="striped responsive-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Application</th>
+                                    <th>Applicant</th>
+                                    <th class="right-align">Avg Score</th>
+                                    <th class="center-align">Approve Winner</th>
+                                    <th>Committee Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.Summaries.Count; i++)
+                                {
+                                    var s = Model.Summaries[i];
+                                    var d = Model.Decisions.ElementAtOrDefault(i) ?? new FinalizeDecisionDto();
+                                    <tr>
+                                        <td>@(i + 1)</td>
+                                        <td>
+                                            <input type="hidden"
+                                                   name="Decisions[@i].ApplicationId"
+                                                   value="@s.Application.Id" />
+                                            <strong>@s.Application.ApplicationId</strong>
+                                        </td>
+                                        <td>@s.Application.Registrant.FullName</td>
+                                        <td class="right-align">
+                                            <strong>@s.TotalWeighted.ToString("N2")</strong>
+                                        </td>
+                                        <td class="center-align">
+                                            <label>
+                                                @if (d.IsApprovedWinner)
+                                                {
+                                                    <input type="checkbox"
+                                                           name="Decisions[@i].IsApprovedWinner"
+                                                           value="true"
+                                                           checked />
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox"
+                                                           name="Decisions[@i].IsApprovedWinner"
+                                                           value="true" />
+                                                }
+                                                <input type="hidden"
+                                                       name="Decisions[@i].IsApprovedWinner"
+                                                       value="false" />
+                                                <span></span>
+                                            </label>
+                                        </td>
+                                        <td>
+                                            <input type="text"
+                                                   name="Decisions[@i].CommitteeRemarks"
+                                                   value="@d.CommitteeRemarks"
+                                                   class="browser-default"
+                                                   style="border:1px solid #ddd; padding:4px 8px; width:100%; border-radius:4px;"
+                                                   placeholder="Optional remarks" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="right-align mb-3">
+                    <a asp-page="Index" asp-route-categoryId="@Model.CategoryId"
+                       class="btn-flat grey-text waves-effect me-2">Cancel</a>
+                    <button type="button" onclick="confirmFinalize()"
+                            class="btn green darken-2 waves-effect waves-light">
+                        <i class="ri ri-trophy-line me-1"></i>Finalize Rankings
+                    </button>
+                    <div id="finalizeFormWrapper" style="display:none;">
+                        <button type="submit" id="finalizeBtn"></button>
+                    </div>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+function confirmFinalize() {
+    Swal.fire({
+        title:             'Finalize Rankings?',
+        text:              'This will overwrite any existing rankings for this category.',
+        icon:              'warning',
+        showCancelButton:  true,
+        confirmButtonText: 'Yes, Finalize',
+        cancelButtonText:  'Cancel',
+        confirmButtonColor:'#2e7d32'
+    }).then(function (result) {
+        if (result.isConfirmed)
+            document.getElementById('finalizeBtn').click();
+    });
+}
+</script>
+}
