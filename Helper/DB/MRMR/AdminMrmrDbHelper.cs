@@ -335,6 +335,113 @@ public class AdminMrmrDbHelper : DbHelper
             doc.UpdatedAt          = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         });
+
+    // ── Category Management ──
+
+    public async Task<List<AwardCategory>> GetCategoryListAsync()
+        => await ExecuteAsync(async () =>
+            await _db.AwardCategories
+                .Include(c => c.Criteria.Where(x => x.IsActive).OrderBy(x => x.DisplayOrder))
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync());
+
+    public async Task<AwardCategory?> GetCategoryAsync(int id)
+        => await ExecuteAsync(async () =>
+            await _db.AwardCategories
+                .Include(c => c.Criteria.OrderBy(x => x.DisplayOrder))
+                .FirstOrDefaultAsync(c => c.Id == id));
+
+    public async Task CreateCategoryAsync(AwardCategory category, List<AwardCriterion> criteria)
+        => await ExecuteAsync(async () =>
+        {
+            ValidateCriteriaWeights(criteria);
+
+            category.CreatedAt = DateTime.UtcNow;
+            category.UpdatedAt = DateTime.UtcNow;
+            _db.AwardCategories.Add(category);
+            await _db.SaveChangesAsync();
+
+            short order = 1;
+            foreach (var c in criteria.Where(x => !string.IsNullOrWhiteSpace(x.CriterionName)))
+            {
+                c.AwardCategoryId = category.Id;
+                c.DisplayOrder    = order++;
+                c.IsActive        = true;
+                c.CreatedAt       = DateTime.UtcNow;
+                c.UpdatedAt       = DateTime.UtcNow;
+                _db.AwardCriteria.Add(c);
+            }
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task UpdateCategoryAsync(AwardCategory updated, List<AwardCriterion> criteria)
+        => await ExecuteAsync(async () =>
+        {
+            var category = await _db.AwardCategories
+                .Include(c => c.Criteria)
+                .FirstOrDefaultAsync(c => c.Id == updated.Id)
+                ?? throw new InvalidOperationException("Category not found.");
+
+            category.Name          = updated.Name;
+            category.CategoryType  = updated.CategoryType;
+            category.Price         = updated.Price;
+            category.MaxRecipients = updated.MaxRecipients;
+            category.IsActive      = updated.IsActive;
+            category.DisplayOrder  = updated.DisplayOrder;
+            category.Description   = updated.Description;
+            category.UpdatedAt     = DateTime.UtcNow;
+
+            if (!category.CriteriaLocked)
+            {
+                ValidateCriteriaWeights(criteria);
+
+                foreach (var existing in category.Criteria)
+                {
+                    existing.IsActive  = false;
+                    existing.UpdatedAt = DateTime.UtcNow;
+                }
+
+                short order = 1;
+                foreach (var c in criteria.Where(x => !string.IsNullOrWhiteSpace(x.CriterionName)))
+                {
+                    c.AwardCategoryId = category.Id;
+                    c.DisplayOrder    = order++;
+                    c.IsActive        = true;
+                    c.CreatedAt       = DateTime.UtcNow;
+                    c.UpdatedAt       = DateTime.UtcNow;
+                    _db.AwardCriteria.Add(c);
+                }
+            }
+
+            await _db.SaveChangesAsync();
+        });
+
+    public async Task DeactivateCategoryAsync(int id)
+        => await ExecuteAsync(async () =>
+        {
+            var category = await _db.AwardCategories.FindAsync(id)
+                ?? throw new InvalidOperationException("Category not found.");
+
+            var hasApps = await _db.Applications.AnyAsync(a => a.AwardCategoryId == id);
+            if (hasApps)
+                throw new InvalidOperationException(
+                    "Cannot deactivate a category that has applications linked to it.");
+
+            category.IsActive  = false;
+            category.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        });
+
+    private static void ValidateCriteriaWeights(List<AwardCriterion> criteria)
+    {
+        var active = criteria.Where(x => !string.IsNullOrWhiteSpace(x.CriterionName)).ToList();
+        if (!active.Any()) return;
+
+        var total = active.Sum(x => x.Weight);
+        if (total != 100)
+            throw new InvalidOperationException(
+                $"Criteria weights must total exactly 100%. Current total: {total}%.");
+    }
 }
 
 public class MrmrDashboardStats

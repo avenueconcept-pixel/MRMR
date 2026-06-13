@@ -1,0 +1,165 @@
+@page
+@model MyApp.Areas.Admin.Pages.MRMR.Categories.CreateModel
+@{
+    ViewData["Title"]      = "Create Category";
+    ViewData["ActiveMenu"] = "MRMR_CATEGORIES";
+}
+
+<div class="row">
+    <div class="col s12">
+        <a asp-page="Index" class="btn-flat grey-text waves-effect mb-2">
+            <i class="ri ri-arrow-left-line me-1"></i>Back to Categories
+        </a>
+        <h5 class="mb-3"><i class="ri ri-trophy-line me-1"></i>Create Award Category</h5>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel red lighten-4 mb-2">
+                <i class="ri ri-error-warning-line me-1 red-text"></i>@Model.AlertMessageContent
+            </div>
+        }
+
+        <form method="post" asp-page-handler="Create">
+            @Html.AntiForgeryToken()
+
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title" style="font-size:1rem;">Category Details</span>
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <input type="text" id="Category_Name" name="Category.Name"
+                                   value="@Model.Category.Name" required />
+                            <label for="Category_Name">Category Name *</label>
+                        </div>
+                        <div class="input-field col s12 m3">
+                            <select name="Category.CategoryType" id="Category_CategoryType">
+                                @if (Model.Category.CategoryType == "Corporate")
+                                {
+                                    <option value="Individual">Individual</option>
+                                    <option value="Corporate" selected>Corporate</option>
+                                }
+                                else
+                                {
+                                    <option value="Individual" selected>Individual</option>
+                                    <option value="Corporate">Corporate</option>
+                                }
+                            </select>
+                            <label>Type *</label>
+                        </div>
+                        <div class="input-field col s12 m3">
+                            <input type="number" id="Category_Price" name="Category.Price"
+                                   value="@Model.Category.Price" min="0" step="0.01" required />
+                            <label for="Category_Price">Award Fee (RM) *</label>
+                        </div>
+                        <div class="input-field col s12 m3">
+                            <input type="number" id="Category_MaxRecipients" name="Category.MaxRecipients"
+                                   value="@(Model.Category.MaxRecipients == 0 ? 1 : Model.Category.MaxRecipients)"
+                                   min="1" required />
+                            <label for="Category_MaxRecipients" class="active">Max Recipients *</label>
+                        </div>
+                        <div class="input-field col s12 m3">
+                            <input type="number" id="Category_DisplayOrder" name="Category.DisplayOrder"
+                                   value="@Model.Category.DisplayOrder" min="0" />
+                            <label for="Category_DisplayOrder" class="active">Display Order</label>
+                        </div>
+                        <div class="input-field col s12">
+                            <textarea id="Category_Description" name="Category.Description"
+                                      class="materialize-textarea">@Model.Category.Description</textarea>
+                            <label for="Category_Description">Description</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title" style="font-size:1rem;">
+                        Evaluation Criteria
+                        <small class="grey-text">(weights must total 100%)</small>
+                    </span>
+                    <p class="grey-text" style="font-size:0.85rem;">
+                        Leave blank to skip. Weight total: <strong id="weightTotal">0</strong>%
+                        <span id="weightWarning" class="red-text ms-2" style="display:none;">&#9888; Must equal 100%</span>
+                    </p>
+
+                    <table class="striped">
+                        <thead>
+                            <tr>
+                                <th style="width:50%">Criterion Name</th>
+                                <th style="width:20%">Weight (%)</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Criteria.Count; i++)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="text"
+                                               name="Criteria[@i].CriterionName"
+                                               value="@Model.Criteria[i].CriterionName"
+                                               class="browser-default"
+                                               style="border:1px solid #ddd; padding:4px 8px; width:100%; border-radius:4px;"
+                                               placeholder="e.g. Innovation" />
+                                    </td>
+                                    <td>
+                                        <input type="number"
+                                               name="Criteria[@i].Weight"
+                                               value="@Model.Criteria[i].Weight"
+                                               class="browser-default weight-input"
+                                               style="border:1px solid #ddd; padding:4px 8px; width:80px; border-radius:4px;"
+                                               min="0" max="100" step="0.01" />
+                                    </td>
+                                    <td>
+                                        <input type="text"
+                                               name="Criteria[@i].Description"
+                                               value="@Model.Criteria[i].Description"
+                                               class="browser-default"
+                                               style="border:1px solid #ddd; padding:4px 8px; width:100%; border-radius:4px;"
+                                               placeholder="Optional" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="right-align mb-3">
+                <a asp-page="Index" class="btn-flat grey-text waves-effect me-2">Cancel</a>
+                <button type="submit" class="btn blue darken-3 waves-effect waves-light">
+                    <i class="ri ri-save-line me-1"></i>Create Category
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    M.FormSelect.init(document.querySelectorAll('select'));
+    updateWeightTotal();
+    document.querySelectorAll('.weight-input').forEach(function (el) {
+        el.addEventListener('input', updateWeightTotal);
+    });
+});
+
+function updateWeightTotal() {
+    var total = 0;
+    document.querySelectorAll('.weight-input').forEach(function (el) {
+        total += parseFloat(el.value) || 0;
+    });
+    total = Math.round(total * 100) / 100;
+    document.getElementById('weightTotal').textContent = total;
+    var warn = document.getElementById('weightWarning');
+    if (total > 0 && total !== 100) {
+        warn.style.display = 'inline';
+        document.getElementById('weightTotal').classList.add('red-text');
+    } else {
+        warn.style.display = 'none';
+        document.getElementById('weightTotal').classList.remove('red-text');
+    }
+}
+</script>
+}
