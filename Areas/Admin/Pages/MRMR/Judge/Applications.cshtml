@@ -1,0 +1,108 @@
+@page
+@model MyApp.Areas.Admin.Pages.MRMR.Judge.ApplicationsModel
+@using MyApp.Constants.MRMR
+@{
+    ViewData["Title"]      = $"Evaluate — {Model.Category?.Name}";
+    ViewData["ActiveMenu"] = "JUDGE_DASHBOARD";
+    var submitted  = Model.Evaluations.Values.Count(e => e?.Status == nameof(EvaluationStatus.Submitted));
+    var draft      = Model.Evaluations.Values.Count(e => e?.Status == nameof(EvaluationStatus.Draft));
+    var notStarted = Model.Applications.Count - submitted - draft;
+}
+
+<div class="row">
+    <div class="col s12">
+        <a asp-page="Dashboard" class="btn-flat grey-text waves-effect mb-2">
+            <i class="ri ri-arrow-left-line me-1"></i>Back to Dashboard
+        </a>
+
+        <h5 class="mb-1">
+            <i class="ri ri-trophy-line me-1"></i>@Model.Category?.Name
+            <small class="grey-text">(@Model.Category?.CategoryType)</small>
+        </h5>
+
+        <div class="mb-3">
+            <span class="chip green white-text"><i class="ri ri-checkbox-circle-line me-1"></i>Submitted: @submitted</span>
+            <span class="chip orange white-text ms-1"><i class="ri ri-edit-line me-1"></i>Draft: @draft</span>
+            <span class="chip grey white-text ms-1"><i class="ri ri-time-line me-1"></i>Not Started: @notStarted</span>
+        </div>
+
+        @if (!Model.Applications.Any())
+        {
+            <div class="card">
+                <div class="card-content center-align py-4">
+                    <i class="ri ri-inbox-line grey-text" style="font-size:3rem;"></i>
+                    <p class="grey-text">No submitted applications in this category yet.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-content">
+                    <table class="striped responsive-table highlight">
+                        <thead>
+                            <tr>
+                                <th>Application ID</th>
+                                <th>Applicant</th>
+                                <th>Submitted</th>
+                                <th>Evaluation Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var app in Model.Applications)
+                            {
+                                var eval       = Model.Evaluations.GetValueOrDefault(app.Id);
+                                var evalStatus = eval?.Status ?? nameof(EvaluationStatus.NotStarted);
+                                var badgeClass = evalStatus switch
+                                {
+                                    nameof(EvaluationStatus.Submitted) => "green white-text",
+                                    nameof(EvaluationStatus.Draft)     => "orange white-text",
+                                    _                                  => "grey white-text"
+                                };
+                                var btnLabel = evalStatus switch
+                                {
+                                    nameof(EvaluationStatus.Submitted) => "View",
+                                    nameof(EvaluationStatus.Draft)     => "Continue",
+                                    _                                  => "Start"
+                                };
+                                var btnClass = evalStatus == nameof(EvaluationStatus.Submitted)
+                                    ? "btn-small blue-grey waves-effect waves-light"
+                                    : "btn-small blue darken-3 waves-effect waves-light";
+
+                                <tr>
+                                    <td><strong>@app.ApplicationId</strong></td>
+                                    <td>
+                                        @app.Registrant.FullName
+                                        @if (app.ApplicationType == "Corporate" && !string.IsNullOrEmpty(app.Registrant.CompanyName))
+                                        {
+                                            <br /><small class="grey-text">@app.Registrant.CompanyName</small>
+                                        }
+                                    </td>
+                                    <td>@(app.SubmittedAt?.ToString("dd MMM yyyy") ?? "-")</td>
+                                    <td>
+                                        <span class="badge @badgeClass" style="float:none; font-size:0.75rem;">
+                                            @evalStatus
+                                        </span>
+                                        @if (eval?.SubmittedAt != null)
+                                        {
+                                            <br /><small class="grey-text">@eval.SubmittedAt.Value.ToString("dd MMM yyyy")</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a asp-page="Evaluate"
+                                           asp-route-applicationId="@app.Id"
+                                           asp-route-categoryId="@Model.CategoryId"
+                                           class="@btnClass">
+                                            <i class="ri ri-edit-line me-1"></i>@btnLabel
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>

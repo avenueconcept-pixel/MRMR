@@ -569,6 +569,32 @@ public class AdminMrmrDbHelper : DbHelper
             await _db.Applications.CountAsync(a =>
                 a.AwardCategoryId == categoryId &&
                 a.IsFinalSubmitted));
+
+    // ── Judge Evaluation ──
+
+    public async Task<List<Application>> GetCategoryApplicationsForJudgeAsync(int categoryId)
+        => await ExecuteAsync(async () =>
+            await _db.Applications
+                .Include(a => a.Registrant)
+                .Include(a => a.AwardCategory)
+                .Where(a => a.AwardCategoryId == categoryId && a.IsFinalSubmitted)
+                .OrderBy(a => a.ApplicationId)
+                .ToListAsync());
+
+    public async Task<JudgeEvaluation?> GetJudgeEvaluationAsync(int applicationId, int judgeId)
+        => await ExecuteAsync(async () =>
+            await _db.JudgeEvaluations
+                .Include(e => e.Scores)
+                    .ThenInclude(s => s.AwardCriterion)
+                .FirstOrDefaultAsync(e =>
+                    e.ApplicationId == applicationId && e.JudgeId == judgeId));
+
+    public async Task<bool> IsJudgeAssignedToCategoryAsync(int judgeId, int categoryId)
+        => await ExecuteAsync(async () =>
+            await _db.JudgeCategoryAssignments.AnyAsync(a =>
+                a.JudgeId == judgeId &&
+                a.AwardCategoryId == categoryId &&
+                a.IsActive));
 }
 
 public class MrmrDashboardStats
