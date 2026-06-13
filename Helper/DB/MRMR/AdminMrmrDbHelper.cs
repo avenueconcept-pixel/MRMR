@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApp.Constants;
 using MyApp.Constants.MRMR;
 using MyApp.Data;
+using MyApp.Helper;
 using MyApp.Models.MRMR;
 using AdminUser = MyApp.Models.AdminUser;
 
@@ -493,7 +494,7 @@ public class AdminMrmrDbHelper : DbHelper
                 FullName              = fullName,
                 Email                 = email,
                 Username              = username,
-                PasswordHash          = BCrypt.Net.BCrypt.HashPassword(tempPassword),
+                PasswordHash          = PasswordCryptoHelper.Encrypt(tempPassword),
                 RoleId                = judgeRole.Id,
                 CountryCode           = "MY",
                 Status                = StatusConstants.Active,
@@ -562,6 +563,12 @@ public class AdminMrmrDbHelper : DbHelper
 
             await _db.SaveChangesAsync();
         });
+
+    public async Task<int> GetCategoryApplicationCountAsync(int categoryId)
+        => await ExecuteAsync(async () =>
+            await _db.Applications.CountAsync(a =>
+                a.AwardCategoryId == categoryId &&
+                a.IsFinalSubmitted));
 }
 
 public class MrmrDashboardStats

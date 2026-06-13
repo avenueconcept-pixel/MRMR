@@ -74,7 +74,8 @@ public class Routes
   public const string AdminMrmrPayments     = "/MRMR/Payments/Index";
   public const string AdminMrmrDocuments    = "/MRMR/Documents/Index";
   public const string AdminMrmrCategories   = "/MRMR/Categories/Index";
-  public const string AdminMrmrJudges       = "/MRMR/Judges/Index";
+  public const string AdminMrmrJudges            = "/MRMR/Judges/Index";
+  public const string AdminMrmrJudgeDashboard    = "/MRMR/Judge/Dashboard";
   public const string AdminMrmrReports      = "/MRMR/Reports/Index";
 
   // Shared

@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MyApp.Constants;
+using MyApp.Data;
 using MyApp.Helper;
 using MyApp.Helper.DB;
 using MyApp.Models;
 using MyApp.Services;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
 //using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace MyApp.Areas.Admin.Pages
@@ -18,6 +20,7 @@ namespace MyApp.Areas.Admin.Pages
     private readonly AuditHelper         _audit;
     private readonly UserSessionDbHelper _sessionDbHelper;
     private readonly MaintenanceService  _maintenanceService;
+    private readonly AppDbContext        _db;
 
     public List<Language> Languages            { get; set; } = new();
     public string         CurrentLang          { get; set; } = AppConstants.DefaultLanguage;
@@ -49,7 +52,8 @@ namespace MyApp.Areas.Admin.Pages
         LanguageDbHelper    languageDbHelper,
         AuditHelper         audit,
         UserSessionDbHelper sessionDbHelper,
-        MaintenanceService  maintenanceService)
+        MaintenanceService  maintenanceService,
+        AppDbContext        db)
     {
       _translation        = translation;
       _adminDbHelper      = adminDbHelper;
@@ -57,6 +61,7 @@ namespace MyApp.Areas.Admin.Pages
       _audit              = audit;
       _sessionDbHelper    = sessionDbHelper;
       _maintenanceService = maintenanceService;
+      _db                 = db;
     }
 
     public async Task OnGetAsync(string? username = null)
@@ -205,6 +210,10 @@ namespace MyApp.Areas.Admin.Pages
 
       if (adminUser.IsForceChangePassword)
         return RedirectToPage(Routes.AdminForceChangePassword);
+
+      var judgeRole = await _db.Roles.FirstOrDefaultAsync(r => r.RoleCode == "JUDGE");
+      if (judgeRole != null && adminUser.RoleId == judgeRole.Id)
+        return RedirectToPage(Routes.AdminMrmrJudgeDashboard);
 
       return RedirectToPage(Routes.AdminDashboard);
     }
