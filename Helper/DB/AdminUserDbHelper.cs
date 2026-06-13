@@ -13,15 +13,12 @@ public class AdminUserDbHelper : DbHelper
       => await ExecuteAsync(async () => await _db.AdminUsers
           .Where(u => u.Status != StatusConstants.Deleted)
           .Include(u => u.Role)
-          .Include(u => u.Department)
           .OrderBy(u => u.FullName)
           .ToListAsync());
 
   public async Task<AdminUser?> GetByIdAsync(int id)
       => await ExecuteAsync(() => _db.AdminUsers
           .Include(u => u.Role)
-          .Include(u => u.Department)
-          .Include(u => u.Region)
           .FirstOrDefaultAsync(u => u.Id == id && u.Status != StatusConstants.Deleted));
 
   public async Task<bool> IsUsernameExistsAsync(string username, int? excludeId = null)
@@ -54,9 +51,7 @@ public class AdminUserDbHelper : DbHelper
         existing.FullName              = user.FullName;
         existing.Email                 = user.Email;
         existing.RoleId                = user.RoleId;
-        existing.DeptId                = user.DeptId;
         existing.CountryCode           = user.CountryCode;
-        existing.RegionId              = user.RegionId;
         existing.MobileCountryCode     = user.MobileCountryCode;
         existing.MobileNo              = user.MobileNo;
         existing.IsForceChangePassword = user.IsForceChangePassword;

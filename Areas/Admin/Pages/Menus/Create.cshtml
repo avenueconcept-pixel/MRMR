@@ -1,7 +1,9 @@
 @page
 @model MyApp.Areas.Admin.Pages.Menus.CreateModel
+@inject Microsoft.Extensions.Options.IOptions<MyApp.Models.AppSettingsOptions> AppOpts
 @{
   ViewData["title"] = await T.GetAsync("Menu.AddTitle");
+  var menuUrlPlaceholder = $"/{AppOpts.Value.AdminUrlPrefix}/Countries";
 }
 
 @section VendorStyles {
@@ -66,7 +68,7 @@
             <label class="form-label">@await T.GetAsync("Menu.Url")</label>
             <input name="txtMenuUrl" value="@Model.txtMenuUrl"
                    class="form-control font-monospace" maxlength="500"
-                   placeholder="/Admin/Countries" />
+                   placeholder="@menuUrlPlaceholder" />
           </div>
 
         </div>

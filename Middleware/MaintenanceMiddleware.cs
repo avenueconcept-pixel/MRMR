@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Configuration;
 using MyApp.Constants;
 using MyApp.Services;
 using System.Security.Claims;
@@ -8,13 +9,23 @@ namespace MyApp.Middleware;
 public class MaintenanceMiddleware
 {
   private readonly RequestDelegate _next;
+  private readonly string          _adminUrlPrefix;
+  private readonly string          _applicantUrlPrefix;
+  private readonly string          _adminLoginPath;
+  private readonly string          _applicantLoginPath;
 
   private static readonly string[] StaticPrefixes =
     { "/vendor", "/css", "/js", "/images", "/uploads", "/favicon" };
 
-  public MaintenanceMiddleware(RequestDelegate next)
+  public MaintenanceMiddleware(RequestDelegate next, IConfiguration config)
   {
-    _next = next;
+    _next               = next;
+    var adminPrefix     = config[AppConstants.AdminUrlPrefixConfigKey]     ?? "admin";
+    var applicantPrefix = config[AppConstants.ApplicantUrlPrefixConfigKey] ?? "applicant";
+    _adminUrlPrefix     = $"/{adminPrefix}";
+    _applicantUrlPrefix = $"/{applicantPrefix}";
+    _adminLoginPath     = $"/{adminPrefix}/Login";
+    _applicantLoginPath = $"/{applicantPrefix}/Login";
   }
 
   public async Task InvokeAsync(HttpContext context, MaintenanceService maintenanceService)
@@ -31,16 +42,16 @@ public class MaintenanceMiddleware
     string loginPage;
     string signOutScheme;
 
-    if (path.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase))
+    if (path.StartsWith(_adminUrlPrefix, StringComparison.OrdinalIgnoreCase))
     {
       systemCode    = AppConstants.SystemTypeAdmin;
-      loginPage     = "/Admin/Login";
+      loginPage     = _adminLoginPath;
       signOutScheme = AuthSchemeConstants.Admin;
     }
-    else if (path.StartsWith("/Applicant", StringComparison.OrdinalIgnoreCase))
+    else if (path.StartsWith(_applicantUrlPrefix, StringComparison.OrdinalIgnoreCase))
     {
       systemCode    = AppConstants.SystemTypeCustomer;
-      loginPage     = "/Applicant/Login";
+      loginPage     = _applicantLoginPath;
       signOutScheme = AuthSchemeConstants.Applicant;
     }
     else

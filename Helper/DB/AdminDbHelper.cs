@@ -72,9 +72,7 @@ public class AdminDbHelper : DbHelper
         existing.FullName             = adminUser.FullName;
         existing.Email                = adminUser.Email;
         existing.RoleId               = adminUser.RoleId;
-        existing.DeptId               = adminUser.DeptId;
         existing.CountryCode          = adminUser.CountryCode;
-        existing.RegionId             = adminUser.RegionId;
         existing.MobileCountryCode    = adminUser.MobileCountryCode;
         existing.MobileNo             = adminUser.MobileNo;
         existing.IsForceChangePassword = adminUser.IsForceChangePassword;

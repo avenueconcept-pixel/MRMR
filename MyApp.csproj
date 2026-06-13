@@ -17,6 +17,7 @@
     <Compile Remove="Areas\Admin\Pages\JobsheetF\**" />
     <Compile Remove="Areas\Admin\Pages\ProductF\**" />
     <Compile Remove="Areas\Admin\Pages\UserF\**" />
+    <Compile Remove="Areas\Customer\**" />
     <Compile Remove="Migrations\**" />
     <Compile Remove="wwwroot\custom\**" />
     <Content Remove="Areas\Admin\Pages\CustomerF\**" />
@@ -27,6 +28,7 @@
     <Content Remove="Areas\Admin\Pages\JobsheetF\**" />
     <Content Remove="Areas\Admin\Pages\ProductF\**" />
     <Content Remove="Areas\Admin\Pages\UserF\**" />
+    <Content Remove="Areas\Customer\**" />
     <Content Remove="Migrations\**" />
     <Content Remove="wwwroot\custom\**" />
     <EmbeddedResource Remove="Areas\Admin\Pages\CustomerF\**" />
@@ -37,6 +39,7 @@
     <EmbeddedResource Remove="Areas\Admin\Pages\JobsheetF\**" />
     <EmbeddedResource Remove="Areas\Admin\Pages\ProductF\**" />
     <EmbeddedResource Remove="Areas\Admin\Pages\UserF\**" />
+    <EmbeddedResource Remove="Areas\Customer\**" />
     <EmbeddedResource Remove="Migrations\**" />
     <EmbeddedResource Remove="wwwroot\custom\**" />
     <None Remove="Areas\Admin\Pages\CustomerF\**" />
@@ -47,6 +50,7 @@
     <None Remove="Areas\Admin\Pages\JobsheetF\**" />
     <None Remove="Areas\Admin\Pages\ProductF\**" />
     <None Remove="Areas\Admin\Pages\UserF\**" />
+    <None Remove="Areas\Customer\**" />
     <None Remove="Migrations\**" />
     <None Remove="wwwroot\custom\**" />
   </ItemGroup>
@@ -104,7 +108,6 @@
 
   <ItemGroup>
     <Folder Include="Areas\Admin\Pages\Shared\" />
-    <Folder Include="Areas\Customer\Pages\" />
     <Folder Include="bin\" />
     <Folder Include="wwwroot\audio\" />
   </ItemGroup>

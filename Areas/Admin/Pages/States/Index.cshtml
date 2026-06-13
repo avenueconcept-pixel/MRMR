@@ -1,7 +1,10 @@
 @page
 @model MyApp.Areas.Admin.Pages.States.IndexModel
+@inject Microsoft.Extensions.Options.IOptions<MyApp.Models.AppSettingsOptions> AppOpts
 @{
   ViewData["title"] = await T.GetAsync("State.PageTitle");
+  var statesEditBase   = $"/{AppOpts.Value.AdminUrlPrefix}/States/Edit";
+  var statesCreateBase = $"/{AppOpts.Value.AdminUrlPrefix}/States/Create";
 }
 
 @section VendorStyles {
@@ -150,7 +153,7 @@
       html +=       '<i class="ri ri-more-2-fill"></i>';
       html +=     '</button>';
       html +=     '<ul class="dropdown-menu dropdown-menu-end">';
-      html +=       '<li><a class="dropdown-item" href="/Admin/States/Edit/' + state.id + '">';
+      html +=       '<li><a class="dropdown-item" href="@statesEditBase/' + state.id + '">';
       html +=         '<i class="ri ri-edit-line me-1"></i>' + lblEdit + '</a></li>';
       html +=       '<li><button class="dropdown-item" type="button" onclick="toggleStatus(' + state.id + ')">';
       html +=         '<i class="ri ri-toggle-line me-1"></i>' + lblToggleStatus + '</button></li>';
@@ -167,7 +170,7 @@
     var tbody = $('#tblStatesBody');
 
     if (countryCode) {
-      $('#btnAdd').attr('href', '/Admin/States/Create?countryCode=' + countryCode)
+      $('#btnAdd').attr('href', '@statesCreateBase?countryCode=' + countryCode)
                  .removeClass('disabled');
     } else {
       $('#btnAdd').attr('href', '#').addClass('disabled');

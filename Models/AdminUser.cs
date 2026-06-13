@@ -10,9 +10,7 @@ public class AdminUser
   public string   FullName        { get; set; } = string.Empty;
   public string   Email           { get; set; } = string.Empty;
   public int      RoleId          { get; set; }
-  public int?     DeptId          { get; set; }
   public string   CountryCode     { get; set; } = string.Empty;
-  public int?     RegionId        { get; set; }
   public string?  MobileCountryCode     { get; set; }
   public string?  MobileNo              { get; set; }
   public bool     IsForceChangePassword { get; set; } = false;
@@ -26,7 +24,5 @@ public class AdminUser
   public string   UpdatedBy       { get; set; } = string.Empty;
 
   public Role?       Role       { get; set; }
-  public Department? Department { get; set; }
   public Country?    Country    { get; set; }
-  public Region?     Region     { get; set; }
 }

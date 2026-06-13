@@ -1,7 +1,9 @@
 @page "{id:int}"
 @model MyApp.Areas.Admin.Pages.Menus.EditModel
+@inject Microsoft.Extensions.Options.IOptions<MyApp.Models.AppSettingsOptions> AppOpts
 @{
   ViewData["title"] = await T.GetAsync("Menu.EditTitle");
+  var menuUrlPlaceholder = $"/{AppOpts.Value.AdminUrlPrefix}/Countries";
 }
 
 @section VendorStyles {
@@ -69,7 +71,7 @@
             <label class="form-label">@await T.GetAsync("Menu.Url")</label>
             <input name="txtMenuUrl" value="@Model.txtMenuUrl"
                    class="form-control font-monospace" maxlength="500"
-                   placeholder="/Admin/Countries" />
+                   placeholder="@menuUrlPlaceholder" />
           </div>
 
           <div class="d-flex gap-2">

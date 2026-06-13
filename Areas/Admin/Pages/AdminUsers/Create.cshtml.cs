@@ -23,9 +23,7 @@ public class CreateModel : AdminPageModel
   [BindProperty] public string    txtPassword              { get; set; } = string.Empty;
   [BindProperty] public string    txtConfirmPassword       { get; set; } = string.Empty;
   [BindProperty] public int       ddlRoleId                { get; set; }
-  [BindProperty] public int?      ddlDeptId                { get; set; }
   [BindProperty] public string    ddlCountryCode           { get; set; } = "MY";
-  [BindProperty] public int?      ddlRegionId              { get; set; }
   [BindProperty] public string    txtMobileCountryCode     { get; set; } = string.Empty;
   [BindProperty] public string    txtMobileNo              { get; set; } = string.Empty;
   [BindProperty] public bool      chkIsForceChangePassword { get; set; }
@@ -96,9 +94,7 @@ public class CreateModel : AdminPageModel
       FullName               = txtFullName.Trim(),
       Email                  = txtEmail.Trim(),
       RoleId                 = ddlRoleId,
-      DeptId                 = null,
       CountryCode            = ddlCountryCode,
-      RegionId               = null,
       MobileCountryCode      = string.IsNullOrWhiteSpace(txtMobileCountryCode) ? null : txtMobileCountryCode.Trim(),
       MobileNo               = string.IsNullOrWhiteSpace(txtMobileNo) ? null : txtMobileNo.Trim(),
       IsForceChangePassword  = chkIsForceChangePassword,

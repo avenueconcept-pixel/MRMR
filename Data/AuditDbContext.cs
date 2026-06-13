@@ -41,7 +41,6 @@ public class AuditDbContext : DbContext
       entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(100).IsRequired();
       entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(200);
       entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2);
-      entity.Property(e => e.RegionId).HasColumnName("region_id");
       entity.Property(e => e.SessionToken).HasColumnName("session_token").HasMaxLength(200).IsRequired();
       entity.Property(e => e.IpAddress).HasColumnName("ip_address").HasMaxLength(50);
       entity.Property(e => e.Browser).HasColumnName("browser").HasMaxLength(200);

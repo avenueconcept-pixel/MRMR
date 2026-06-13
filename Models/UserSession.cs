@@ -8,7 +8,6 @@ public class UserSession
   public string    Username     { get; set; } = string.Empty;
   public string?   FullName     { get; set; }
   public string?   CountryCode  { get; set; }
-  public int?      RegionId     { get; set; }
   public string    SessionToken { get; set; } = string.Empty;
   public string?   IpAddress    { get; set; }
   public string?   Browser      { get; set; }

@@ -36,7 +36,6 @@
             <th>@await T.GetAsync("Username")</th>
             <th>@await T.GetAsync("Email")</th>
             <th>@await T.GetAsync("Role")</th>
-            <th>@await T.GetAsync("Department")</th>
             <th>@await T.GetAsync("Status")</th>
             <th>@await T.GetAsync("Actions")</th>
           </tr>
@@ -60,7 +59,6 @@
               <td>@user.Username</td>
               <td>@user.Email</td>
               <td>@(user.Role?.RoleName ?? "-")</td>
-              <td>@(user.Department?.DeptName ?? "-")</td>
               <td><span class="badge @badgeClass">@statusLabel</span></td>
               <td>
                 <div class="dropdown">

@@ -39,7 +39,9 @@ public static class AppConstants
   // ─── Pagination ───────────────────────────────────
   public const int DefaultPage = 1;
 
-
+  // ─── URL Prefix Config Keys ───────────────────────
+  public const string AdminUrlPrefixConfigKey     = "AppSettings:AdminUrlPrefix";
+  public const string ApplicantUrlPrefixConfigKey = "AppSettings:ApplicantUrlPrefix";
 }
 
 public static class DateTimeExtensions
