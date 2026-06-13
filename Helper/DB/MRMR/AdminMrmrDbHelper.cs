@@ -219,6 +219,82 @@ public class AdminMrmrDbHelper : DbHelper
             });
             await _db.SaveChangesAsync();
         });
+
+    // ── Application Management ──
+
+    public async Task<List<Application>> GetApplicationListAsync(
+        string? statusFilter, string? typeFilter, string? search)
+        => await ExecuteAsync(async () =>
+        {
+            var query = _db.Applications
+                .Include(a => a.Registrant)
+                .Include(a => a.AwardCategory)
+                .Include(a => a.Payments)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(statusFilter))
+                query = query.Where(a => a.Status == statusFilter);
+
+            if (!string.IsNullOrWhiteSpace(typeFilter))
+                query = query.Where(a => a.ApplicationType == typeFilter);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(a =>
+                    a.ApplicationId.ToLower().Contains(s) ||
+                    a.Registrant.FullName.ToLower().Contains(s) ||
+                    a.Registrant.Email.ToLower().Contains(s) ||
+                    (a.Registrant.CompanyName != null && a.Registrant.CompanyName.ToLower().Contains(s)));
+            }
+
+            return await query
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(200)
+                .ToListAsync();
+        });
+
+    public async Task<Application?> GetApplicationDetailAsync(int applicationId)
+        => await ExecuteAsync(async () =>
+            await _db.Applications
+                .Include(a => a.Registrant)
+                .Include(a => a.AwardCategory)
+                .Include(a => a.Payments.OrderByDescending(p => p.CreatedAt))
+                    .ThenInclude(p => p.AuditLogs.OrderByDescending(l => l.PerformedAt))
+                .Include(a => a.Documents.OrderBy(d => d.DocumentType))
+                .Include(a => a.Submission)
+                .FirstOrDefaultAsync(a => a.Id == applicationId));
+
+    public async Task OverrideApplicationStatusAsync(
+        int applicationId, string newStatus, int adminId, string reason)
+        => await ExecuteAsync(async () =>
+        {
+            var app = await _db.Applications.FindAsync(applicationId)
+                ?? throw new InvalidOperationException("Application not found.");
+
+            var oldStatus = app.Status;
+            app.Status    = newStatus;
+            app.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            var payment = await _db.Payments
+                .Where(p => p.ApplicationId == applicationId &&
+                            p.PaymentType   == nameof(PaymentType.NominationFee))
+                .FirstOrDefaultAsync();
+
+            if (payment != null)
+            {
+                _db.PaymentAuditLogs.Add(new PaymentAuditLog
+                {
+                    PaymentId   = payment.Id,
+                    Action      = "AdminStatusOverride",
+                    PerformedBy = adminId,
+                    PerformedAt = DateTime.UtcNow,
+                    Remarks     = $"Status changed: {oldStatus} → {newStatus}. Reason: {reason}"
+                });
+                await _db.SaveChangesAsync();
+            }
+        });
 }
 
 public class MrmrDashboardStats

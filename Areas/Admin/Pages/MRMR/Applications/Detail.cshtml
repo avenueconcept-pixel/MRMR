@@ -1,0 +1,302 @@
+@page "{id:int}"
+@model MyApp.Areas.Admin.Pages.MRMR.Applications.DetailModel
+@using MyApp.Constants.MRMR
+@{
+    ViewData["Title"]      = $"Application — {Model.Application?.ApplicationId}";
+    ViewData["ActiveMenu"] = "MRMR_APPLICATIONS";
+    var app = Model.Application!;
+    var reg = app.Registrant;
+}
+
+<div class="row">
+    <div class="col s12">
+        <a asp-page="Index" class="btn-flat grey-text waves-effect mb-2">
+            <i class="ri ri-arrow-left-line me-1"></i>Back to List
+        </a>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="card-panel green lighten-4 mb-2">
+                <i class="ri ri-checkbox-circle-line me-1 green-text"></i>@TempData["SuccessMessage"]
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+        {
+            <div class="card-panel @(Model.AlertMessageType == "success" ? "green" : "red") lighten-4 mb-2">
+                @Model.AlertMessageContent
+            </div>
+        }
+
+        <div class="row">
+
+            @* Left — Application + Registrant info *@
+            <div class="col s12 l8">
+
+                @* Application summary *@
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">
+                            @app.ApplicationId
+                            @{
+                                var statusClass = app.Status switch
+                                {
+                                    nameof(ApplicationStatus.Approved)             => "green white-text",
+                                    nameof(ApplicationStatus.Rejected)             => "red white-text",
+                                    nameof(ApplicationStatus.SubmissionCompleted)  => "teal white-text",
+                                    nameof(ApplicationStatus.UnderEvaluation)      => "purple white-text",
+                                    nameof(ApplicationStatus.AwardFeeVerified)     => "blue white-text",
+                                    nameof(ApplicationStatus.NominationFeeVerified)=> "light-blue white-text",
+                                    _ => "grey white-text"
+                                };
+                            }
+                            <span class="badge @statusClass ms-2" style="float:none;">@app.Status</span>
+                        </span>
+                        <table class="striped">
+                            <tbody>
+                                <tr><td class="grey-text" style="width:40%">Application Type</td><td>@app.ApplicationType</td></tr>
+                                <tr><td class="grey-text">Award Category</td><td>@app.AwardCategory?.Name</td></tr>
+                                <tr><td class="grey-text">Payment Method</td><td>@app.PaymentMethod</td></tr>
+                                <tr><td class="grey-text">Final Submitted</td><td>@(app.IsFinalSubmitted ? (app.SubmittedAt?.ToString("dd MMM yyyy HH:mm") ?? "Yes") : "No")</td></tr>
+                                <tr><td class="grey-text">Registered</td><td>@app.CreatedAt.ToString("dd MMM yyyy HH:mm")</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @* Registrant info *@
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title" style="font-size:1rem;">
+                            <i class="ri ri-user-line me-1"></i>Registrant
+                        </span>
+                        <table class="striped">
+                            <tbody>
+                                <tr><td class="grey-text" style="width:40%">Full Name</td><td>@reg.FullName</td></tr>
+                                <tr><td class="grey-text">NRIC / Passport</td><td>@reg.NricPassport</td></tr>
+                                <tr><td class="grey-text">Email</td><td>@reg.Email</td></tr>
+                                <tr><td class="grey-text">Contact No</td><td>@reg.ContactNo</td></tr>
+                                @if (app.ApplicationType == "Corporate")
+                                {
+                                    <tr><td class="grey-text">Company Name</td><td>@reg.CompanyName</td></tr>
+                                    <tr><td class="grey-text">SSM Reg No</td><td>@reg.SsmRegNo</td></tr>
+                                    <tr><td class="grey-text">Industry</td><td>@reg.Industry</td></tr>
+                                    <tr><td class="grey-text">Website</td><td>@(reg.Website ?? "-")</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @* Payment summary *@
+                @if (app.Payments.Any())
+                {
+                    <div class="card">
+                        <div class="card-content">
+                            <span class="card-title" style="font-size:1rem;">
+                                <i class="ri ri-bank-card-line me-1"></i>Payments
+                            </span>
+                            <table class="striped">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice</th>
+                                        <th>Type</th>
+                                        <th class="right-align">Amount (RM)</th>
+                                        <th>Method</th>
+                                        <th>Status</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pay in app.Payments)
+                                    {
+                                        var payBadge = pay.Status switch
+                                        {
+                                            nameof(PaymentStatus.Verified)            => "green white-text",
+                                            nameof(PaymentStatus.Rejected)            => "red white-text",
+                                            nameof(PaymentStatus.PendingVerification) => "orange white-text",
+                                            _ => "grey white-text"
+                                        };
+                                        <tr>
+                                            <td>@pay.InvoiceNo</td>
+                                            <td>@pay.PaymentType</td>
+                                            <td class="right-align">@pay.Amount.ToString("N2")</td>
+                                            <td>@pay.Method</td>
+                                            <td>
+                                                <span class="badge @payBadge" style="float:none; font-size:0.7rem;">@pay.Status</span>
+                                            </td>
+                                            <td>
+                                                <a asp-area="Admin" asp-page="/MRMR/Payments/Detail"
+                                                   asp-route-paymentId="@pay.Id"
+                                                   class="btn-small btn-flat blue-text waves-effect">
+                                                    <i class="ri ri-external-link-line"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                @* Document status overview *@
+                @if (app.Documents.Any())
+                {
+                    <div class="card">
+                        <div class="card-content">
+                            <span class="card-title" style="font-size:1rem;">
+                                <i class="ri ri-folder-line me-1"></i>Documents
+                            </span>
+                            <table class="striped">
+                                <thead>
+                                    <tr>
+                                        <th>Document Type</th>
+                                        <th>Uploaded</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var doc in app.Documents)
+                                    {
+                                        var docBadge = doc.VerificationStatus switch
+                                        {
+                                            nameof(DocumentVerificationStatus.Verified) => "green white-text",
+                                            nameof(DocumentVerificationStatus.Rejected) => "red white-text",
+                                            _ => "orange white-text"
+                                        };
+                                        <tr>
+                                            <td>@doc.DocumentType</td>
+                                            <td>@doc.UploadedAt.ToString("dd MMM yyyy")</td>
+                                            <td>
+                                                <span class="badge @docBadge" style="float:none; font-size:0.7rem;">
+                                                    @doc.VerificationStatus
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                @* Submission checklist *@
+                @if (app.Submission != null)
+                {
+                    var sub = app.Submission;
+                    <div class="card">
+                        <div class="card-content">
+                            <span class="card-title" style="font-size:1rem;">
+                                <i class="ri ri-task-line me-1"></i>Submission Sections
+                            </span>
+                            <div class="row mb-0">
+                                @{
+                                    var sections = new (string Label, bool Done)[]
+                                    {
+                                        ("A — Personal Info",      sub.SectionAComplete),
+                                        ("B — Business Profile",   sub.SectionBComplete),
+                                        ("C — Category",           sub.SectionCComplete),
+                                        ("D — Positioning",        sub.SectionDComplete),
+                                        ("E — Achievements",       sub.SectionEComplete),
+                                        ("F — Notable Impact",     sub.SectionFComplete),
+                                        ("G — Vision",             sub.SectionGComplete),
+                                        ("H — Innovation",         sub.SectionHComplete),
+                                        ("I — Corp Info",          sub.SectionIComplete),
+                                        ("J — Introducer",         sub.SectionJComplete),
+                                        ("K — Documents",          sub.SectionKComplete),
+                                        ("L — Declarations",       sub.SectionLComplete),
+                                    };
+                                }
+                                @foreach (var (label, done) in sections)
+                                {
+                                    <div class="col s6 m4">
+                                        <p class="@(done ? "green-text" : "grey-text")">
+                                            <i class="ri @(done ? "ri-checkbox-circle-fill" : "ri-checkbox-blank-circle-line") me-1"></i>
+                                            @label
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @* Right column — Manual status override *@
+            <div class="col s12 l4">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title" style="font-size:1rem;">
+                            <i class="ri ri-settings-3-line me-1"></i>Manual Status Override
+                        </span>
+                        <p class="grey-text" style="font-size:0.85rem;">
+                            Current: <strong>@app.Status</strong>
+                        </p>
+                        <form method="post" asp-page-handler="OverrideStatus" id="overrideForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" value="@app.Id" />
+
+                            <div class="input-field">
+                                <select name="OverrideStatus" id="ddlOverrideStatus">
+                                    <option value="" disabled selected>Select new status</option>
+                                    @foreach (var stype in Model.AllStatuses)
+                                    {
+                                        @if (Model.OverrideStatus == stype)
+                                        {
+                                            <option value="@stype" selected>@stype</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@stype">@stype</option>
+                                        }
+                                    }
+                                </select>
+                                <label>New Status</label>
+                            </div>
+
+                            <div class="input-field">
+                                <textarea id="txtOverrideReason" name="OverrideReason"
+                                          class="materialize-textarea" rows="3">@Model.OverrideReason</textarea>
+                                <label for="txtOverrideReason" class="@(!string.IsNullOrEmpty(Model.OverrideReason) ? "active" : "")">
+                                    Reason *
+                                </label>
+                            </div>
+
+                            <button type="button" onclick="confirmOverride()"
+                                    class="btn orange darken-2 waves-effect waves-light w-100">
+                                <i class="ri ri-refresh-line me-1"></i>Override Status
+                            </button>
+                            <button type="submit" id="overrideSubmit" style="display:none;"></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        M.FormSelect.init(document.querySelectorAll('select'));
+        var ta = document.querySelector('#txtOverrideReason');
+        if (ta) M.textareaAutoResize(ta);
+    });
+
+    function confirmOverride() {
+        Swal.fire({
+            title:             'Override Application Status?',
+            text:              'This will manually change the application status. Please ensure the reason is documented.',
+            icon:              'warning',
+            showCancelButton:  true,
+            confirmButtonText: 'Yes, Override',
+            cancelButtonText:  'Cancel',
+            confirmButtonColor: '#e65100'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                document.getElementById('overrideSubmit').click();
+            }
+        });
+    }
+</script>
+}
