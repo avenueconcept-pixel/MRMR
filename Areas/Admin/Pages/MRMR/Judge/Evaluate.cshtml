@@ -9,258 +9,242 @@
     bool readOnly = Model.IsSubmitted;
 }
 
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+    <h4 class="mb-0"><i class="ri ri-edit-line me-1"></i>Evaluate — @app.ApplicationId</h4>
+    <a asp-page="Applications" asp-route-categoryId="@Model.CategoryId" class="btn btn-outline-secondary">
+        <i class="ri ri-arrow-left-line me-1"></i>Back to Applications
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success mb-3">
+        <i class="ri ri-checkbox-circle-line me-1"></i>@TempData["SuccessMessage"]
+    </div>
+}
+@if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+{
+    <div class="alert alert-danger mb-3">
+        <i class="ri ri-error-warning-line me-1"></i>@Model.AlertMessageContent
+    </div>
+}
+
+@if (readOnly)
+{
+    <div class="alert alert-info mb-3">
+        <i class="ri ri-lock-line me-1"></i>
+        This evaluation was submitted on
+        <strong>@Model.Evaluation!.SubmittedAt?.ToString("dd MMM yyyy HH:mm")</strong>
+        and is now read-only.
+    </div>
+}
+
 <div class="row">
-    <div class="col s12">
-        <a asp-page="Applications" asp-route-categoryId="@Model.CategoryId"
-           class="btn-flat grey-text waves-effect mb-2">
-            <i class="ri ri-arrow-left-line me-1"></i>Back to Applications
-        </a>
-
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="card-panel green lighten-4 mb-2">
-                <i class="ri ri-checkbox-circle-line me-1 green-text"></i>@TempData["SuccessMessage"]
+    @* Applicant info *@
+    <div class="col-12 col-lg-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="ri ri-user-line me-1"></i>Applicant</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle mb-0">
+                        <tbody>
+                            <tr><td class="text-muted">Application ID</td><td><strong>@app.ApplicationId</strong></td></tr>
+                            <tr><td class="text-muted">Name</td><td>@app.Registrant.FullName</td></tr>
+                            <tr><td class="text-muted">Type</td><td>@app.ApplicationType</td></tr>
+                            <tr><td class="text-muted">Category</td><td>@app.AwardCategory?.Name</td></tr>
+                            @if (!string.IsNullOrEmpty(app.Registrant.CompanyName))
+                            {
+                                <tr><td class="text-muted">Company</td><td>@app.Registrant.CompanyName</td></tr>
+                            }
+                            <tr><td class="text-muted">Submitted</td><td>@(app.SubmittedAt?.ToString("dd MMM yyyy") ?? "-")</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        }
-        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
-        {
-            <div class="card-panel red lighten-4 mb-2">
-                <i class="ri ri-error-warning-line me-1 red-text"></i>@Model.AlertMessageContent
-            </div>
-        }
+        </div>
+    </div>
 
-        @if (readOnly)
-        {
-            <div class="card-panel blue lighten-4 mb-2">
-                <i class="ri ri-lock-line me-1 blue-text"></i>
-                This evaluation was submitted on
-                <strong>@Model.Evaluation!.SubmittedAt?.ToString("dd MMM yyyy HH:mm")</strong>
-                and is now read-only.
-            </div>
-        }
+    @* Scoring form *@
+    <div class="col-12 col-lg-8">
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ApplicationId" value="@app.Id" />
+            <input type="hidden" name="CategoryId"    value="@Model.CategoryId" />
 
-        <div class="row">
-            @* Applicant info *@
-            <div class="col s12 l4">
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title" style="font-size:1rem;">
-                            <i class="ri ri-user-line me-1"></i>Applicant
-                        </span>
-                        <table class="striped">
-                            <tbody>
-                                <tr><td class="grey-text">Application ID</td><td><strong>@app.ApplicationId</strong></td></tr>
-                                <tr><td class="grey-text">Name</td><td>@app.Registrant.FullName</td></tr>
-                                <tr><td class="grey-text">Type</td><td>@app.ApplicationType</td></tr>
-                                <tr><td class="grey-text">Category</td><td>@app.AwardCategory?.Name</td></tr>
-                                @if (!string.IsNullOrEmpty(app.Registrant.CompanyName))
-                                {
-                                    <tr><td class="grey-text">Company</td><td>@app.Registrant.CompanyName</td></tr>
-                                }
-                                <tr><td class="grey-text">Submitted</td><td>@(app.SubmittedAt?.ToString("dd MMM yyyy") ?? "-")</td></tr>
-                            </tbody>
-                        </table>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="ri ri-bar-chart-line me-1"></i>Criteria Scores
+                        <small class="text-muted">(0–100 per criterion)</small>
+                    </h5>
+
+                    @if (!criteria.Any())
+                    {
+                        <p class="text-muted">No criteria defined for this category.</p>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-3" style="font-size:0.85rem;">
+                            Weighted Total: <strong id="weightedTotal">0.00</strong> / 100
+                        </p>
+
+                        @for (int i = 0; i < criteria.Count; i++)
+                        {
+                            var c          = criteria[i];
+                            var existing   = Model.Scores.FirstOrDefault(s => s.CriterionId == c.Id);
+                            var scoreVal   = existing?.Score ?? 0;
+                            var commentVal = existing?.Comment ?? string.Empty;
+
+                            <input type="hidden" name="Scores[@i].CriterionId" value="@c.Id" />
+
+                            <div class="card bg-light mb-2" style="border:1px solid #e0e0e0;">
+                                <div class="card-body py-2">
+                                    <div class="row align-items-center mb-2">
+                                        <div class="col-12 col-md-6">
+                                            <p class="mb-0">
+                                                <strong>@c.CriterionName</strong>
+                                                <span class="badge bg-primary ms-1" style="font-size:0.7rem;">Weight: @c.Weight%</span>
+                                            </p>
+                                            @if (!string.IsNullOrEmpty(c.Description))
+                                            {
+                                                <p class="text-muted mb-0" style="font-size:0.8rem;">@c.Description</p>
+                                            }
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            @if (readOnly)
+                                            {
+                                                <input type="number"
+                                                       id="score_@c.Id"
+                                                       name="Scores[@i].Score"
+                                                       value="@scoreVal"
+                                                       min="0" max="100" step="0.01"
+                                                       class="form-control score-input"
+                                                       data-weight="@c.Weight"
+                                                       readonly disabled
+                                                       required />
+                                            }
+                                            else
+                                            {
+                                                <input type="number"
+                                                       id="score_@c.Id"
+                                                       name="Scores[@i].Score"
+                                                       value="@scoreVal"
+                                                       min="0" max="100" step="0.01"
+                                                       class="form-control score-input"
+                                                       data-weight="@c.Weight"
+                                                       required />
+                                            }
+                                        </div>
+                                        <div class="col-6 col-md-3 text-muted" style="font-size:0.85rem;">
+                                            Weighted: <strong class="weighted-display" id="w_@c.Id">
+                                                @(Math.Round(scoreVal * (c.Weight / 100m), 2))
+                                            </strong>
+                                        </div>
+                                    </div>
+                                    @if (readOnly)
+                                    {
+                                        <input type="text"
+                                               id="comment_@c.Id"
+                                               name="Scores[@i].Comment"
+                                               value="@commentVal"
+                                               class="form-control form-control-sm"
+                                               placeholder="Optional comment"
+                                               readonly />
+                                    }
+                                    else
+                                    {
+                                        <input type="text"
+                                               id="comment_@c.Id"
+                                               name="Scores[@i].Comment"
+                                               value="@commentVal"
+                                               class="form-control form-control-sm"
+                                               placeholder="Optional comment" />
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="ri ri-chat-3-line me-1"></i>Overall Assessment</h5>
+                    <div class="mb-3">
+                        <label class="form-label" for="OverallComment">Overall Comment</label>
+                        @if (readOnly)
+                        {
+                            <textarea id="OverallComment" name="OverallComment"
+                                      class="form-control" rows="4" readonly>@Model.OverallComment</textarea>
+                        }
+                        else
+                        {
+                            <textarea id="OverallComment" name="OverallComment"
+                                      class="form-control" rows="4">@Model.OverallComment</textarea>
+                        }
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Recommendation</label>
+                        <select name="Recommendation" id="Recommendation" class="form-select"
+                                @(readOnly ? "disabled" : "")>
+                            @if (string.IsNullOrEmpty(Model.Recommendation))
+                            {
+                                <option value="" disabled selected>Select recommendation</option>
+                            }
+                            else
+                            {
+                                <option value="" disabled>Select recommendation</option>
+                            }
+                            @if (Model.Recommendation == "Recommended")
+                            {
+                                <option value="Recommended" selected>Recommended</option>
+                            }
+                            else
+                            {
+                                <option value="Recommended">Recommended</option>
+                            }
+                            @if (Model.Recommendation == "Neutral")
+                            {
+                                <option value="Neutral" selected>Neutral</option>
+                            }
+                            else
+                            {
+                                <option value="Neutral">Neutral</option>
+                            }
+                            @if (Model.Recommendation == "NotRecommended")
+                            {
+                                <option value="NotRecommended" selected>Not Recommended</option>
+                            }
+                            else
+                            {
+                                <option value="NotRecommended">Not Recommended</option>
+                            }
+                        </select>
                     </div>
                 </div>
             </div>
 
-            @* Scoring form *@
-            <div class="col s12 l8">
-                <form method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="ApplicationId" value="@app.Id" />
-                    <input type="hidden" name="CategoryId"    value="@Model.CategoryId" />
-
-                    <div class="card">
-                        <div class="card-content">
-                            <span class="card-title" style="font-size:1rem;">
-                                <i class="ri ri-bar-chart-line me-1"></i>Criteria Scores
-                                <small class="grey-text">(0–100 per criterion)</small>
-                            </span>
-
-                            @if (!criteria.Any())
-                            {
-                                <p class="grey-text">No criteria defined for this category.</p>
-                            }
-                            else
-                            {
-                                <p class="grey-text mb-2" style="font-size:0.85rem;">
-                                    Weighted Total: <strong id="weightedTotal">0.00</strong> / 100
-                                </p>
-
-                                @for (int i = 0; i < criteria.Count; i++)
-                                {
-                                    var c          = criteria[i];
-                                    var existing   = Model.Scores.FirstOrDefault(s => s.CriterionId == c.Id);
-                                    var scoreVal   = existing?.Score ?? 0;
-                                    var commentVal = existing?.Comment ?? string.Empty;
-
-                                    <input type="hidden" name="Scores[@i].CriterionId" value="@c.Id" />
-
-                                    <div class="card grey lighten-5 mb-2" style="box-shadow:none; border:1px solid #e0e0e0;">
-                                        <div class="card-content py-2">
-                                            <div class="row valign-wrapper mb-0">
-                                                <div class="col s12 m6">
-                                                    <p class="mb-0">
-                                                        <strong>@c.CriterionName</strong>
-                                                        <span class="badge blue darken-3 white-text ms-1"
-                                                              style="float:none; font-size:0.7rem;">Weight: @c.Weight%</span>
-                                                    </p>
-                                                    @if (!string.IsNullOrEmpty(c.Description))
-                                                    {
-                                                        <p class="grey-text mb-0" style="font-size:0.8rem;">@c.Description</p>
-                                                    }
-                                                </div>
-                                                <div class="col s6 m3">
-                                                    <div class="input-field mb-0">
-                                                        @if (readOnly)
-                                                        {
-                                                            <input type="number"
-                                                                   id="score_@c.Id"
-                                                                   name="Scores[@i].Score"
-                                                                   value="@scoreVal"
-                                                                   min="0" max="100" step="0.01"
-                                                                   class="score-input"
-                                                                   data-weight="@c.Weight"
-                                                                   readonly disabled
-                                                                   required />
-                                                        }
-                                                        else
-                                                        {
-                                                            <input type="number"
-                                                                   id="score_@c.Id"
-                                                                   name="Scores[@i].Score"
-                                                                   value="@scoreVal"
-                                                                   min="0" max="100" step="0.01"
-                                                                   class="score-input"
-                                                                   data-weight="@c.Weight"
-                                                                   required />
-                                                        }
-                                                        <label for="score_@c.Id" class="active">Score *</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col s6 m3 grey-text" style="font-size:0.85rem;">
-                                                    Weighted: <strong class="weighted-display" id="w_@c.Id">
-                                                        @(Math.Round(scoreVal * (c.Weight / 100m), 2))
-                                                    </strong>
-                                                </div>
-                                            </div>
-                                            <div class="input-field mt-1 mb-0">
-                                                @if (readOnly)
-                                                {
-                                                    <input type="text"
-                                                           id="comment_@c.Id"
-                                                           name="Scores[@i].Comment"
-                                                           value="@commentVal"
-                                                           placeholder="Optional comment"
-                                                           readonly />
-                                                }
-                                                else
-                                                {
-                                                    <input type="text"
-                                                           id="comment_@c.Id"
-                                                           name="Scores[@i].Comment"
-                                                           value="@commentVal"
-                                                           placeholder="Optional comment" />
-                                                }
-                                                <label for="comment_@c.Id" class="@(!string.IsNullOrEmpty(commentVal) ? "active" : "")">
-                                                    Comment (optional)
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            }
-                        </div>
+            @if (!readOnly)
+            {
+                <div class="d-flex justify-content-end mb-3 gap-2">
+                    <button type="submit" asp-page-handler="SaveDraft" class="btn btn-secondary">
+                        <i class="ri ri-save-line me-1"></i>Save Draft
+                    </button>
+                    <button type="button" onclick="confirmSubmit()" class="btn btn-success">
+                        <i class="ri ri-send-plane-line me-1"></i>Submit Evaluation
+                    </button>
+                    <div id="submitFormWrapper" style="display:none;">
+                        <button type="submit" asp-page-handler="Submit" id="submitBtn"></button>
                     </div>
-
-                    <div class="card">
-                        <div class="card-content">
-                            <span class="card-title" style="font-size:1rem;">
-                                <i class="ri ri-chat-3-line me-1"></i>Overall Assessment
-                            </span>
-                            <div class="input-field">
-                                @if (readOnly)
-                                {
-                                    <textarea id="OverallComment" name="OverallComment"
-                                              class="materialize-textarea" readonly>@Model.OverallComment</textarea>
-                                }
-                                else
-                                {
-                                    <textarea id="OverallComment" name="OverallComment"
-                                              class="materialize-textarea">@Model.OverallComment</textarea>
-                                }
-                                <label for="OverallComment" class="@(!string.IsNullOrEmpty(Model.OverallComment) ? "active" : "")">
-                                    Overall Comment
-                                </label>
-                            </div>
-                            <div class="input-field">
-                                <select name="Recommendation" id="Recommendation"
-                                        @(readOnly ? "disabled" : "")>
-                                    @if (string.IsNullOrEmpty(Model.Recommendation))
-                                    {
-                                        <option value="" disabled selected>Select recommendation</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="" disabled>Select recommendation</option>
-                                    }
-                                    @if (Model.Recommendation == "Recommended")
-                                    {
-                                        <option value="Recommended" selected>Recommended</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="Recommended">Recommended</option>
-                                    }
-                                    @if (Model.Recommendation == "Neutral")
-                                    {
-                                        <option value="Neutral" selected>Neutral</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="Neutral">Neutral</option>
-                                    }
-                                    @if (Model.Recommendation == "NotRecommended")
-                                    {
-                                        <option value="NotRecommended" selected>Not Recommended</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="NotRecommended">Not Recommended</option>
-                                    }
-                                </select>
-                                <label>Recommendation</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if (!readOnly)
-                    {
-                        <div class="right-align mb-3">
-                            <button type="submit" asp-page-handler="SaveDraft"
-                                    class="btn grey darken-1 waves-effect waves-light me-2">
-                                <i class="ri ri-save-line me-1"></i>Save Draft
-                            </button>
-                            <button type="button" onclick="confirmSubmit()"
-                                    class="btn green darken-2 waves-effect waves-light">
-                                <i class="ri ri-send-plane-line me-1"></i>Submit Evaluation
-                            </button>
-                            <div id="submitFormWrapper" style="display:none;">
-                                <button type="submit" asp-page-handler="Submit" id="submitBtn"></button>
-                            </div>
-                        </div>
-                    }
-                </form>
-            </div>
-        </div>
+                </div>
+            }
+        </form>
     </div>
 </div>
 
 @section PageScripts {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    M.FormSelect.init(document.querySelectorAll('select'));
     updateWeightedTotal();
     document.querySelectorAll('.score-input').forEach(function (el) {
         el.addEventListener('input', updateWeightedTotal);

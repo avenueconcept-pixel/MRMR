@@ -5,46 +5,48 @@
     ViewData["ActiveMenu"] = "MRMR_JUDGES";
 }
 
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+    <h4 class="mb-0"><i class="ri ri-user-star-line me-1"></i>Add Judge</h4>
+    <a asp-page="Index" class="btn btn-outline-secondary">
+        <i class="ri ri-arrow-left-line me-1"></i>Back to Judges
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.AlertMessageContent))
+{
+    <div class="alert alert-danger mb-3">
+        <i class="ri ri-error-warning-line me-1"></i>@Model.AlertMessageContent
+    </div>
+}
+
 <div class="row">
-    <div class="col s12 m8 offset-m2">
-        <a asp-page="Index" class="btn-flat grey-text waves-effect mb-2">
-            <i class="ri ri-arrow-left-line me-1"></i>Back to Judges
-        </a>
-        <h5 class="mb-3"><i class="ri ri-user-star-line me-1"></i>Add Judge</h5>
-
-        @if (!string.IsNullOrEmpty(Model.AlertMessageContent))
-        {
-            <div class="card-panel red lighten-4 mb-2">
-                <i class="ri ri-error-warning-line me-1 red-text"></i>@Model.AlertMessageContent
-            </div>
-        }
-
+    <div class="col-12 col-md-8 offset-md-2">
         <form method="post" asp-page-handler="Create">
             @Html.AntiForgeryToken()
 
-            <div class="card">
-                <div class="card-content">
-                    <span class="card-title" style="font-size:1rem;">Judge Account</span>
-                    <p class="grey-text" style="font-size:0.85rem;">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Judge Account</h5>
+                    <p class="text-muted" style="font-size:0.85rem;">
                         A temporary password will be generated and emailed to the judge.
                         They must change it on first login.
                     </p>
 
-                    <div class="row">
-                        <div class="input-field col s12">
-                            <input type="text" id="FullName" name="FullName"
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" for="FullName">Full Name *</label>
+                            <input type="text" id="FullName" name="FullName" class="form-control"
                                    value="@Model.FullName" required />
-                            <label for="FullName">Full Name *</label>
                         </div>
-                        <div class="input-field col s12 m6">
-                            <input type="email" id="Email" name="Email"
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="Email">Email *</label>
+                            <input type="email" id="Email" name="Email" class="form-control"
                                    value="@Model.Email" required />
-                            <label for="Email">Email *</label>
                         </div>
-                        <div class="input-field col s12 m6">
-                            <input type="text" id="Username" name="Username"
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="Username">Username *</label>
+                            <input type="text" id="Username" name="Username" class="form-control"
                                    value="@Model.Username" required />
-                            <label for="Username">Username *</label>
                         </div>
                     </div>
                 </div>
@@ -52,29 +54,31 @@
 
             @if (Model.Categories.Any())
             {
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title" style="font-size:1rem;">
-                            Assign to Categories <small class="grey-text">(optional)</small>
-                        </span>
-                        <div class="row mb-0">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Assign to Categories <small class="text-muted">(optional)</small>
+                        </h5>
+                        <div class="row">
                             @foreach (var cat in Model.Categories)
                             {
-                                <div class="col s12 m6">
-                                    <label>
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check mb-2">
                                         @if (Model.CategoryIds.Contains(cat.Id))
                                         {
-                                            <input type="checkbox" name="CategoryIds" value="@cat.Id" checked />
+                                            <input type="checkbox" class="form-check-input"
+                                                   id="cat_@cat.Id" name="CategoryIds" value="@cat.Id" checked />
                                         }
                                         else
                                         {
-                                            <input type="checkbox" name="CategoryIds" value="@cat.Id" />
+                                            <input type="checkbox" class="form-check-input"
+                                                   id="cat_@cat.Id" name="CategoryIds" value="@cat.Id" />
                                         }
-                                        <span>
+                                        <label class="form-check-label" for="cat_@cat.Id">
                                             @cat.Name
-                                            <small class="grey-text">(@cat.CategoryType)</small>
-                                        </span>
-                                    </label>
+                                            <small class="text-muted">(@cat.CategoryType)</small>
+                                        </label>
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -82,9 +86,9 @@
                 </div>
             }
 
-            <div class="right-align mb-3">
-                <a asp-page="Index" class="btn-flat grey-text waves-effect me-2">Cancel</a>
-                <button type="submit" class="btn blue darken-3 waves-effect waves-light">
+            <div class="d-flex justify-content-end mb-3 gap-2">
+                <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
                     <i class="ri ri-user-add-line me-1"></i>Create Judge
                 </button>
             </div>

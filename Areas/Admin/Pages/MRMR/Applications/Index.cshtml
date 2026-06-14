@@ -6,172 +6,158 @@
     ViewData["ActiveMenu"] = "MRMR_APPLICATIONS";
 }
 
-<div class="row">
-    <div class="col s12">
-        <h5 class="mb-3">
-            <i class="ri ri-file-list-3-line me-1"></i>Application Management
-        </h5>
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+    <h4 class="mb-0"><i class="ri ri-file-list-3-line me-1"></i>Application Management</h4>
+</div>
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="card-panel green lighten-4 mb-2">
-                <i class="ri ri-checkbox-circle-line me-1 green-text"></i>@TempData["SuccessMessage"]
-            </div>
-        }
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success mb-3">
+        <i class="ri ri-checkbox-circle-line me-1"></i>@TempData["SuccessMessage"]
+    </div>
+}
 
-        @* Filter bar *@
-        <div class="card">
-            <div class="card-content py-2">
-                <form method="get" class="row valign-wrapper mb-0">
-                    <div class="input-field col s12 m3">
-                        <select name="FilterStatus" id="ddlFilterStatus">
-                            @if (string.IsNullOrEmpty(Model.FilterStatus))
-                            {
-                                <option value="" selected>All Statuses</option>
-                            }
-                            else
-                            {
-                                <option value="">All Statuses</option>
-                            }
-                            @foreach (var stype in Model.AllStatuses)
-                            {
-                                @if (Model.FilterStatus == stype)
-                                {
-                                    <option value="@stype" selected>@stype</option>
-                                }
-                                else
-                                {
-                                    <option value="@stype">@stype</option>
-                                }
-                            }
-                        </select>
-                        <label>Status</label>
-                    </div>
-                    <div class="input-field col s12 m2">
-                        <select name="FilterType" id="ddlFilterType">
-                            @if (string.IsNullOrEmpty(Model.FilterType))
-                            {
-                                <option value="" selected>All Types</option>
-                            }
-                            else
-                            {
-                                <option value="">All Types</option>
-                            }
-                            @if (Model.FilterType == "Individual")
-                            {
-                                <option value="Individual" selected>Individual</option>
-                            }
-                            else
-                            {
-                                <option value="Individual">Individual</option>
-                            }
-                            @if (Model.FilterType == "Corporate")
-                            {
-                                <option value="Corporate" selected>Corporate</option>
-                            }
-                            else
-                            {
-                                <option value="Corporate">Corporate</option>
-                            }
-                        </select>
-                        <label>Type</label>
-                    </div>
-                    <div class="input-field col s12 m4">
-                        <input type="text" name="Search" id="txtSearch" value="@Model.Search"
-                               placeholder="App ID / Name / Email / Company" />
-                        <label for="txtSearch" class="@(!string.IsNullOrEmpty(Model.Search) ? "active" : "")">Search</label>
-                    </div>
-                    <div class="col s12 m3">
-                        <button type="submit" class="btn blue darken-3 waves-effect waves-light w-100">
-                            <i class="ri ri-search-line me-1"></i>Filter
-                        </button>
-                    </div>
-                </form>
+@* Filter bar *@
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row align-items-end g-2">
+            <div class="col-12 col-md-3">
+                <label class="form-label">Status</label>
+                <select name="FilterStatus" id="ddlFilterStatus" class="form-select">
+                    @if (string.IsNullOrEmpty(Model.FilterStatus))
+                    {
+                        <option value="" selected>All Statuses</option>
+                    }
+                    else
+                    {
+                        <option value="">All Statuses</option>
+                    }
+                    @foreach (var stype in Model.AllStatuses)
+                    {
+                        @if (Model.FilterStatus == stype)
+                        {
+                            <option value="@stype" selected>@stype</option>
+                        }
+                        else
+                        {
+                            <option value="@stype">@stype</option>
+                        }
+                    }
+                </select>
             </div>
-        </div>
-
-        @* Results *@
-        <div class="card">
-            <div class="card-content">
-                <p class="grey-text mb-2">Showing <strong>@Model.Applications.Count</strong> result(s)</p>
-                @if (!Model.Applications.Any())
-                {
-                    <div class="center-align py-4">
-                        <i class="ri ri-inbox-line grey-text" style="font-size:3rem;"></i>
-                        <p class="grey-text">No applications found.</p>
-                    </div>
-                }
-                else
-                {
-                    <table class="striped responsive-table highlight">
-                        <thead>
-                            <tr>
-                                <th>Application ID</th>
-                                <th>Applicant</th>
-                                <th>Type</th>
-                                <th>Category</th>
-                                <th>Status</th>
-                                <th>Submitted</th>
-                                <th>Registered</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var app in Model.Applications)
-                            {
-                                var statusClass = app.Status switch
-                                {
-                                    nameof(ApplicationStatus.Approved)             => "green white-text",
-                                    nameof(ApplicationStatus.Rejected)             => "red white-text",
-                                    nameof(ApplicationStatus.SubmissionCompleted)  => "teal white-text",
-                                    nameof(ApplicationStatus.UnderEvaluation)      => "purple white-text",
-                                    nameof(ApplicationStatus.AwardFeeVerified)     => "blue white-text",
-                                    nameof(ApplicationStatus.NominationFeeVerified)=> "light-blue white-text",
-                                    _ => "grey white-text"
-                                };
-                                <tr>
-                                    <td><strong>@app.ApplicationId</strong></td>
-                                    <td>
-                                        @app.Registrant.FullName
-                                        @if (!string.IsNullOrEmpty(app.Registrant.CompanyName))
-                                        {
-                                            <br /><small class="grey-text">@app.Registrant.CompanyName</small>
-                                        }
-                                    </td>
-                                    <td>
-                                        <span class="badge @(app.ApplicationType == "Corporate" ? "orange" : "blue-grey") white-text"
-                                              style="float:none; font-size:0.7rem;">
-                                            @app.ApplicationType
-                                        </span>
-                                    </td>
-                                    <td>@app.AwardCategory?.Name</td>
-                                    <td>
-                                        <span class="badge @statusClass" style="float:none; font-size:0.7rem;">
-                                            @app.Status
-                                        </span>
-                                    </td>
-                                    <td>@(app.SubmittedAt?.ToString("dd MMM yyyy") ?? "-")</td>
-                                    <td>@app.CreatedAt.ToString("dd MMM yyyy")</td>
-                                    <td>
-                                        <a asp-page="Detail" asp-route-id="@app.Id"
-                                           class="btn-small blue darken-3 waves-effect waves-light">
-                                            <i class="ri ri-eye-line me-1"></i>View
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
+            <div class="col-12 col-md-2">
+                <label class="form-label">Type</label>
+                <select name="FilterType" id="ddlFilterType" class="form-select">
+                    @if (string.IsNullOrEmpty(Model.FilterType))
+                    {
+                        <option value="" selected>All Types</option>
+                    }
+                    else
+                    {
+                        <option value="">All Types</option>
+                    }
+                    @if (Model.FilterType == "Individual")
+                    {
+                        <option value="Individual" selected>Individual</option>
+                    }
+                    else
+                    {
+                        <option value="Individual">Individual</option>
+                    }
+                    @if (Model.FilterType == "Corporate")
+                    {
+                        <option value="Corporate" selected>Corporate</option>
+                    }
+                    else
+                    {
+                        <option value="Corporate">Corporate</option>
+                    }
+                </select>
             </div>
-        </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" name="Search" id="txtSearch" value="@Model.Search"
+                       class="form-control" placeholder="App ID / Name / Email / Company" />
+            </div>
+            <div class="col-12 col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="ri ri-search-line me-1"></i>Filter
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
-@section PageScripts {
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        M.FormSelect.init(document.querySelectorAll('select'));
-    });
-</script>
-}
+@* Results *@
+<div class="card">
+    <div class="card-body">
+        <p class="text-muted mb-2">Showing <strong>@Model.Applications.Count</strong> result(s)</p>
+        @if (!Model.Applications.Any())
+        {
+            <div class="text-center py-4">
+                <i class="ri ri-inbox-line text-muted" style="font-size:3rem;"></i>
+                <p class="text-muted">No applications found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Application ID</th>
+                            <th>Applicant</th>
+                            <th>Type</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Registered</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var app in Model.Applications)
+                        {
+                            var statusClass = app.Status switch
+                            {
+                                nameof(ApplicationStatus.Approved)              => "bg-success",
+                                nameof(ApplicationStatus.Rejected)              => "bg-danger",
+                                nameof(ApplicationStatus.SubmissionCompleted)   => "bg-info",
+                                nameof(ApplicationStatus.AwardFeeVerified)      => "bg-primary",
+                                nameof(ApplicationStatus.NominationFeeVerified) => "bg-info",
+                                _ => "bg-secondary"
+                            };
+                            var statusStyle = app.Status == nameof(ApplicationStatus.UnderEvaluation)
+                                ? "background:#6f42c1" : "";
+                            var typeBadge = app.ApplicationType == "Corporate" ? "bg-warning text-dark" : "bg-secondary";
+                            <tr>
+                                <td><strong>@app.ApplicationId</strong></td>
+                                <td>
+                                    @app.Registrant.FullName
+                                    @if (!string.IsNullOrEmpty(app.Registrant.CompanyName))
+                                    {
+                                        <br /><small class="text-muted">@app.Registrant.CompanyName</small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge @typeBadge">@app.ApplicationType</span>
+                                </td>
+                                <td>@app.AwardCategory?.Name</td>
+                                <td>
+                                    <span class="badge @statusClass" style="@statusStyle">@app.Status</span>
+                                </td>
+                                <td>@(app.SubmittedAt?.ToString("dd MMM yyyy") ?? "-")</td>
+                                <td>@app.CreatedAt.ToString("dd MMM yyyy")</td>
+                                <td>
+                                    <a asp-page="Detail" asp-route-id="@app.Id" class="btn btn-sm btn-primary">
+                                        <i class="ri ri-eye-line me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

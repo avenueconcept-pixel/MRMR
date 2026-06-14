@@ -6,174 +6,162 @@
     ViewData["ActiveMenu"] = "MRMR_PAYMENTS";
 }
 
-<div class="row">
-    <div class="col s12">
-        <h5 class="mb-3">
-            <i class="ri ri-bank-card-line me-1"></i>Payment Verification Queue
-        </h5>
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+    <h4 class="mb-0"><i class="ri ri-bank-card-line me-1"></i>Payment Verification Queue</h4>
+</div>
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="card-panel green lighten-4 mb-2">
-                <i class="ri ri-checkbox-circle-line me-1 green-text"></i>@TempData["SuccessMessage"]
-            </div>
-        }
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success mb-3">
+        <i class="ri ri-checkbox-circle-line me-1"></i>@TempData["SuccessMessage"]
+    </div>
+}
 
-        @* Filter bar *@
-        <div class="card">
-            <div class="card-content py-2">
-                <form method="get" class="row valign-wrapper mb-0">
-                    <div class="input-field col s12 m3">
-                        <select name="FilterType" id="ddlFilterType">
-                            @if (string.IsNullOrEmpty(Model.FilterType))
-                            {
-                                <option value="" selected>All Types</option>
-                            }
-                            else
-                            {
-                                <option value="">All Types</option>
-                            }
-                            @if (Model.FilterType == nameof(PaymentType.NominationFee))
-                            {
-                                <option value="@nameof(PaymentType.NominationFee)" selected>Nomination Fee</option>
-                            }
-                            else
-                            {
-                                <option value="@nameof(PaymentType.NominationFee)">Nomination Fee</option>
-                            }
-                            @if (Model.FilterType == nameof(PaymentType.AwardFee))
-                            {
-                                <option value="@nameof(PaymentType.AwardFee)" selected>Award Fee</option>
-                            }
-                            else
-                            {
-                                <option value="@nameof(PaymentType.AwardFee)">Award Fee</option>
-                            }
-                        </select>
-                        <label>Type</label>
-                    </div>
-                    <div class="input-field col s12 m3">
-                        <select name="FilterStatus" id="ddlFilterStatus">
-                            @{
-                                bool isPending = Model.FilterStatus == nameof(PaymentStatus.PendingVerification)
-                                             || string.IsNullOrEmpty(Model.FilterStatus);
-                            }
-                            @if (isPending)
-                            {
-                                <option value="@nameof(PaymentStatus.PendingVerification)" selected>Pending Verification</option>
-                            }
-                            else
-                            {
-                                <option value="@nameof(PaymentStatus.PendingVerification)">Pending Verification</option>
-                            }
-                            @if (Model.FilterStatus == nameof(PaymentStatus.Verified))
-                            {
-                                <option value="@nameof(PaymentStatus.Verified)" selected>Verified</option>
-                            }
-                            else
-                            {
-                                <option value="@nameof(PaymentStatus.Verified)">Verified</option>
-                            }
-                            @if (Model.FilterStatus == nameof(PaymentStatus.Rejected))
-                            {
-                                <option value="@nameof(PaymentStatus.Rejected)" selected>Rejected</option>
-                            }
-                            else
-                            {
-                                <option value="@nameof(PaymentStatus.Rejected)">Rejected</option>
-                            }
-                        </select>
-                        <label>Status</label>
-                    </div>
-                    <div class="input-field col s12 m4">
-                        <input type="text" name="Search" id="txtSearch" value="@Model.Search"
-                               placeholder="Invoice No / Applicant / App ID" />
-                        <label for="txtSearch" class="@(!string.IsNullOrEmpty(Model.Search) ? "active" : "")">Search</label>
-                    </div>
-                    <div class="col s12 m2">
-                        <button type="submit" class="btn blue darken-3 waves-effect waves-light w-100">
-                            <i class="ri ri-search-line me-1"></i>Filter
-                        </button>
-                    </div>
-                </form>
+@* Filter bar *@
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row align-items-end g-2">
+            <div class="col-12 col-md-3">
+                <label class="form-label">Type</label>
+                <select name="FilterType" id="ddlFilterType" class="form-select">
+                    @if (string.IsNullOrEmpty(Model.FilterType))
+                    {
+                        <option value="" selected>All Types</option>
+                    }
+                    else
+                    {
+                        <option value="">All Types</option>
+                    }
+                    @if (Model.FilterType == nameof(PaymentType.NominationFee))
+                    {
+                        <option value="@nameof(PaymentType.NominationFee)" selected>Nomination Fee</option>
+                    }
+                    else
+                    {
+                        <option value="@nameof(PaymentType.NominationFee)">Nomination Fee</option>
+                    }
+                    @if (Model.FilterType == nameof(PaymentType.AwardFee))
+                    {
+                        <option value="@nameof(PaymentType.AwardFee)" selected>Award Fee</option>
+                    }
+                    else
+                    {
+                        <option value="@nameof(PaymentType.AwardFee)">Award Fee</option>
+                    }
+                </select>
             </div>
-        </div>
-
-        @* Results table *@
-        <div class="card">
-            <div class="card-content">
-                <p class="grey-text mb-2">
-                    Showing <strong>@Model.Payments.Count</strong> result(s) — Manual Bank Transfer only
-                </p>
-                @if (!Model.Payments.Any())
-                {
-                    <div class="center-align py-4">
-                        <i class="ri ri-inbox-line grey-text" style="font-size:3rem;"></i>
-                        <p class="grey-text">No payments found.</p>
-                    </div>
-                }
-                else
-                {
-                    <table class="striped responsive-table highlight">
-                        <thead>
-                            <tr>
-                                <th>Invoice No</th>
-                                <th>Application ID</th>
-                                <th>Applicant</th>
-                                <th>Type</th>
-                                <th class="right-align">Amount (RM)</th>
-                                <th>Uploaded</th>
-                                <th>Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var p in Model.Payments)
-                            {
-                                var badgeClass = p.Status switch
-                                {
-                                    nameof(PaymentStatus.Verified)            => "green white-text",
-                                    nameof(PaymentStatus.Rejected)            => "red white-text",
-                                    nameof(PaymentStatus.PendingVerification) => "orange white-text",
-                                    _ => "grey white-text"
-                                };
-                                <tr>
-                                    <td><strong>@p.InvoiceNo</strong></td>
-                                    <td>@p.Application?.ApplicationId</td>
-                                    <td>@p.Application?.Registrant?.FullName</td>
-                                    <td>
-                                        <span class="badge @(p.PaymentType == nameof(PaymentType.NominationFee) ? "blue" : "teal") white-text"
-                                              style="float:none; font-size:0.75rem;">
-                                            @(p.PaymentType == nameof(PaymentType.NominationFee) ? "Nomination" : "Award")
-                                        </span>
-                                    </td>
-                                    <td class="right-align">@p.Amount.ToString("N2")</td>
-                                    <td>@(p.SlipUploadedAt?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>
-                                    <td>
-                                        <span class="badge @badgeClass" style="float:none; font-size:0.75rem;">
-                                            @p.Status
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a asp-page="Detail" asp-route-paymentId="@p.Id"
-                                           class="btn-small blue darken-3 waves-effect waves-light">
-                                            <i class="ri ri-eye-line me-1"></i>Review
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
+            <div class="col-12 col-md-3">
+                <label class="form-label">Status</label>
+                <select name="FilterStatus" id="ddlFilterStatus" class="form-select">
+                    @{
+                        bool isPending = Model.FilterStatus == nameof(PaymentStatus.PendingVerification)
+                                     || string.IsNullOrEmpty(Model.FilterStatus);
+                    }
+                    @if (isPending)
+                    {
+                        <option value="@nameof(PaymentStatus.PendingVerification)" selected>Pending Verification</option>
+                    }
+                    else
+                    {
+                        <option value="@nameof(PaymentStatus.PendingVerification)">Pending Verification</option>
+                    }
+                    @if (Model.FilterStatus == nameof(PaymentStatus.Verified))
+                    {
+                        <option value="@nameof(PaymentStatus.Verified)" selected>Verified</option>
+                    }
+                    else
+                    {
+                        <option value="@nameof(PaymentStatus.Verified)">Verified</option>
+                    }
+                    @if (Model.FilterStatus == nameof(PaymentStatus.Rejected))
+                    {
+                        <option value="@nameof(PaymentStatus.Rejected)" selected>Rejected</option>
+                    }
+                    else
+                    {
+                        <option value="@nameof(PaymentStatus.Rejected)">Rejected</option>
+                    }
+                </select>
             </div>
-        </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" name="Search" id="txtSearch" value="@Model.Search"
+                       class="form-control" placeholder="Invoice No / Applicant / App ID" />
+            </div>
+            <div class="col-12 col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="ri ri-search-line me-1"></i>Filter
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
-@section PageScripts {
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        M.FormSelect.init(document.querySelectorAll('select'));
-    });
-</script>
-}
+@* Results table *@
+<div class="card">
+    <div class="card-body">
+        <p class="text-muted mb-2">
+            Showing <strong>@Model.Payments.Count</strong> result(s) — Manual Bank Transfer only
+        </p>
+        @if (!Model.Payments.Any())
+        {
+            <div class="text-center py-4">
+                <i class="ri ri-inbox-line text-muted" style="font-size:3rem;"></i>
+                <p class="text-muted">No payments found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Invoice No</th>
+                            <th>Application ID</th>
+                            <th>Applicant</th>
+                            <th>Type</th>
+                            <th class="text-end">Amount (RM)</th>
+                            <th>Uploaded</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Payments)
+                        {
+                            var badgeClass = p.Status switch
+                            {
+                                nameof(PaymentStatus.Verified)            => "bg-success",
+                                nameof(PaymentStatus.Rejected)            => "bg-danger",
+                                nameof(PaymentStatus.PendingVerification) => "bg-warning text-dark",
+                                _ => "bg-secondary"
+                            };
+                            var typeBadge = p.PaymentType == nameof(PaymentType.NominationFee) ? "bg-primary" : "bg-info";
+                            <tr>
+                                <td><strong>@p.InvoiceNo</strong></td>
+                                <td>@p.Application?.ApplicationId</td>
+                                <td>@p.Application?.Registrant?.FullName</td>
+                                <td>
+                                    <span class="badge @typeBadge">
+                                        @(p.PaymentType == nameof(PaymentType.NominationFee) ? "Nomination" : "Award")
+                                    </span>
+                                </td>
+                                <td class="text-end">@p.Amount.ToString("N2")</td>
+                                <td>@(p.SlipUploadedAt?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>
+                                <td>
+                                    <span class="badge @badgeClass">@p.Status</span>
+                                </td>
+                                <td>
+                                    <a asp-page="Detail" asp-route-paymentId="@p.Id"
+                                       class="btn btn-sm btn-primary">
+                                        <i class="ri ri-eye-line me-1"></i>Review
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

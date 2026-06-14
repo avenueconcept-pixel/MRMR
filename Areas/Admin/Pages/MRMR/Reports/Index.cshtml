@@ -5,111 +5,105 @@
     ViewData["ActiveMenu"] = "MRMR_REPORTS";
 }
 
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+    <h4 class="mb-0"><i class="ri ri-file-chart-line me-1"></i>MRMR 2026 Reports</h4>
+</div>
+
 <div class="row">
-    <div class="col s12">
-        <h5 class="mb-3"><i class="ri ri-file-chart-line me-1"></i>MRMR 2026 Reports</h5>
 
-        <div class="row">
-
-            @* Applicant List *@
-            <div class="col s12 m4">
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title" style="font-size:1rem;">
-                            <i class="ri ri-group-line me-1 blue-text text-darken-3"></i>
-                            Applicant List
-                        </span>
-                        <p class="grey-text" style="font-size:0.85rem;">
-                            All registrations with status, category, and contact details.
-                        </p>
-                    </div>
-                    <div class="card-action">
-                        <form method="post" asp-page-handler="ExportApplicants">
-                            @Html.AntiForgeryToken()
-                            <button type="submit"
-                                    class="btn blue darken-3 waves-effect waves-light w-100">
-                                <i class="ri ri-download-line me-1"></i>Export Excel
-                            </button>
-                        </form>
-                    </div>
-                </div>
+    @* Applicant List *@
+    <div class="col-12 col-md-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="ri ri-group-line me-1 text-primary"></i>
+                    Applicant List
+                </h5>
+                <p class="text-muted" style="font-size:0.85rem;">
+                    All registrations with status, category, and contact details.
+                </p>
             </div>
-
-            @* Payment Summary *@
-            <div class="col s12 m4">
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title" style="font-size:1rem;">
-                            <i class="ri ri-bank-card-line me-1 teal-text"></i>
-                            Payment Summary
-                        </span>
-                        <p class="grey-text" style="font-size:0.85rem;">
-                            All nomination and award fee payments with verification status.
-                        </p>
-                    </div>
-                    <div class="card-action">
-                        <form method="post" asp-page-handler="ExportPayments">
-                            @Html.AntiForgeryToken()
-                            <button type="submit"
-                                    class="btn teal waves-effect waves-light w-100">
-                                <i class="ri ri-download-line me-1"></i>Export Excel
-                            </button>
-                        </form>
-                    </div>
-                </div>
+            <div class="card-footer">
+                <form method="post" asp-page-handler="ExportApplicants">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="ri ri-download-line me-1"></i>Export Excel
+                    </button>
+                </form>
             </div>
-
-            @* Evaluation Results *@
-            <div class="col s12 m4">
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title" style="font-size:1rem;">
-                            <i class="ri ri-trophy-line me-1 green-text text-darken-2"></i>
-                            Evaluation Results
-                        </span>
-                        <p class="grey-text" style="font-size:0.85rem;">
-                            Final rankings and winners. Filter by category (optional).
-                        </p>
-                        <div class="input-field">
-                            <select id="CategorySelect">
-                                <option value="0">All Categories</option>
-                                @foreach (var cat in Model.Categories)
-                                {
-                                    @if (Model.CategoryId == cat.Id)
-                                    {
-                                        <option value="@cat.Id" selected>@cat.Name</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@cat.Id">@cat.Name</option>
-                                    }
-                                }
-                            </select>
-                            <label>Filter by Category</label>
-                        </div>
-                    </div>
-                    <div class="card-action">
-                        <form method="post" asp-page-handler="ExportEvaluation" id="evalForm">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="CategoryId" id="CategoryIdInput"
-                                   value="@Model.CategoryId" />
-                            <button type="submit"
-                                    class="btn green darken-2 waves-effect waves-light w-100">
-                                <i class="ri ri-download-line me-1"></i>Export Excel
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
+
+    @* Payment Summary *@
+    <div class="col-12 col-md-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="ri ri-bank-card-line me-1 text-info"></i>
+                    Payment Summary
+                </h5>
+                <p class="text-muted" style="font-size:0.85rem;">
+                    All nomination and award fee payments with verification status.
+                </p>
+            </div>
+            <div class="card-footer">
+                <form method="post" asp-page-handler="ExportPayments">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-info w-100">
+                        <i class="ri ri-download-line me-1"></i>Export Excel
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* Evaluation Results *@
+    <div class="col-12 col-md-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="ri ri-trophy-line me-1 text-success"></i>
+                    Evaluation Results
+                </h5>
+                <p class="text-muted" style="font-size:0.85rem;">
+                    Final rankings and winners. Filter by category (optional).
+                </p>
+                <div class="mb-3">
+                    <label class="form-label">Filter by Category</label>
+                    <select id="CategorySelect" class="form-select">
+                        <option value="0">All Categories</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            @if (Model.CategoryId == cat.Id)
+                            {
+                                <option value="@cat.Id" selected>@cat.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="card-footer">
+                <form method="post" asp-page-handler="ExportEvaluation" id="evalForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="CategoryId" id="CategoryIdInput"
+                           value="@Model.CategoryId" />
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="ri ri-download-line me-1"></i>Export Excel
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @section PageScripts {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    M.FormSelect.init(document.querySelectorAll('select'));
     document.getElementById('CategorySelect').addEventListener('change', function () {
         document.getElementById('CategoryIdInput').value = this.value;
     });

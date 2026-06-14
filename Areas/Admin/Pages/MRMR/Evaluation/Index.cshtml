@@ -6,210 +6,202 @@
     ViewData["ActiveMenu"] = "MRMR_EVALUATION";
 }
 
-<div class="row">
-    <div class="col s12">
-        <h5 class="mb-3"><i class="ri ri-bar-chart-2-line me-1"></i>Evaluation Overview</h5>
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+    <h4 class="mb-0"><i class="ri ri-bar-chart-2-line me-1"></i>Evaluation Overview</h4>
+</div>
 
-        <div class="card">
-            <div class="card-content py-2">
-                <form method="get" class="row valign-wrapper mb-0">
-                    <div class="input-field col s12 m6">
-                        <select name="CategoryId" id="CategoryId">
-                            @if (Model.CategoryId == 0)
-                            {
-                                <option value="0" disabled selected>Select a category</option>
-                            }
-                            else
-                            {
-                                <option value="0" disabled>Select a category</option>
-                            }
-                            @foreach (var cat in Model.Categories)
-                            {
-                                @if (Model.CategoryId == cat.Id)
-                                {
-                                    <option value="@cat.Id" selected>@cat.Name (@cat.CategoryType)</option>
-                                }
-                                else
-                                {
-                                    <option value="@cat.Id">@cat.Name (@cat.CategoryType)</option>
-                                }
-                            }
-                        </select>
-                        <label>Award Category</label>
-                    </div>
-                    <div class="col s12 m3">
-                        <button type="submit" class="btn blue darken-3 waves-effect waves-light w-100">
-                            <i class="ri ri-search-line me-1"></i>View
-                        </button>
-                    </div>
-                    @if (Model.CategoryId > 0)
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row align-items-end g-2">
+            <div class="col-12 col-md-6">
+                <label class="form-label">Award Category</label>
+                <select name="CategoryId" id="CategoryId" class="form-select">
+                    @if (Model.CategoryId == 0)
                     {
-                        <div class="col s12 m3">
-                            <a asp-page="Finalize" asp-route-categoryId="@Model.CategoryId"
-                               class="btn orange darken-2 waves-effect waves-light w-100">
-                                <i class="ri ri-trophy-line me-1"></i>Finalize
-                            </a>
-                        </div>
+                        <option value="0" disabled selected>Select a category</option>
                     }
-                </form>
-            </div>
-        </div>
-
-        @if (Model.CategoryId > 0)
-        {
-            @if (!Model.Summaries.Any())
-            {
-                <div class="card">
-                    <div class="card-content center-align py-4">
-                        <i class="ri ri-inbox-line grey-text" style="font-size:3rem;"></i>
-                        <p class="grey-text">No submitted evaluations yet for this category.</p>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title" style="font-size:1rem;">
-                            Leaderboard — @Model.Category?.Name
-                            <small class="grey-text">(@Model.Summaries.Count applications)</small>
-                        </span>
-                        <table class="striped responsive-table highlight">
-                            <thead>
-                                <tr>
-                                    <th style="width:50px">#</th>
-                                    <th>Application</th>
-                                    <th>Applicant</th>
-                                    <th class="right-align">Avg Weighted Score</th>
-                                    <th class="center-align">Judges</th>
-                                    <th>Consensus</th>
-                                    <th>Rank</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (int idx = 0; idx < Model.Summaries.Count; idx++)
-                                {
-                                    var s           = Model.Summaries[idx];
-                                    int pos         = idx + 1;
-                                    var recommended = s.JudgeRows.Count(j => j.Recommendation == "Recommended");
-                                    var notRecom    = s.JudgeRows.Count(j => j.Recommendation == "NotRecommended");
-                                    var neutral     = s.JudgeRows.Count(j => j.Recommendation == "Neutral");
-
-                                    <tr>
-                                        <td>
-                                            @if (pos == 1)
-                                            {
-                                                <i class="ri ri-trophy-fill" style="color:#FFD700;"></i>
-                                            }
-                                            else if (pos == 2)
-                                            {
-                                                <i class="ri ri-trophy-fill" style="color:#C0C0C0;"></i>
-                                            }
-                                            else if (pos == 3)
-                                            {
-                                                <i class="ri ri-trophy-fill" style="color:#CD7F32;"></i>
-                                            }
-                                            else
-                                            {
-                                                <span class="grey-text">@pos</span>
-                                            }
-                                        </td>
-                                        <td><strong>@s.Application.ApplicationId</strong></td>
-                                        <td>
-                                            @s.Application.Registrant.FullName
-                                            @if (!string.IsNullOrEmpty(s.Application.Registrant.CompanyName))
-                                            {
-                                                <br /><small class="grey-text">@s.Application.Registrant.CompanyName</small>
-                                            }
-                                        </td>
-                                        <td class="right-align">
-                                            <strong class="@(pos == 1 ? "green-text text-darken-2" : "")">
-                                                @s.TotalWeighted.ToString("N2")
-                                            </strong>
-                                            / 100
-                                        </td>
-                                        <td class="center-align">@s.JudgeCount</td>
-                                        <td>
-                                            @if (recommended > 0)
-                                            {
-                                                <span class="badge green white-text" style="float:none; font-size:0.7rem;">
-                                                    &#10003;@recommended
-                                                </span>
-                                            }
-                                            @if (neutral > 0)
-                                            {
-                                                <span class="badge grey white-text ms-1" style="float:none; font-size:0.7rem;">
-                                                    ~@neutral
-                                                </span>
-                                            }
-                                            @if (notRecom > 0)
-                                            {
-                                                <span class="badge red white-text ms-1" style="float:none; font-size:0.7rem;">
-                                                    &#10007;@notRecom
-                                                </span>
-                                            }
-                                        </td>
-                                        <td>
-                                            @if (s.Ranking != null)
-                                            {
-                                                <span class="badge @(s.Ranking.IsApprovedWinner ? "green white-text" : "grey white-text")"
-                                                      style="float:none; font-size:0.7rem;">
-                                                    @(s.Ranking.IsApprovedWinner ? "Winner" : $"#{s.Ranking.RankPosition}")
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="grey-text">-</span>
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-
-                        @* Judge breakdown per application *@
-                        @foreach (var s in Model.Summaries.Where(x => x.JudgeRows.Any()))
+                    else
+                    {
+                        <option value="0" disabled>Select a category</option>
+                    }
+                    @foreach (var cat in Model.Categories)
+                    {
+                        @if (Model.CategoryId == cat.Id)
                         {
-                            <div class="mt-3">
-                                <p class="grey-text mb-1" style="font-size:0.85rem;">
-                                    <strong>@s.Application.ApplicationId</strong> — Judge Breakdown
-                                </p>
-                                <table class="striped" style="font-size:0.85rem;">
-                                    <thead>
-                                        <tr>
-                                            <th>Judge</th>
-                                            <th class="right-align">Weighted Total</th>
-                                            <th>Recommendation</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var j in s.JudgeRows)
-                                        {
-                                            <tr>
-                                                <td>@j.JudgeName</td>
-                                                <td class="right-align">@j.TotalWeighted.ToString("N2")</td>
-                                                <td>
-                                                    <span class="@(j.Recommendation switch { "Recommended" => "green-text", "NotRecommended" => "red-text", _ => "grey-text" })">
-                                                        @(j.Recommendation ?? "-")
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
+                            <option value="@cat.Id" selected>@cat.Name (@cat.CategoryType)</option>
                         }
-                    </div>
+                        else
+                        {
+                            <option value="@cat.Id">@cat.Name (@cat.CategoryType)</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="ri ri-search-line me-1"></i>View
+                </button>
+            </div>
+            @if (Model.CategoryId > 0)
+            {
+                <div class="col-12 col-md-3">
+                    <a asp-page="Finalize" asp-route-categoryId="@Model.CategoryId"
+                       class="btn btn-warning w-100">
+                        <i class="ri ri-trophy-line me-1"></i>Finalize
+                    </a>
                 </div>
             }
-        }
+        </form>
     </div>
 </div>
 
-@section PageScripts {
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        M.FormSelect.init(document.querySelectorAll('select'));
-    });
-</script>
+@if (Model.CategoryId > 0)
+{
+    @if (!Model.Summaries.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center py-4">
+                <i class="ri ri-inbox-line text-muted" style="font-size:3rem;"></i>
+                <p class="text-muted">No submitted evaluations yet for this category.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    Leaderboard — @Model.Category?.Name
+                    <small class="text-muted">(@Model.Summaries.Count applications)</small>
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width:50px">#</th>
+                                <th>Application</th>
+                                <th>Applicant</th>
+                                <th class="text-end">Avg Weighted Score</th>
+                                <th class="text-center">Judges</th>
+                                <th>Consensus</th>
+                                <th>Rank</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int idx = 0; idx < Model.Summaries.Count; idx++)
+                            {
+                                var s           = Model.Summaries[idx];
+                                int pos         = idx + 1;
+                                var recommended = s.JudgeRows.Count(j => j.Recommendation == "Recommended");
+                                var notRecom    = s.JudgeRows.Count(j => j.Recommendation == "NotRecommended");
+                                var neutral     = s.JudgeRows.Count(j => j.Recommendation == "Neutral");
+
+                                <tr>
+                                    <td>
+                                        @if (pos == 1)
+                                        {
+                                            <i class="ri ri-trophy-fill" style="color:#FFD700;"></i>
+                                        }
+                                        else if (pos == 2)
+                                        {
+                                            <i class="ri ri-trophy-fill" style="color:#C0C0C0;"></i>
+                                        }
+                                        else if (pos == 3)
+                                        {
+                                            <i class="ri ri-trophy-fill" style="color:#CD7F32;"></i>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">@pos</span>
+                                        }
+                                    </td>
+                                    <td><strong>@s.Application.ApplicationId</strong></td>
+                                    <td>
+                                        @s.Application.Registrant.FullName
+                                        @if (!string.IsNullOrEmpty(s.Application.Registrant.CompanyName))
+                                        {
+                                            <br /><small class="text-muted">@s.Application.Registrant.CompanyName</small>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="@(pos == 1 ? "text-success" : "")">
+                                            @s.TotalWeighted.ToString("N2")
+                                        </strong>
+                                        / 100
+                                    </td>
+                                    <td class="text-center">@s.JudgeCount</td>
+                                    <td>
+                                        @if (recommended > 0)
+                                        {
+                                            <span class="badge bg-success">&#10003;@recommended</span>
+                                        }
+                                        @if (neutral > 0)
+                                        {
+                                            <span class="badge bg-secondary ms-1">~@neutral</span>
+                                        }
+                                        @if (notRecom > 0)
+                                        {
+                                            <span class="badge bg-danger ms-1">&#10007;@notRecom</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (s.Ranking != null)
+                                        {
+                                            @if (s.Ranking.IsApprovedWinner)
+                                            {
+                                                <span class="badge bg-success">Winner</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">#@s.Ranking.RankPosition</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @* Judge breakdown per application *@
+                @foreach (var s in Model.Summaries.Where(x => x.JudgeRows.Any()))
+                {
+                    <div class="mt-3">
+                        <p class="text-muted mb-1" style="font-size:0.85rem;">
+                            <strong>@s.Application.ApplicationId</strong> — Judge Breakdown
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle" style="font-size:0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Judge</th>
+                                        <th class="text-end">Weighted Total</th>
+                                        <th>Recommendation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var j in s.JudgeRows)
+                                    {
+                                        <tr>
+                                            <td>@j.JudgeName</td>
+                                            <td class="text-end">@j.TotalWeighted.ToString("N2")</td>
+                                            <td>
+                                                <span class="@(j.Recommendation switch { "Recommended" => "text-success", "NotRecommended" => "text-danger", _ => "text-muted" })">
+                                                    @(j.Recommendation ?? "-")
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 }
