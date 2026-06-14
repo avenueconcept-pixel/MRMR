@@ -55,6 +55,7 @@ public class RegisterModel : PublicPageModel
     public string MsgDuplicateEmail           { get; set; } = string.Empty;
     public string MsgDuplicateNric            { get; set; } = string.Empty;
     public string MsgDuplicateApplicationType { get; set; } = string.Empty;
+    public string MsgAlreadyVerified          { get; set; } = string.Empty;
     public string MsgError                    { get; set; } = string.Empty;
 
     public async Task OnGetAsync()
@@ -138,6 +139,11 @@ public class RegisterModel : PublicPageModel
                 AlertMessageType    = MessageType.Error;
                 break;
 
+            case RegistrationResult.AlreadyVerified:
+                AlertMessageContent = MsgAlreadyVerified;
+                AlertMessageType    = MessageType.Error;
+                break;
+
             default:
                 AlertMessageContent = MsgError;
                 AlertMessageType    = MessageType.Error;
@@ -174,9 +180,10 @@ public class RegisterModel : PublicPageModel
         CorporateCategories        = await _dbHelper.GetActiveCategoriesAsync("Corporate");
         ManualBankTransferEnabled  = await _systemSetting.GetAsBoolAsync("Registration.ManualBankTransferEnabled", false);
         BankAccounts               = await _bankAccountDbHelper.GetAllActiveByCountryAsync("MY", _translation.CurrentLanguage);
-        MsgDuplicateEmail          = await _translation.GetAsync("Registration.DuplicateEmail");
-        MsgDuplicateNric           = await _translation.GetAsync("Registration.DuplicateNric");
+        MsgDuplicateEmail           = await _translation.GetAsync("Registration.DuplicateEmail");
+        MsgDuplicateNric            = await _translation.GetAsync("Registration.DuplicateNric");
         MsgDuplicateApplicationType = await _translation.GetAsync("Registration.DuplicateApplicationType");
-        MsgError                   = await _translation.GetAsync(MessageConstants.SaveError);
+        MsgAlreadyVerified          = await _translation.GetAsync("Registration.AlreadyVerified");
+        MsgError                    = await _translation.GetAsync(MessageConstants.SaveError);
     }
 }

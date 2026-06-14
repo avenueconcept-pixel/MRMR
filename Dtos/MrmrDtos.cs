@@ -25,7 +25,8 @@ public enum RegistrationResult
     DuplicateNric,
     DuplicateApplicationType,
     CategoryNotFound,
-    Error
+    Error,
+    AlreadyVerified
 }
 
 public class CriterionScoreInputDto

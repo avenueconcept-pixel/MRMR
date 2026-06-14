@@ -71,11 +71,79 @@ public class RegistrationDbHelper : DbHelper
         Registrant registrant, string applicationType, int awardCategoryId, string paymentMethod)
         => await ExecuteAsync(async () =>
         {
-            if (await _db.Registrants.AnyAsync(r => r.Email.ToLower() == registrant.Email.ToLower()))
-                return (RegistrationResult.DuplicateEmail, (int?)null);
+            var existing = await _db.Registrants.FirstOrDefaultAsync(r =>
+                r.NricPassport.ToLower() == registrant.NricPassport.ToLower() ||
+                r.Email.ToLower()        == registrant.Email.ToLower());
 
-            if (await _db.Registrants.AnyAsync(r => r.NricPassport.ToLower() == registrant.NricPassport.ToLower()))
-                return (RegistrationResult.DuplicateNric, (int?)null);
+            if (existing != null)
+            {
+                var hasVerified = await _db.Applications.AnyAsync(a =>
+                    a.RegistrantId == existing.Id &&
+                    a.Status       == nameof(ApplicationStatus.NominationFeeVerified));
+
+                if (hasVerified)
+                    return (RegistrationResult.AlreadyVerified, (int?)null);
+
+                existing.Title                = registrant.Title;
+                existing.FullName             = registrant.FullName;
+                existing.ContactNo            = registrant.ContactNo;
+                existing.Email                = registrant.Email;
+                existing.CompanyName          = registrant.CompanyName;
+                existing.SsmRegNo             = registrant.SsmRegNo;
+                existing.CompanyAddress       = registrant.CompanyAddress;
+                existing.Website              = registrant.Website;
+                existing.Industry             = registrant.Industry;
+                existing.BusinessNature       = registrant.BusinessNature;
+                existing.DeclInfoAccurate     = registrant.DeclInfoAccurate;
+                existing.DeclFeeNonrefundable = registrant.DeclFeeNonrefundable;
+                existing.UpdatedAt            = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+
+                var existingApp = await _db.Applications
+                    .FirstOrDefaultAsync(a => a.RegistrantId == existing.Id);
+
+                if (existingApp != null)
+                {
+                    existingApp.ApplicationType = applicationType;
+                    existingApp.AwardCategoryId = awardCategoryId;
+                    existingApp.PaymentMethod   = paymentMethod;
+                    existingApp.Status          = nameof(ApplicationStatus.Registered);
+                    existingApp.UpdatedAt       = DateTime.UtcNow;
+                    await _db.SaveChangesAsync();
+                }
+                else
+                {
+                    var reAttemptAppId = await _idGen.GenerateAsync(applicationType);
+                    existingApp = new Application
+                    {
+                        ApplicationId   = reAttemptAppId,
+                        RegistrantId    = existing.Id,
+                        ApplicationType = applicationType,
+                        AwardCategoryId = awardCategoryId,
+                        Status          = nameof(ApplicationStatus.Registered),
+                        PaymentMethod   = paymentMethod,
+                        CreatedAt       = DateTime.UtcNow,
+                        UpdatedAt       = DateTime.UtcNow
+                    };
+                    _db.Applications.Add(existingApp);
+                    await _db.SaveChangesAsync();
+                }
+
+                var reAttemptPayment = new Payment
+                {
+                    ApplicationId = existingApp.Id,
+                    PaymentType   = nameof(PaymentType.NominationFee),
+                    Amount        = PaymentConstants.NominationFeeAmount,
+                    Method        = paymentMethod,
+                    Status        = nameof(PaymentStatus.Pending),
+                    CreatedAt     = DateTime.UtcNow,
+                    UpdatedAt     = DateTime.UtcNow
+                };
+                _db.Payments.Add(reAttemptPayment);
+                await _db.SaveChangesAsync();
+
+                return (RegistrationResult.Success, (int?)existingApp.Id);
+            }
 
             var category = await _db.AwardCategories.FindAsync(awardCategoryId);
             if (category == null || !category.IsActive)
