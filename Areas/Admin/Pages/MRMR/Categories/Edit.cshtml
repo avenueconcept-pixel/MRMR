@@ -89,7 +89,7 @@
 
     <div class="card mb-3">
         <div class="card-body">
-            <h5 class="card-title">
+            <h5 class="card-title d-flex align-items-center gap-2">
                 Evaluation Criteria
                 @if (Model.Category.CriteriaLocked)
                 {
@@ -100,6 +100,9 @@
                 else
                 {
                     <small class="text-muted">(weights must total 100%)</small>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" id="btnCopyCriteria">
+                        <i class="ri ri-file-copy-line me-1"></i>Copy from Category
+                    </button>
                 }
             </h5>
 
@@ -131,7 +134,7 @@
                     <span id="weightWarning" class="text-danger ms-2" style="display:none;">&#9888; Must equal 100%</span>
                 </p>
                 <div class="table-responsive">
-                    <table class="table table-striped align-middle">
+                    <table id="criteriaTable" class="table table-striped align-middle">
                         <thead>
                             <tr>
                                 <th style="width:50%">Criterion Name</th>
@@ -181,13 +184,66 @@
 </form>
 
 @section PageScripts {
+@{
+    var allCategoriesJson = !Model.Category.CriteriaLocked
+        ? System.Text.Json.JsonSerializer.Serialize(
+            Model.AllCategories
+                .Where(c => c.Criteria != null && c.Criteria.Any())
+                .Select(c => new {
+                    id       = c.Id,
+                    name     = c.Name,
+                    criteria = c.Criteria
+                        .Where(x => x.IsActive)
+                        .OrderBy(x => x.DisplayOrder)
+                        .Select(x => new {
+                            criterionName = x.CriterionName,
+                            weight        = x.Weight,
+                            description   = x.Description ?? string.Empty
+                        })
+                }))
+        : "[]";
+}
 <script>
+const allCategories = @Html.Raw(allCategoriesJson);
+
 document.addEventListener('DOMContentLoaded', function () {
     @if (!Model.Category.CriteriaLocked)
     {
         @:updateWeightTotal();
         @:document.querySelectorAll('.weight-input').forEach(function (el) {
         @:    el.addEventListener('input', updateWeightTotal);
+        @:});
+        @:
+        @:document.getElementById('btnCopyCriteria').addEventListener('click', function () {
+        @:    if (!allCategories.length) {
+        @:        Swal.fire('No categories', 'No other categories with criteria found.', 'info');
+        @:        return;
+        @:    }
+        @:    const options = allCategories.map(c => '<option value="' + c.id + '">' + escHtml(c.name) + '</option>').join('');
+        @:    Swal.fire({
+        @:        title: 'Copy from Category',
+        @:        html: '<select id="swalCatSelect" class="form-select mt-2">' + options + '</select>',
+        @:        confirmButtonText: 'Copy',
+        @:        showCancelButton: true,
+        @:        preConfirm: () => document.getElementById('swalCatSelect').value
+        @:    }).then(result => {
+        @:        if (!result.isConfirmed) return;
+        @:        const catId    = parseInt(result.value);
+        @:        const selected = allCategories.find(c => c.id === catId);
+        @:        if (!selected) return;
+        @:        const rows = [...selected.criteria];
+        @:        while (rows.length < 5) rows.push({ criterionName: '', weight: '', description: '' });
+        @:        const tbody = document.querySelector('#criteriaTable tbody');
+        @:        tbody.innerHTML = rows.map((c, i) =>
+        @:            '<tr>' +
+        @:            '<td><input type="text"   name="Criteria[' + i + '].CriterionName" value="' + escHtml(c.criterionName) + '" class="form-control" /></td>' +
+        @:            '<td><input type="number" name="Criteria[' + i + '].Weight"         value="' + c.weight + '"                 class="form-control weight-input" style="width:80px;" min="0" max="100" step="0.01" /></td>' +
+        @:            '<td><input type="text"   name="Criteria[' + i + '].Description"    value="' + escHtml(c.description) + '"   class="form-control" /></td>' +
+        @:            '</tr>'
+        @:        ).join('');
+        @:        tbody.querySelectorAll('.weight-input').forEach(el => el.addEventListener('input', updateWeightTotal));
+        @:        updateWeightTotal();
+        @:    });
         @:});
     }
 });
@@ -207,6 +263,10 @@ function updateWeightTotal() {
         warn.style.display = 'none';
         document.getElementById('weightTotal').classList.remove('text-danger');
     }
+}
+
+function escHtml(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 }

@@ -14,11 +14,13 @@ public class CreateModel : AdminPageModel
         _mrmrDb = mrmrDb;
     }
 
-    [BindProperty] public AwardCategory        Category { get; set; } = new();
-    [BindProperty] public List<AwardCriterion> Criteria { get; set; } = [];
+    [BindProperty] public AwardCategory        Category     { get; set; } = new();
+    [BindProperty] public List<AwardCriterion> Criteria     { get; set; } = [];
+    public         List<AwardCategory>         AllCategories { get; set; } = [];
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGetAsync()
     {
+        AllCategories = await _mrmrDb.GetCategoryListAsync();
         Criteria = Enumerable.Range(0, 5)
             .Select(_ => new AwardCriterion())
             .ToList();

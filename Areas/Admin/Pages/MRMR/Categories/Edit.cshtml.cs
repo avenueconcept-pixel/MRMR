@@ -14,9 +14,10 @@ public class EditModel : AdminPageModel
         _mrmrDb = mrmrDb;
     }
 
-    [BindProperty(SupportsGet = true)] public int                 Id       { get; set; }
-    [BindProperty]                     public AwardCategory        Category { get; set; } = new();
-    [BindProperty]                     public List<AwardCriterion> Criteria { get; set; } = [];
+    [BindProperty(SupportsGet = true)] public int                 Id            { get; set; }
+    [BindProperty]                     public AwardCategory        Category      { get; set; } = new();
+    [BindProperty]                     public List<AwardCriterion> Criteria      { get; set; } = [];
+    public                             List<AwardCategory>         AllCategories { get; set; } = [];
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -32,6 +33,9 @@ public class EditModel : AdminPageModel
 
         while (Criteria.Count < 5)
             Criteria.Add(new AwardCriterion());
+
+        var all = await _mrmrDb.GetCategoryListAsync();
+        AllCategories = all.Where(c => c.Id != Id).ToList();
 
         return Page();
     }
