@@ -1,0 +1,222 @@
+@page
+@model MyApp.Areas.Admin.Pages.MRMR.Documents.DetailModel
+@using MyApp.Constants.MRMR
+@{
+    ViewData["Title"]      = $"Documents — {Model.Application?.ApplicationId}";
+    ViewData["ActiveMenu"] = "MRMR_APPLICATIONS";
+    var app = Model.Application!;
+}
+
+<div class="d-flex justify-content-between align-items-center py-3 mb-4">
+    <h4 class="mb-0">
+        <i class="ri ri-folder-line me-1"></i>Document Verification — @app.ApplicationId
+        <small class="text-muted fs-6">(@app.ApplicationType)</small>
+    </h4>
+    <a asp-area="Admin" asp-page="/MRMR/Applications/Detail" asp-route-id="@app.Id"
+       class="btn btn-outline-secondary">
+        <i class="ri ri-arrow-left-line me-1"></i>Back to @app.ApplicationId
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success mb-3">
+        <i class="ri ri-checkbox-circle-line me-1"></i>@TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger mb-3">
+        <i class="ri ri-error-warning-line me-1"></i>@TempData["ErrorMessage"]
+    </div>
+}
+
+@{
+    var verified = Model.Documents.Count(d => d.VerificationStatus == nameof(DocumentVerificationStatus.Verified));
+    var rejected = Model.Documents.Count(d => d.VerificationStatus == nameof(DocumentVerificationStatus.Rejected));
+    var pending  = Model.Documents.Count(d => d.VerificationStatus == nameof(DocumentVerificationStatus.Pending));
+}
+
+@if (!Model.Documents.Any())
+{
+    <div class="card">
+        <div class="card-body text-center py-4">
+            <i class="ri ri-inbox-line text-muted" style="font-size:3rem;"></i>
+            <p class="text-muted">No documents uploaded for this application.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <span class="badge bg-success"><i class="ri ri-checkbox-circle-line me-1"></i>Verified: @verified</span>
+        <span class="badge bg-danger ms-1"><i class="ri ri-close-circle-line me-1"></i>Rejected: @rejected</span>
+        <span class="badge bg-warning text-dark ms-1"><i class="ri ri-time-line me-1"></i>Pending: @pending</span>
+    </div>
+
+    @foreach (var doc in Model.Documents)
+    {
+        var badgeClass = doc.VerificationStatus switch
+        {
+            nameof(DocumentVerificationStatus.Verified) => "bg-success",
+            nameof(DocumentVerificationStatus.Rejected) => "bg-danger",
+            _                                           => "bg-warning text-dark"
+        };
+        var ext   = System.IO.Path.GetExtension(doc.FilePath).ToLowerInvariant();
+        var isPdf = ext == ".pdf";
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row align-items-center">
+
+                    @* Doc info *@
+                    <div class="col-12 col-md-5">
+                        <p class="mb-0">
+                            <strong>@doc.DocumentType.Replace("_", " ").ToUpperInvariant()</strong>
+                            @if (doc.IsRequired)
+                            {
+                                <span class="badge bg-danger ms-1">Required</span>
+                            }
+                        </p>
+                        <p class="text-muted mb-0" style="font-size:0.85rem;">@doc.OriginalFilename</p>
+                        <p class="text-muted mb-0" style="font-size:0.8rem;">
+                            Uploaded: @doc.UploadedAt.ToString("dd MMM yyyy HH:mm")
+                            @if (doc.FileSizeBytes.HasValue)
+                            {
+                                <span class="ms-2">(@((doc.FileSizeBytes.Value / 1024.0).ToString("N0")) KB)</span>
+                            }
+                        </p>
+                        @if (!string.IsNullOrEmpty(doc.AdminRemarks))
+                        {
+                            <p class="text-danger mb-0" style="font-size:0.85rem;">
+                                <i class="ri ri-error-warning-line me-1"></i>@doc.AdminRemarks
+                            </p>
+                        }
+                    </div>
+
+                    @* Preview *@
+                    <div class="col-12 col-md-3 text-center mt-2 mt-md-0">
+                        @if (isPdf)
+                        {
+                            <a href="/@doc.FilePath" target="_blank" class="btn btn-sm btn-primary">
+                                <i class="ri ri-file-pdf-line me-1"></i>Open PDF
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="/@doc.FilePath" target="_blank">
+                                <img src="/@doc.FilePath" alt="@doc.DocumentType"
+                                     style="max-height:80px; max-width:120px; border:1px solid #ddd; border-radius:4px; object-fit:cover;" />
+                            </a>
+                        }
+                    </div>
+
+                    @* Status + actions *@
+                    <div class="col-12 col-md-4 text-end mt-2 mt-md-0">
+                        <span class="badge @badgeClass d-inline-block mb-2">
+                            @doc.VerificationStatus
+                        </span>
+                        @if (doc.VerifiedAt.HasValue)
+                        {
+                            <p class="text-muted mb-1" style="font-size:0.8rem;">
+                                @doc.VerifiedAt.Value.ToString("dd MMM yyyy HH:mm")
+                            </p>
+                        }
+
+                        @* Verify button *@
+                        @if (doc.VerificationStatus != nameof(DocumentVerificationStatus.Verified))
+                        {
+                            <form method="post" asp-page-handler="Verify"
+                                  id="verifyForm_@doc.Id" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="ApplicationId" value="@app.Id" />
+                                <input type="hidden" name="DocumentId"    value="@doc.Id" />
+                                <button type="button"
+                                        class="btn btn-sm btn-success"
+                                        onclick="confirmVerify(@doc.Id)">
+                                    <i class="ri ri-checkbox-circle-line me-1"></i>Verify
+                                </button>
+                            </form>
+                        }
+
+                        @* Reject button *@
+                        @if (doc.VerificationStatus != nameof(DocumentVerificationStatus.Rejected))
+                        {
+                            <button type="button"
+                                    class="btn btn-sm btn-danger ms-1"
+                                    onclick="openRejectModal(@doc.Id)">
+                                <i class="ri ri-close-circle-line me-1"></i>Reject
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@* Reject modal (Bootstrap 5) *@
+<div id="rejectModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Enter the reason for rejection. This will be shown to the applicant.</p>
+                <form method="post" asp-page-handler="Reject" id="rejectForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ApplicationId" value="@app.Id" />
+                    <input type="hidden" name="DocumentId"    id="rejectDocumentId" value="" />
+                    <div class="mb-3">
+                        <label class="form-label" for="txtRejectRemarks">Rejection Remarks *</label>
+                        <textarea id="txtRejectRemarks" name="RejectRemarks"
+                                  class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" onclick="submitReject()" class="btn btn-danger">
+                    <i class="ri ri-close-circle-line me-1"></i>Confirm Reject
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section PageScripts {
+<script>
+function confirmVerify(docId) {
+    Swal.fire({
+        title:              'Verify Document?',
+        text:               'Mark this document as verified.',
+        icon:               'question',
+        showCancelButton:   true,
+        confirmButtonText:  'Yes, Verify',
+        cancelButtonText:   'Cancel',
+        confirmButtonColor: '#388e3c'
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            document.getElementById('verifyForm_' + docId).submit();
+        }
+    });
+}
+
+function openRejectModal(docId) {
+    document.getElementById('rejectDocumentId').value = docId;
+    document.getElementById('txtRejectRemarks').value = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('rejectModal')).show();
+}
+
+function submitReject() {
+    var remarks = document.getElementById('txtRejectRemarks').value.trim();
+    if (!remarks) {
+        Swal.fire({ icon: 'warning', text: 'Remarks are required.' });
+        return;
+    }
+    document.getElementById('rejectForm').submit();
+}
+</script>
+}

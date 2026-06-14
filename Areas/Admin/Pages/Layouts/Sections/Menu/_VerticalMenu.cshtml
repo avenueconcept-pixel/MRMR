@@ -12,7 +12,8 @@
 
   bool IsActive(string? url) =>
       !string.IsNullOrEmpty(url) &&
-      (current == url || current?.StartsWith(url + "/") == true);
+      (string.Equals(current, url, StringComparison.OrdinalIgnoreCase) ||
+       current?.StartsWith(url + "/", StringComparison.OrdinalIgnoreCase) == true);
 
   bool IsActiveByCode(string? menuCode) =>
       !string.IsNullOrEmpty(activeMenuCode) &&
@@ -148,7 +149,7 @@
               @foreach (var child in item.Children.OrderBy(c => c.SortOrder))
               {
                 var childHasChildren = child.Children.Any();
-                var childActive      = IsActive(child.MenuUrl) || child.Children.Any(gc => IsActive(gc.MenuUrl));
+                var childActive      = IsActive(child.MenuUrl) || IsActiveByCode(child.MenuCode) || child.Children.Any(gc => IsActive(gc.MenuUrl) || IsActiveByCode(gc.MenuCode));
                 if (childHasChildren)
                 {
                   <li class='menu-item@(childActive ? " active open" : "")'>

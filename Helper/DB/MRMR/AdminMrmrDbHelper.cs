@@ -309,6 +309,34 @@ public class AdminMrmrDbHelper : DbHelper
                 .OrderBy(d => d.DocumentType)
                 .ToListAsync());
 
+    public async Task<List<ApplicationDocument>> GetAllDocumentsAsync(
+        string? status, string? search)
+        => await ExecuteAsync(async () =>
+        {
+            var query = _db.ApplicationDocuments
+                .Include(d => d.Application)
+                    .ThenInclude(a => a.Registrant)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(status))
+                query = query.Where(d => d.VerificationStatus == status);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(d =>
+                    d.Application.ApplicationId.ToLower().Contains(s) ||
+                    d.Application.Registrant.FullName.ToLower().Contains(s) ||
+                    d.DocumentType.ToLower().Contains(s) ||
+                    d.OriginalFilename.ToLower().Contains(s));
+            }
+
+            return await query
+                .OrderByDescending(d => d.UploadedAt)
+                .Take(300)
+                .ToListAsync();
+        });
+
     public async Task VerifyDocumentAsync(int documentId, int adminId)
         => await ExecuteAsync(async () =>
         {

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MyApp.Constants.MRMR;
 using MyApp.Helper;
 using MyApp.Helper.DB.MRMR;
 using MyApp.Models.MRMR;
@@ -14,54 +15,22 @@ public class IndexModel : AdminPageModel
         _mrmrDb = mrmrDb;
     }
 
-    [BindProperty(SupportsGet = true)] public int    ApplicationId { get; set; }
-    [BindProperty]                     public int    DocumentId    { get; set; }
-    [BindProperty]                     public string RejectRemarks { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public string? FilterStatus { get; set; }
+    [BindProperty(SupportsGet = true)] public string? Search       { get; set; }
 
-    public Application?              Application { get; set; }
     public List<ApplicationDocument> Documents   { get; set; } = [];
+
+    public List<string> AllStatuses { get; set; } =
+    [
+        nameof(DocumentVerificationStatus.Pending),
+        nameof(DocumentVerificationStatus.Verified),
+        nameof(DocumentVerificationStatus.Rejected)
+    ];
 
     public async Task<IActionResult> OnGetAsync()
     {
         AlertMessageType = string.Empty;
-        Application = await _mrmrDb.GetApplicationDetailAsync(ApplicationId);
-        if (Application == null) return RedirectToPage("/MRMR/Applications/Index");
-
-        Documents = await _mrmrDb.GetApplicationDocumentsAsync(ApplicationId);
+        Documents = await _mrmrDb.GetAllDocumentsAsync(FilterStatus, Search);
         return Page();
-    }
-
-    public async Task<IActionResult> OnPostVerifyAsync()
-    {
-        try
-        {
-            await _mrmrDb.VerifyDocumentAsync(DocumentId, CurrentUserId);
-            TempData["SuccessMessage"] = "Document verified successfully.";
-        }
-        catch (InvalidOperationException ex)
-        {
-            TempData["ErrorMessage"] = ex.Message;
-        }
-        return RedirectToPage(new { ApplicationId });
-    }
-
-    public async Task<IActionResult> OnPostRejectAsync()
-    {
-        if (string.IsNullOrWhiteSpace(RejectRemarks))
-        {
-            TempData["ErrorMessage"] = "Remarks are required when rejecting a document.";
-            return RedirectToPage(new { ApplicationId });
-        }
-
-        try
-        {
-            await _mrmrDb.RejectDocumentAsync(DocumentId, CurrentUserId, RejectRemarks);
-            TempData["SuccessMessage"] = "Document rejected.";
-        }
-        catch (InvalidOperationException ex)
-        {
-            TempData["ErrorMessage"] = ex.Message;
-        }
-        return RedirectToPage(new { ApplicationId });
     }
 }
