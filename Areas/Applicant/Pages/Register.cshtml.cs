@@ -33,6 +33,7 @@ public class RegisterModel : PublicPageModel
     [BindProperty] public string  ddlTitle                { get; set; } = string.Empty;
     [BindProperty] public string  txtFullName             { get; set; } = string.Empty;
     [BindProperty] public string  txtNric                 { get; set; } = string.Empty;
+    [BindProperty] public string  txtContactAreaCode       { get; set; } = "+60";
     [BindProperty] public string  txtContactNo            { get; set; } = string.Empty;
     [BindProperty] public string  txtEmail                { get; set; } = string.Empty;
     [BindProperty] public string? txtCompanyName          { get; set; }
@@ -51,6 +52,7 @@ public class RegisterModel : PublicPageModel
     public List<CategorySummaryDto>    CorporateCategories       { get; set; } = new();
     public bool                        ManualBankTransferEnabled  { get; set; }
     public List<CompanyBankAccount>    BankAccounts              { get; set; } = new();
+    public string                      NominationFeeDisplay      { get; set; } = string.Empty;
 
     public string MsgDuplicateEmail           { get; set; } = string.Empty;
     public string MsgDuplicateNric            { get; set; } = string.Empty;
@@ -101,7 +103,7 @@ public class RegisterModel : PublicPageModel
             Title                = ddlTitle,
             FullName             = txtFullName.Trim(),
             NricPassport         = nric,
-            ContactNo            = txtContactNo.Trim(),
+            ContactNo            = txtContactAreaCode.Trim() + txtContactNo.Trim(),
             Email                = txtEmail.Trim().ToLower(),
             CompanyName          = txtCompanyName?.Trim(),
             SsmRegNo             = txtSsmRegNo?.Trim(),
@@ -180,6 +182,7 @@ public class RegisterModel : PublicPageModel
         CorporateCategories        = await _dbHelper.GetActiveCategoriesAsync("Corporate");
         ManualBankTransferEnabled  = await _systemSetting.GetAsBoolAsync("Registration.ManualBankTransferEnabled", false);
         BankAccounts               = await _bankAccountDbHelper.GetAllActiveByCountryAsync("MY", _translation.CurrentLanguage);
+        NominationFeeDisplay        = $"{MyApp.Constants.MRMR.PaymentConstants.CurrencySymbol} {MyApp.Constants.MRMR.PaymentConstants.NominationFeeAmount:N2}";
         MsgDuplicateEmail           = await _translation.GetAsync("Registration.DuplicateEmail");
         MsgDuplicateNric            = await _translation.GetAsync("Registration.DuplicateNric");
         MsgDuplicateApplicationType = await _translation.GetAsync("Registration.DuplicateApplicationType");

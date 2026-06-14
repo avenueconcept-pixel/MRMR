@@ -236,7 +236,42 @@
             </div>
             <div class="col-12 col-md-6">
                 <label class="form-label" for="txtContactNo">@await T.GetAsync("Registration.ContactNo") <span class="text-danger">*</span></label>
-                <input type="text" id="txtContactNo" name="txtContactNo" class="form-control" value="@Model.txtContactNo" />
+                <div class="input-group">
+                    <select id="txtContactAreaCode" name="txtContactAreaCode" class="form-select" style="max-width:110px;">
+                        @{
+                            var areaCodes = new[]
+                            {
+                                ("+60",  "MY +60"),
+                                ("+65",  "SG +65"),
+                                ("+1",   "US +1"),
+                                ("+44",  "UK +44"),
+                                ("+61",  "AU +61"),
+                                ("+86",  "CN +86"),
+                                ("+91",  "IN +91"),
+                                ("+852", "HK +852"),
+                                ("+62",  "ID +62"),
+                                ("+66",  "TH +66"),
+                                ("+84",  "VN +84"),
+                                ("+63",  "PH +63"),
+                                ("+81",  "JP +81"),
+                                ("+82",  "KR +82"),
+                            };
+                            foreach (var (areaCode, areaLabel) in areaCodes)
+                            {
+                                if (Model.txtContactAreaCode == areaCode)
+                                {
+                                    <option value="@areaCode" selected>@areaLabel</option>
+                                }
+                                else
+                                {
+                                    <option value="@areaCode">@areaLabel</option>
+                                }
+                            }
+                        }
+                    </select>
+                    <input type="text" id="txtContactNo" name="txtContactNo" class="form-control"
+                           placeholder="e.g. 123456789" value="@Model.txtContactNo" />
+                </div>
             </div>
         </div>
 
@@ -333,6 +368,23 @@
     @* ══════════════════════════════════════════════════ *@
     <div class="wizard-step" id="stepPayment">
         <h6 class="text-primary mb-3">@await T.GetAsync("Registration.PaymentMethod")</h6>
+
+        @* Nomination Fee Summary *@
+        <div class="card border-primary bg-primary bg-opacity-10 mb-3">
+            <div class="card-body py-3">
+                <h6 class="card-title text-primary mb-2">
+                    <i class="ri ri-money-dollar-circle-line me-1"></i>@await T.GetAsync("Registration.PaymentSummary")
+                </h6>
+                <table class="table table-sm table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td>@await T.GetAsync("Registration.NominationFee")</td>
+                            <td class="text-end fw-bold text-primary">@Model.NominationFeeDisplay</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
         <div class="form-check mb-2">
             <input class="form-check-input" type="radio" name="ddlPaymentMethod" id="rdoAxaipay" value="Axaipay"
