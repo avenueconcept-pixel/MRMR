@@ -5,6 +5,8 @@
     ViewData["ActiveMenu"] = "MRMR_CATEGORIES";
 }
 
+
+
 <div class="d-flex justify-content-between align-items-center py-3 mb-4">
     <h4 class="mb-0"><i class="ri ri-trophy-line me-1"></i>Create Award Category</h4>
     <a asp-page="Index" class="btn btn-outline-secondary">
@@ -135,6 +137,14 @@
         </button>
     </div>
 </form>
+
+@section VendorStyles {
+  <link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@section VendorScripts {
+  <script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+}
 
 @section PageScripts {
 <script>

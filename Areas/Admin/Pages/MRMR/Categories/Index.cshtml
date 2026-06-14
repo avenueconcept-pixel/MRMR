@@ -11,6 +11,7 @@
         <i class="ri ri-add-line me-1"></i>New Category
     </a>
 </div>
+@Html.AntiForgeryToken()
 
 @if (TempData["SuccessMessage"] != null)
 {
@@ -25,6 +26,18 @@
     </div>
 }
 
+<div class="mb-3 d-flex align-items-center gap-2">
+    <span class="text-muted" style="font-size:0.9rem;">Filter:</span>
+    <div class="btn-group" id="typeFilterGroup">
+        <button type="button" class="btn btn-sm btn-outline-primary active" data-filter="all">All</button>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-filter="Individual">Individual</button>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-filter="Corporate">Corporate</button>
+    </div>
+    <span id="reorderHint" class="text-muted ms-3" style="font-size:0.8rem; display:none;">
+        <i class="ri ri-information-line"></i> Clear filter to reorder
+    </span>
+</div>
+
 @if (!Model.Categories.Any())
 {
     <div class="card">
@@ -36,11 +49,17 @@
 }
 else
 {
+    <div id="categorySortable">
     @foreach (var cat in Model.Categories)
     {
-        <div class="card mb-3 @(!cat.IsActive ? "bg-light" : "")">
+        <div class="card mb-3 category-card @(!cat.IsActive ? "bg-light" : "")"
+             data-id="@cat.Id"
+             data-type="@cat.CategoryType">
             <div class="card-body">
                 <div class="row align-items-center mb-0">
+                    <div class="col-auto drag-handle" style="cursor:grab; color:#aaa; padding-right:0;">
+                        <i class="ri ri-drag-move-line" style="font-size:1.2rem;"></i>
+                    </div>
                     <div class="col-12 col-md-7">
                         <h5 class="card-title mb-1">
                             @cat.Name
@@ -96,16 +115,16 @@ else
                 @if (cat.Criteria.Any(x => x.IsActive))
                 {
                     <div class="mt-3">
-                        @foreach (var c in cat.Criteria.Where(x => x.IsActive))
+                        @foreach (var crit in cat.Criteria.Where(x => x.IsActive))
                         {
                             <div class="row align-items-center mb-1" style="font-size:0.8rem;">
-                                <div class="col-5 text-muted">@c.CriterionName</div>
+                                <div class="col-5 text-muted">@crit.CriterionName</div>
                                 <div class="col-5">
                                     <div class="progress" style="height:8px; margin:6px 0;">
-                                        <div class="progress-bar" style="width:@c.Weight%"></div>
+                                        <div class="progress-bar" style="width:@crit.Weight%"></div>
                                     </div>
                                 </div>
-                                <div class="col-2 text-muted">@c.Weight%</div>
+                                <div class="col-2 text-muted">@crit.Weight%</div>
                             </div>
                         }
                     </div>
@@ -113,10 +132,75 @@ else
             </div>
         </div>
     }
+    </div>
+}
+
+@section VendorStyles {
+<link rel="stylesheet" href="~/vendor/libs/sweetalert2/sweetalert2.dist.css" />
+}
+
+@section VendorScripts {
+<script src="~/vendor/libs/sweetalert2/sweetalert2.dist.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 }
 
 @section PageScripts {
 <script>
+let sortableInstance = null;
+const filterBtns = document.querySelectorAll('#typeFilterGroup button');
+let activeFilter  = 'all';
+
+filterBtns.forEach(btn => {
+    btn.addEventListener('click', function () {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        activeFilter = this.dataset.filter;
+        applyFilter();
+    });
+});
+
+function applyFilter() {
+    document.querySelectorAll('.category-card').forEach(card => {
+        const show = activeFilter === 'all' || card.dataset.type === activeFilter;
+        card.style.display = show ? '' : 'none';
+    });
+
+    const isFiltered = activeFilter !== 'all';
+    document.getElementById('reorderHint').style.display = isFiltered ? 'inline' : 'none';
+    if (sortableInstance) {
+        sortableInstance.option('disabled', isFiltered);
+    }
+}
+
+const container = document.getElementById('categorySortable');
+if (container) {
+    sortableInstance = new Sortable(container, {
+        handle:    '.drag-handle',
+        animation: 150,
+        onEnd: function () {
+            if (activeFilter !== 'all') return;
+
+            const items = [...container.querySelectorAll('.category-card')]
+                .map((el, index) => ({ id: parseInt(el.dataset.id), order: index + 1 }));
+
+            fetch('?handler=Reorder', {
+                method:  'POST',
+                headers: {
+                    'Content-Type':            'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify(items)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            });
+        }
+    });
+}
+
 function confirmDeactivate(id) {
     Swal.fire({
         title:              'Deactivate Category?',

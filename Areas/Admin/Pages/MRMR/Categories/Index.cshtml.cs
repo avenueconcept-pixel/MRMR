@@ -36,4 +36,23 @@ public class IndexModel : AdminPageModel
         }
         return RedirectToPage();
     }
+
+    public async Task<IActionResult> OnPostReorderAsync([FromBody] List<CategorySortItem> items)
+    {
+        try
+        {
+            await _mrmrDb.ReorderCategoriesAsync(items.Select(x => (x.Id, x.Order)).ToList());
+            return new JsonResult(new { success = true, message = "Order saved." });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, message = ex.Message });
+        }
+    }
+}
+
+public class CategorySortItem
+{
+    public int Id    { get; set; }
+    public int Order { get; set; }
 }

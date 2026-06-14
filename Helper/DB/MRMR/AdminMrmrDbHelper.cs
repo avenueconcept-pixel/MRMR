@@ -436,6 +436,21 @@ public class AdminMrmrDbHelper : DbHelper
             await _db.SaveChangesAsync();
         });
 
+    public async Task ReorderCategoriesAsync(List<(int Id, int Order)> items)
+        => await ExecuteAsync(async () =>
+        {
+            foreach (var (id, order) in items)
+            {
+                var cat = await _db.AwardCategories.FindAsync(id);
+                if (cat != null)
+                {
+                    cat.DisplayOrder = (short)order;
+                    cat.UpdatedAt    = DateTime.UtcNow;
+                }
+            }
+            await _db.SaveChangesAsync();
+        });
+
     private static void ValidateCriteriaWeights(List<AwardCriterion> criteria)
     {
         var active = criteria.Where(x => !string.IsNullOrWhiteSpace(x.CriterionName)).ToList();
